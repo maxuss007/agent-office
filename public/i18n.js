@@ -205,7 +205,7 @@
     // installing tools from Connections
     'Klikni výše na': 'Click', ', nebo v Terminálu spusť': ', or run this in Terminal:', '. Stačí i aplikace ChatGPT pro Mac.': '. The ChatGPT app for Mac also works.',
     'Volitelné. Klikni výše na': 'Optional. Click', 'Volitelné, hodí se na studium a rešerše. Klikni výše na': 'Optional, good for study and research. Click', 'Nainstalovat': 'Install',
-    'Instaluji…': 'Installing…', 'Instalace se nepovedla.': 'Installation failed.', 'Skills: doporučené balíčky jsou nainstalované.': 'Skills: the recommended packs are installed.', '↓ Nainstalovat skills': '↓ Install skills',
+    'Nainstalováno': 'Installed', 'Nainstalováno. Přihlas se tlačítkem Připojit znovu.': 'Installed. Sign in with Reconnect.', 'Instaluji…': 'Installing…', 'Instalace se nepovedla.': 'Installation failed.', 'Skills: doporučené balíčky jsou nainstalované.': 'Skills: the recommended packs are installed.', '↓ Nainstalovat skills': '↓ Install skills',
     // labels without accents that the first pass missed
     'Archiv': 'Archive', 'Archivovat': 'Archive', 'Obnovit z archivu': 'Restore from archive', 'Aktivita': 'Activity', 'Podrobnosti': 'Details', 'Poslat': 'Send',
     'Nechat na Bossovi': 'Leave it to the boss', 'Effort': 'Effort', 'Chyba': 'Error', 'Volno': 'Free', 'volno': 'free', 'Nepovedlo se': 'Failed', 'Nepovedlo se.': 'Failed.',

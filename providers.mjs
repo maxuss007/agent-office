@@ -132,6 +132,7 @@ export function geminiInfo(bin = locate('gemini')) {
 }
 export async function providerCatalog(force = false) {
   if (!force && cached && Date.now() - cached.time < 60000) return cached.value;
+  if (pending) { if (!force) return pending; await pending.catch(() => {}); }   // a forced refresh must not get an older, still-running check
   if (pending) return pending;
   pending = (async () => {
     let history = metric();const claude = locate('claude');

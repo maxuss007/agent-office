@@ -65,7 +65,9 @@ http.createServer(async (req, res) => {
     if (url.pathname === '/api/install' && req.method === 'POST') { // one-click install of a missing tool (scripts/install.sh)
       const item = (await body(req)).item; if (!['node', 'claude', 'codex', 'gemini', 'antigravity', 'plugins', 'skills'].includes(item)) return json(res, 400, { error: 'unknown item' });
       const out = await new Promise((ok) => _execFile('/bin/bash', [path.join(ROOT, 'scripts', 'install.sh'), item], { timeout: 600000, maxBuffer: 1 << 22, env: { ...process.env, PATH: [path.join(DATA, 'runtime', 'node', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH].join(':') } }, (err, so, se) => ok({ ok: !err, log: String(so || '') + String(se || '') })));
-      return json(res, 200, { ...out, log: out.log.split('\n').filter(Boolean).slice(-12).join('\n') });
+      const status = await new Promise((ok) => _execFile('/bin/bash', [path.join(ROOT, 'scripts', 'install.sh'), '--status'], { timeout: 30000, env: { ...process.env, PATH: [path.join(DATA, 'runtime', 'node', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH].join(':') } }, (err, so) => { try { ok(JSON.parse(String(so))); } catch { ok(null); } }));
+      providerCatalog(true).catch(() => {});   // refresh the provider list in the background (sign-in state, models)
+      return json(res, 200, { ...out, status, log: out.log.split('\n').filter(Boolean).slice(-12).join('\n') });
     }
     if (url.pathname === '/api/update' && req.method === 'POST') { try { return json(res, 200, await applyUpdate()); } catch (e) { return json(res, 200, { error: e.message }); } }
     if (url.pathname === '/api/update') return json(res, 200, await checkUpdate(url.searchParams.has('force')));

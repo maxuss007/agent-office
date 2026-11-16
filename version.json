@@ -1,7 +1,7 @@
 {
-  "version": "1.3.0",
+  "version": "1.3.1",
   "shell": 3,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "One-click setup: on first launch the app installs what is missing – Node.js (from nodejs.org, no Homebrew needed), Claude Code, Codex, Gemini CLI, Antigravity, the Claude Code plugins and recommended skills from their authors on GitHub. Each item also shows the command to run yourself and the official link. Missing tools can be installed from Connections too. Needs the new app (DMG)."
+  "notes": "Setup: after installing a tool, Connections shows it as installed right away (no more 'not installed' until a slow refresh). The first-launch setup screen installs Node.js, Claude Code, Codex, Gemini CLI, Antigravity, the plugins and the recommended skills with one click each."
 }
