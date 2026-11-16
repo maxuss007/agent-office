@@ -15,3 +15,11 @@ test('automatic boss prefers Opus high with capacity and switches to strong Code
  c.models[0].available=false;r=chooseRoute(c,{role:'boss'});assert.equal(r.provider,'codex');
  c.routing.model='codex/mini';assert.equal(chooseRoute(c,{role:'boss'}).model,'mini');
 });
+
+test('a garbled time zone from the terminal never throws', () => {
+  const t = 'Current session\n  12% used\n  Resets 5pm (Europm (Europe/Prague)\nCurrent week (all models)\n  40% used\n  Resets Nov 20 at 9am (Nonsense/Zone)\n';
+  const w = parseUsageScreen(t, new Date('2026-11-16T15:00:00Z'));
+  assert.equal(w.length, 2);
+  assert.equal(w[0].resetsAt, Date.parse('2026-11-16T16:00:00Z') / 1000); // 5 pm in Prague
+  assert.equal(w[1].usedPercent, 40);
+});

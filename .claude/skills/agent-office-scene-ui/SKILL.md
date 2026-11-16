@@ -23,6 +23,8 @@ Keep the office scene a flat, illustrated, single fixed frame. Do not reintroduc
 - Speech bubbles sit above heads with a z-index above sprites; check they are not hidden.
 - Retire unused sprites by moving them to a sibling backup folder outside the repo, never deleting them. Then update the README art section to list only the folders that still exist.
 - Scale characters from `Sf = min(H*.56, W*.24)`. On a 375 px viewport, crowded teammates collapse behind "+N".
+- Sprite source size: characters draw about 130 px tall, so ship art at half the source resolution (still sharp on Retina). Check the total size of `public/` art before a build; the 20 MB original was far too heavy.
+- Resizing a seated character: keep the desk edge at the same chest height and let the figure grow up and out, so it still sits behind the desk. Harvey and Donna were enlarged 20% this way.
 - To test states, wrap `OfficeGame.update` with a mock project via javascript_exec, wait about 3 s, zoom, then re-read the DOM. Cover working, waiting, done, blocked, and return-to-desk.
 - Verify at 1440x900 and 375x812, light and dark, per `browser-ui-verification`. Run `node --test tests/` after changes.
 

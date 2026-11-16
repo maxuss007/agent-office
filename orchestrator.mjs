@@ -29,6 +29,9 @@ const DEFAULT_CFG = {
   bash: ['git *', 'node *', 'npm *', 'npx *', 'python3 *', 'curl *', 'ls *', 'cat *', 'mkdir *', 'open *', 'kill *', 'lsof *', 'sleep *', '*Google Chrome*'],
   bashDeny: ['git push*', 'rm -rf*', 'sudo*'],
 };
+// UI and conversation language: 'en' (default) or 'cs', set in the app header and stored in config.json
+export const userLang = () => (loadConfig().lang === 'cs' ? 'cs' : 'en');
+export const langName = () => (userLang() === 'cs' ? 'Czech' : 'English');
 export function loadConfig() {
   let c = {};
   try { c = JSON.parse(fs.readFileSync(path.join(DATA, 'config.json'), 'utf8')); } catch {}
@@ -615,8 +618,8 @@ async function chatIdle(p, agentName, text) {
   const isBoss = agentName === 'boss';
   const r = isBoss ? bossRoute(p, 'medium') : route(p, route0);
   const prompt = isBoss
-    ? `USER MESSAGE TO THE BOSS (outside a phase): "${text}"\nReply conversationally in Czech (1-4 sentences). If it changes direction, taste or scope, update ${ctx.office}/TASTE.md and ${ctx.office}/SCORECARD.md now and set changed=true. Do NOT start or redo project phases.`
-    : `USER MESSAGE: "${text}"\nReply in Czech, briefly. If the user asks for a change in your work, do it in ${ctx.work} and mention what you changed. Set changed=true only if you edited files.`;
+    ? `USER MESSAGE TO THE BOSS (outside a phase): "${text}"\nReply conversationally in ${langName()} (1-4 sentences). If it changes direction, taste or scope, update ${ctx.office}/TASTE.md and ${ctx.office}/SCORECARD.md now and set changed=true. Do NOT start or redo project phases.`
+    : `USER MESSAGE: "${text}"\nReply in ${langName()}, briefly. If the user asks for a change in your work, do it in ${ctx.work} and mention what you changed. Set changed=true only if you edited files.`;
   const run = () => ask(p, agentName, { ...r, system: isBoss ? bossSys() : (roleOf(st, agentName)?.base ? roleSys(agentName) : roleOf(st, agentName)?.prompt || ''), prompt, cwd: isBoss ? ctx.work : (agentName === 'researcher' ? ctx.office : ctx.work), addDirs: [ctx.office, ctx.work], tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'WebFetch', 'Skill'], bash: !isBoss, schema: CHAT_SCHEMA, resume: session, quiet: true, interactive: true, label: 'rozhovor' });
   const out = await (isBoss ? withLock(L, run) : run());
   feedPush(p, agentName, { kind: 'reply', text: out.data?.reply || out.text || '(bez odpovědi)' });
@@ -681,7 +684,7 @@ function commit(p, msg) {
 }
 
 // ---------- phases ----------
-const bossSys = () => read(path.join(ROOT, 'boss.md'));
+const bossSys = () => read(path.join(ROOT, 'boss.md')).replaceAll('{{USER_LANGUAGE}}', langName());
 const roleSys = (r) => read(path.join(ROOT, 'roles', `${r}.md`)) || '';
 
 const CMD_OK = /^(node|python3|npm (test|run [\w:-]+)|npx [\w@./-]+)(\s|$)/;

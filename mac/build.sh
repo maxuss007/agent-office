@@ -10,8 +10,8 @@ APP="build/Agent Office.app"
 # --- first install: check the tools and install the Claude Code plugins the office needs (once per Mac)
 SETUP_MARK="$HOME/Library/Application Support/Agent Office/.setup-done"
 if [ ! -f "$SETUP_MARK" ] && [ "${AO_SKIP_SETUP:-}" != "1" ]; then
-  echo "První instalace: kontroluji nástroje a instaluji pluginy (scripts/setup.sh)…"
-  if AO_FROM_BUILD=1 bash "$ROOT/scripts/setup.sh"; then mkdir -p "$(dirname "$SETUP_MARK")"; touch "$SETUP_MARK"; else echo "Setup nedoběhl; pokračuji se sestavením. Spusť ho později: bash scripts/setup.sh"; fi
+  echo "First install: checking tools and installing plugins (scripts/setup.sh)…"
+  if AO_FROM_BUILD=1 bash "$ROOT/scripts/setup.sh"; then mkdir -p "$(dirname "$SETUP_MARK")"; touch "$SETUP_MARK"; else echo "Setup did not finish; building anyway. Run it later: bash scripts/setup.sh"; fi
   echo
 fi
 rm -rf "$APP"; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/server"
@@ -25,16 +25,13 @@ cp Info.plist "$APP/Contents/"
 /usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MINOS" "$APP/Contents/Info.plist"
 # icon
 rm -rf build/AppIcon.iconset
-if [ -f AppIcon.png ]; then
-  # the supplied artwork: every size macOS asks for, then one .icns
-  mkdir -p build/AppIcon.iconset
-  for sz in 16 32 64 128 256 512 1024; do sips -z $sz $sz AppIcon.png --out "build/AppIcon.iconset/icon_${sz}x${sz}.png" >/dev/null; done
-  for sz in 16 32 128 256 512; do cp "build/AppIcon.iconset/icon_$((sz*2))x$((sz*2)).png" "build/AppIcon.iconset/icon_${sz}x${sz}@2x.png"; done
-  rm -f build/AppIcon.iconset/icon_64x64.png build/AppIcon.iconset/icon_1024x1024.png
-  iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
-else
-  swiftc -O -swift-version 5 make-icon.swift -o build/make-icon && build/make-icon build/AppIcon.iconset "$APP/Contents/Resources/AppIcon.icns"
-fi
+[ -f AppIcon.png ] || { echo "mac/AppIcon.png is missing"; exit 1; }
+# the app icon: every size macOS asks for, then one .icns
+mkdir -p build/AppIcon.iconset
+for sz in 16 32 64 128 256 512 1024; do sips -z $sz $sz AppIcon.png --out "build/AppIcon.iconset/icon_${sz}x${sz}.png" >/dev/null; done
+for sz in 16 32 128 256 512; do cp "build/AppIcon.iconset/icon_$((sz*2))x$((sz*2)).png" "build/AppIcon.iconset/icon_${sz}x${sz}@2x.png"; done
+rm -f build/AppIcon.iconset/icon_64x64.png build/AppIcon.iconset/icon_1024x1024.png
+iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 # bundled server (no dependencies)
 for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-auth.mjs project-outputs.mjs claude-usage.mjs local-runner.mjs report.mjs updater.mjs boss.md version.json; do cp "$ROOT/$f" "$APP/Contents/Resources/server/"; done
 mkdir -p "$APP/Contents/Resources/server/scripts"

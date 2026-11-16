@@ -18,9 +18,11 @@ Procedure:
 5. Probe `localhost:4747/pro.css` and `localhost:4747/avatars.js`; both must return 200.
 6. Open a project in the installed app and confirm members render, the office view is visible, and the project workspace is not blank after entering (a stuck entrance animation once left it empty). Verify the installed build, not only the dev server.
 
-Before the reinstall, read each `state.json` under `~/Library/Application Support/Agent Office/projects/*/` and stop if any status is `running`, `waiting_user` or `limit`. Build from the repo root with `bash mac/build.sh`; a successful run ends with `Installed: /Applications/Agent Office.app`. Stop a dev server only by matching its PORT in the process environment, not by killing every `node server.mjs`.
+Before the reinstall, read each `state.json` under `~/Library/Application Support/Agent Office/projects/*/` and stop if any status is `running`, `waiting_user` or `limit`. Build from the repo root with `bash mac/build.sh`; a successful run ends with `Installed: /Applications/Agent Office.app`. The build targets macOS 13.0 as a universal binary, not just the host OS, so after install confirm `lipo -archs` lists x86_64 and arm64, `vtool -show-build` on the binary shows `minos 13.0`, and `PlistBuddy -c "Print :LSMinimumSystemVersion"` prints 13.0. Stop a dev server only by matching its PORT in the process environment, not by killing every `node server.mjs`.
 
 Pitfalls:
 - A bulk rename on 11-11 corrupted the character asset file, so the office loaded without characters. After any bulk rename or move, check the members render.
 - Tests passing does not prove the installed app works.
 - The build uses `mac/AppIcon.png` when it exists (sized with `sips`, packed with `iconutil`) and falls back to `make-icon.swift` otherwise. After an icon change, quit and relaunch the installed app before judging it, since the Dock can keep the old icon.
+- A user-supplied icon PNG with transparent edges and its own rounded corners gets a grey frame from new macOS. Re-render it on the macOS template: a rounded square on a 1024 px canvas with margin and shadow, the whole mascot visible. Confirm the Dock shows no frame, then restart the Dock.
+- The DMG installer path (`bash mac/make-dmg.sh`) is covered in agent-office-dmg-installer. A reinstall of the app does not rebuild the DMG.

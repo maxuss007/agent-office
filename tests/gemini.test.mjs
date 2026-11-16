@@ -10,13 +10,15 @@ const catalog = {
   providers: [{ id: 'claude', remainingPercent: 80 }, { id: 'gemini', remainingPercent: null }],
   models: [
     { id: 'claude/sonnet', provider: 'claude', model: 'sonnet', tier: 'balanced', available: true, efforts: ['medium'] },
-    { id: 'gemini/auto', provider: 'gemini', model: 'auto', tier: 'balanced', available: true, manual: true, efforts: ['medium'] },
+    { id: 'gemini/auto', provider: 'gemini', model: 'auto', tier: 'balanced', available: true, efforts: ['medium'] },
   ],
 };
 
-test('Gemini is never picked automatically, only when chosen for an agent', () => {
-  assert.equal(chooseRoute(catalog, { role: 'researcher', task: 'study' }).provider, 'claude');
-  assert.equal(chooseRoute(catalog, { role: 'researcher', task: 'study', model: 'gemini/auto', pinned: true }).provider, 'gemini');
+test('the boss gives research and study to Gemini by itself, other work stays on Claude', () => {
+  assert.equal(chooseRoute(catalog, { role: 'researcher', task: 'study the sources and compare them' }).provider, 'gemini');
+  assert.equal(chooseRoute(catalog, { role: 'copywriter', task: 'write the landing page copy' }).provider, 'claude');
+  assert.equal(chooseRoute(catalog, { role: 'copywriter', task: 'copy', model: 'gemini/auto', pinned: true }).provider, 'gemini');
+  assert.notEqual(chooseRoute(catalog, { role: 'researcher', task: 'research', exclude: ['gemini'] }).provider, 'gemini');
 });
 
 test('Gemini runner reads the JSON envelope and never enables yolo', async () => {

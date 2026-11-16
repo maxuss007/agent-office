@@ -13,7 +13,7 @@ import { saveClaudeToken } from './provider-auth.mjs';
 import { checkUpdate, applyUpdate } from './updater.mjs';
 import { providerCatalog, launchLogin, updateRouting } from './providers.mjs';
 import { fileURLToPath } from 'node:url';
-import { retryNow, pauseProject, autoResume, openOfficeIn, usageReport, acceptProject, resumeProject, bus, setAgentOverride, routingChanged, createOffice, updateOffice, projectOverview, addManualRole, castList, flushRepos, stopAll, repoSummaries, suggestRepos, guestSessions, addRepo, removeRepo, getFeed, sendMessage, health, openLogin, DATA, listProjects, listPresets, startProject, stopProject, answer, getLive } from './orchestrator.mjs';
+import { userLang, langName, retryNow, pauseProject, autoResume, openOfficeIn, usageReport, acceptProject, resumeProject, bus, setAgentOverride, routingChanged, createOffice, updateOffice, projectOverview, addManualRole, castList, flushRepos, stopAll, repoSummaries, suggestRepos, guestSessions, addRepo, removeRepo, getFeed, sendMessage, health, openLogin, DATA, listProjects, listPresets, startProject, stopProject, answer, getLive } from './orchestrator.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 4747);
@@ -39,7 +39,7 @@ http.createServer(async (req, res) => {
     return res.end(fs.readFileSync(path.join(ROOT, 'public', 'index.html')));
   }
   if (url.pathname === '/art.js') { res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-cache' }); return res.end(fs.readFileSync(path.join(ROOT, 'public', 'art.js'))); }
-    if (/^\/assets\/suits\/(face\/|back\/|stand\/|walk\/|seat\/|front\/)?[a-z-]+\.png$/.test(url.pathname) || ['/avatars.js', '/office-suits.js', '/game.css', '/pro.css'].includes(url.pathname)) {
+    if (/^\/assets\/suits\/(face\/|back\/|stand\/|walk\/|seat\/|front\/)?[a-z-]+\.png$/.test(url.pathname) || ['/avatars.js', '/office-suits.js', '/game.css', '/pro.css', '/i18n.js'].includes(url.pathname)) {
       if (!fs.existsSync(path.join(ROOT, 'public', url.pathname.slice(1)))) { res.writeHead(404); return res.end('Not found'); }
       res.writeHead(200, { 'content-type': url.pathname.endsWith('.png') ? 'image/png' : url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', 'cache-control': 'no-cache' });
       return res.end(fs.readFileSync(path.join(ROOT, 'public', url.pathname.slice(1))));
@@ -52,7 +52,12 @@ http.createServer(async (req, res) => {
       clients.add(res); req.on('close', () => clients.delete(res));
       return res.write(': hi\n\n');
     }
-    if (url.pathname === '/api/state') return json(res, 200, { cast: castList(), repos: repoSummaries(), projects: listProjects(), presets: listPresets(), cwd: process.env.AGENT_OFFICE_CWD || path.resolve(ROOT, '..') });
+    if (url.pathname === '/api/state') return json(res, 200, { lang: userLang(), cast: castList(), repos: repoSummaries(), projects: listProjects(), presets: listPresets(), cwd: process.env.AGENT_OFFICE_CWD || path.resolve(ROOT, '..') });
+    if (url.pathname === '/api/settings' && req.method === 'POST') { // UI language for the app, agents and the Mac menu
+      const b = await body(req); if (!['en', 'cs'].includes(b.lang)) return json(res, 400, { error: 'lang: en | cs' });
+      let c = {}; try { c = JSON.parse(fs.readFileSync(cfgPath, 'utf8')); } catch {}
+      c.lang = b.lang; cfg.lang = b.lang; fs.writeFileSync(cfgPath, JSON.stringify(c, null, 2)); return json(res, 200, { lang: b.lang });
+    }
     if (url.pathname === '/api/update' && req.method === 'POST') { try { return json(res, 200, await applyUpdate()); } catch (e) { return json(res, 200, { error: e.message }); } }
     if (url.pathname === '/api/update') return json(res, 200, await checkUpdate(url.searchParams.has('force')));
     if (url.pathname === '/api/health') return json(res, 200, await health(url.searchParams.has('force')));
@@ -105,7 +110,7 @@ http.createServer(async (req, res) => {
       const entries = getFeed(m2[1], m2[2]).slice(-80).map((e) => `${e.kind}: ${e.text || ''}`).join('\n').slice(-12000);
       if (!entries.trim()) return json(res, 200, { text: 'Zatím není co shrnout.' });
       const bin = _locate('claude'); if (!bin) return json(res, 400, { error: 'Claude není dostupný.' });
-      const prompt = `Tohle je záznam práce jednoho agenta. Shrň česky, lidskou řečí a bez technických detailů (žádné názvy nástrojů, příkazů ani cest), ve 2–4 krátkých větách: na čem pracuje, co už udělal a co ho čeká. Záznam:\n${entries}`;
+      const prompt = `Tohle je záznam práce jednoho agenta. Shrň ${langName() === 'Czech' ? 'česky' : 'anglicky (in English)'}, lidskou řečí a bez technických detailů (žádné názvy nástrojů, příkazů ani cest), ve 2–4 krátkých větách: na čem pracuje, co už udělal a co ho čeká. Záznam:\n${entries}`;
       const text = await new Promise((ok) => { const c = _execFile(bin, ['-p', '--model', 'haiku', '--output-format', 'text'], { env: _cleanEnv('claude'), timeout: 90000, maxBuffer: 1e6 }, (err, out) => ok(err ? null : String(out).trim())); c.stdin.end(prompt); });
       return text ? json(res, 200, { text }) : json(res, 500, { error: 'Shrnutí se nepovedlo.' });
     }

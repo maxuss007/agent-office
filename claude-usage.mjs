@@ -34,6 +34,11 @@ export function terminalScreen() {
     return rows.map(r=>r.join('').trimEnd()).join('\n');
   }};
 }
+function validZone(raw) {
+  const ok=(z)=>{try{new Intl.DateTimeFormat('en-US',{timeZone:z});return true}catch{return false}};
+  const cands=[String(raw||'').trim(),...(String(raw||'').match(/[A-Za-z]+(?:\/[A-Za-z0-9_+-]+)+|UTC|GMT/g)||[]).reverse()];
+  return cands.find((z)=>z&&ok(z))||Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
 export function parseUsageScreen(text, now = new Date()) {
   const windows=[];
   const re=/(Current session|Current week(?:\s*\(([^)]+)\))?)[^\n]*\n([\s\S]*?)(?=\n\s*Current (?:week|session)|\n\s*Extra usage|$)/g;
@@ -43,14 +48,16 @@ export function parseUsageScreen(text, now = new Date()) {
     let resetsAt=null;const reset=m[3].match(/Resets\s+(.+?)(?:\n|$)/i);
     if(reset) {
       const r=reset[1].trim().match(/(?:(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d+)\s+at\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)\s*\(([^)]+)\)/i);
-      if(r){
-        const zone=r[6],parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));
+      // The text comes from a terminal screen and can be garbled ("Europm (Europe/Prague"): pick a valid IANA zone,
+      // fall back to this Mac's zone, and never let one bad line throw (it used to take the whole server down).
+      if(r) try {
+        const zone=validZone(r[6]),parts=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(now).map(p=>[p.type,p.value]));
         const month=r[1]?['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'].indexOf(r[1].toLowerCase())+1:+parts.month,day=r[2]?+r[2]:+parts.day,hour=+r[3]%12+(r[5].toLowerCase()==='pm'?12:0);
         let target=Date.UTC(+parts.year,month-1,day,hour,+(r[4]||0));
         for(let k=0;k<2;k++){const dt=new Date(target),local=Object.fromEntries(new Intl.DateTimeFormat('en-US',{timeZone:zone,year:'numeric',month:'numeric',day:'numeric',hour:'numeric',minute:'numeric',hourCycle:'h23'}).formatToParts(dt).map(p=>[p.type,p.value]));target-=Date.UTC(+local.year,+local.month-1,+local.day,+local.hour,+local.minute)-Date.UTC(+parts.year,month-1,day,hour,+(r[4]||0));}
         if(!r[1]&&target<now.getTime())target+=86400000;
         resetsAt=target/1000;
-      }
+      } catch { resetsAt=null; }
     }
     windows.push({name,usedPercent:Math.min(100,+pct[1]),resetsAt,resetText:reset?.[1]?.trim()||null});
   }

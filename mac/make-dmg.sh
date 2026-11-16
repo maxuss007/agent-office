@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds "Agent Office.dmg": opening it shows a window with the app, an arrow and the Applications folder to drag it into,
-# and a short note on opening an app that is not notarized. Setup (scripts/setup.sh) runs inside the app on its first launch,
+# and a short note on opening an app that is not notarized (English, with a Czech line in the text file). Setup (scripts/setup.sh) runs inside the app on its first launch,
 # so macOS asks for approval only once.
 # Usage: bash mac/make-dmg.sh            build the app (without installing) and package it
 #        bash mac/make-dmg.sh --reuse    package the app already in mac/build/
@@ -11,23 +11,28 @@ APP="build/Agent Office.app"; VOL="Agent Office"; OUT="build/Agent Office.dmg"
 
 STAGE=build/dmg; rm -rf "$STAGE"; mkdir -p "$STAGE/.background"
 ditto "$APP" "$STAGE/Agent Office.app"
-ln -s /Applications "$STAGE/Aplikace"
+ln -s /Applications "$STAGE/Applications"
 # the quarantine command as a text file, so it can be copied (the window background is only a picture)
-cat > "$STAGE/Příkaz pro Terminál.txt" <<'TXT'
-Agent Office se nedá otevřít?
+cat > "$STAGE/Terminal command.txt" <<'TXT'
+Agent Office won't open?
 
-macOS blokuje aplikace stažené z internetu, které nejsou notarizované u Apple.
-Stačí to vyřešit jednou, jedním z těchto dvou způsobů.
+macOS blocks apps downloaded from the internet that are not notarized by Apple.
+Fix it once, in one of these two ways.
 
-1) Nastavení systému → Soukromí a zabezpečení → sjeď dolů a u Agent Office klikni na „Přesto otevřít“.
-   Potvrď heslem nebo Touch ID.
+1) System Settings → Privacy & Security → scroll down and click "Open Anyway" next to Agent Office.
+   Confirm with your password or Touch ID.
 
-2) Otevři Terminál (Aplikace → Utility → Terminál), vlož tenhle řádek a stiskni Enter:
+2) Open Terminal (Applications → Utilities → Terminal), paste this line and press Return:
 
 xattr -dr com.apple.quarantine "/Applications/Agent Office.app"
 
-Příkaz jen odstraní značku „staženo z internetu“ z aplikace Agent Office. Nic jiného nemění.
-Pak Agent Office normálně otevři ze složky Aplikace.
+The command only removes the "downloaded from the internet" flag from Agent Office. It changes nothing else.
+Then open Agent Office from the Applications folder as usual.
+
+---
+
+Agent Office se nedá otevřít? V Nastavení systému → Soukromí a zabezpečení klikni u Agent Office na „Přesto otevřít“,
+nebo vlož do Terminálu řádek výše (xattr …) a stiskni Enter. Stačí jednou.
 TXT
 swiftc -O -swift-version 5 make-dmg-background.swift -o build/make-dmg-background
 build/make-dmg-background "$STAGE/.background/bg.png"
@@ -53,7 +58,7 @@ tell application "Finder"
     set text size of opts to 13
     set background picture of opts to file ".background:bg.png"
     set position of item "Agent Office.app" of container window to {170, 110}
-    set position of item "Aplikace" of container window to {490, 110}
+    set position of item "Applications" of container window to {490, 110}
     set position of (first item of container window whose name ends with ".txt") to {330, 446}
     update without registering applications
     delay 1

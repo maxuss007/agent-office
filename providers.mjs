@@ -121,14 +121,14 @@ export const ANTIGRAVITY_MODELS = [{ model: 'auto', name: 'Antigravity (výchoz�
 export function antigravityInfo(bin = locate('agy')) {
   if (!bin) return { available: false, installed: false, message: 'Antigravity CLI (agy) není nainstalované (volitelné).', windows: [] };
   const failed = metric().antigravity?.authFailed;
-  return { available: !failed, installed: true, message: failed ? 'Antigravity není přihlášené. Spusť ho jednou v Terminálu (Připojit znovu) a přihlas se účtem Google.' : 'Antigravity se používá jen tam, kde ho u agenta vybereš ručně.', windows: [], source: 'unknown', updated: new Date().toISOString() };
+  return { available: !failed, installed: true, message: failed ? 'Antigravity není přihlášené. Spusť ho jednou v Terminálu (Připojit znovu) a přihlas se účtem Google.' : 'Šéf mu sám dává programování, u agenta ho můžeš vybrat i ručně.', windows: [], source: 'unknown', updated: new Date().toISOString() };
 }
 /** Gemini CLI `gemini` (optional): Google account sign-in (~/.gemini/oauth_creds.json) or GEMINI_API_KEY. Good for study and research. */
 export const GEMINI_MODELS = [{ model: 'auto', name: 'Gemini (výchozí model)', tier: 'balanced' }];
 export function geminiInfo(bin = locate('gemini')) {
   if (!bin) return { available: false, installed: false, message: 'Gemini CLI není nainstalované (volitelné).', windows: [] };
   const signedIn = fs.existsSync(path.join(home, '.gemini', 'oauth_creds.json')) || !!process.env.GEMINI_API_KEY || !!process.env.GOOGLE_API_KEY;
-  return { available: signedIn, installed: true, message: signedIn ? 'Gemini se používá jen tam, kde ho u agenta vybereš ručně (hodí se na studium a rešerše).' : 'Gemini není přihlášené. Klikni na Připojit znovu a přihlas se účtem Google.', windows: [], source: 'unknown', updated: new Date().toISOString() };
+  return { available: signedIn, installed: true, message: signedIn ? 'Šéf mu sám dává studium a rešerše, u agenta ho můžeš vybrat i ručně.' : 'Gemini není přihlášené. Klikni na Připojit znovu a přihlas se účtem Google.', windows: [], source: 'unknown', updated: new Date().toISOString() };
 }
 export async function providerCatalog(force = false) {
   if (!force && cached && Date.now() - cached.time < 60000) return cached.value;
@@ -154,8 +154,8 @@ export async function providerCatalog(force = false) {
     ].map((p) => ({ ...p, pausedUntil: history[p.id]?.pausedUntil || null, blocked: Math.max(history[p.id]?.blockedUntil || 0, history[p.id]?.pausedUntil || 0) > Date.now() || remaining(p.windows.filter(w => !/^seven_day_/.test(w.name))) === 0, remainingPercent: remaining(p.windows.filter(w => !/^seven_day_/.test(w.name))) }));
     const models = [
       ...claudeCapabilities(claude).models.map((model) => ({ id: `claude/${model}`, provider: 'claude', model, name: `Claude ${model[0].toUpperCase() + model.slice(1)}`, tier: CLAUDE_TIER[model] || 'deep', efforts: ['low', 'medium', 'high', 'xhigh', 'max'] })),
-      ...(providers.find((p) => p.id === 'gemini')?.installed ? GEMINI_MODELS.map((m) => ({ id: `gemini/${m.model}`, provider: 'gemini', model: m.model, name: m.name, tier: m.tier, manual: true, efforts: ['medium'] })) : []),
-      ...(providers.find((p) => p.id === 'antigravity')?.installed ? ANTIGRAVITY_MODELS.map((m) => ({ id: `antigravity/${m.model}`, provider: 'antigravity', model: m.model, name: m.name, tier: m.tier, manual: true, efforts: ['low', 'medium', 'high', 'xhigh', 'max'] })) : []),
+      ...(providers.find((p) => p.id === 'gemini')?.installed ? GEMINI_MODELS.map((m) => ({ id: `gemini/${m.model}`, provider: 'gemini', model: m.model, name: m.name, tier: m.tier, efforts: ['medium'] })) : []),
+      ...(providers.find((p) => p.id === 'antigravity')?.installed ? ANTIGRAVITY_MODELS.map((m) => ({ id: `antigravity/${m.model}`, provider: 'antigravity', model: m.model, name: m.name, tier: m.tier, efforts: ['low', 'medium', 'high', 'xhigh', 'max'] })) : []),
       ...c.models.map((m) => ({ id: `codex/${m.model}`, provider: 'codex', model: m.model, name: m.displayName || m.model, default: m.isDefault, efforts: m.supportedReasoningEfforts?.map((e) => e.reasoningEffort), tier: /luna|mini|nano/i.test(m.model) ? 'fast' : /astra|opus|pro/i.test(m.model) ? 'deep' : 'balanced' })),
     ].map((m) => {
       const p = providers.find(p => p.id === m.provider);
@@ -190,6 +190,7 @@ export function chooseRoute(catalog, request) {
   if (pinned && requested !== 'auto') candidates = candidates.filter((m) => (provider === 'auto' || m.provider === provider) && m.model === nativeModel);
   if (!candidates.length) throw new Error(pinned || override ? 'Vybraný model není dostupný nebo vyčerpal limit.' : 'Žádný model není dostupný. Přihlas Claude nebo Codex v okně Připojení.');
   const task = `${request.role || ''} ${request.task || ''}`, coding = /code|coding|program|implement|debug|test|kód|oprav|designér/i.test(task), simple = /summary|shrnutí|rename|mechanic|format|přepi|classif/i.test(task) || request.effort === 'low';
+  const research = /výzkum|research|rešerš|studi|study|vysvětl|explain|learn|nauč|zdroj|source|srovn|compare|analý|analys/i.test(task);
   const serious = request.role === 'boss' || /legal|práv|financ|security|architec/i.test(task);
   const rank = (m) => {
     const p = catalog.providers.find((p) => p.id === m.provider), left = m.remainingPercent ?? p.remainingPercent;
@@ -201,6 +202,10 @@ export function chooseRoute(catalog, request) {
       if (left === null && m.provider !== 'ollama') score -= 25;
     }
     if (m.provider === 'codex' && coding) score += 14;
+    // Google subscriptions join the rotation when they are signed in: Gemini for study and research,
+    // Antigravity for code. Elsewhere they rank a little below Claude and Codex.
+    if (m.provider === 'gemini') score += research ? 24 : -6;
+    if (m.provider === 'antigravity') score += coding ? 10 : -6;
     if (m.provider === 'claude' && !coding) score += 8;
     if (serious && (m.tier === 'deep' || m.tier === 'frontier')) score += m.tier === 'frontier' ? 18 : 15;
     if (!serious && m.tier === 'frontier') score -= 10; // the strongest model is kept for judgement, not routine work

@@ -10,11 +10,12 @@ const catalog = {
   providers: [{ id: 'claude', remainingPercent: 80 }, { id: 'antigravity', remainingPercent: null }],
   models: [
     { id: 'claude/sonnet', provider: 'claude', model: 'sonnet', tier: 'balanced', available: true, efforts: ['medium'] },
-    { id: 'antigravity/auto', provider: 'antigravity', model: 'auto', tier: 'balanced', available: true, manual: true, efforts: ['medium'] },
+    { id: 'antigravity/auto', provider: 'antigravity', model: 'auto', tier: 'balanced', available: true, efforts: ['medium'] },
   ],
 };
 
-test('Antigravity is never picked automatically, only when chosen for an agent', () => {
+test('the boss gives code to Antigravity by itself when it fits best, other work stays on Claude', () => {
+  assert.equal(chooseRoute(catalog, { role: 'developer', task: 'implement the login fix in code' }).provider, 'antigravity');
   assert.equal(chooseRoute(catalog, { role: 'designer', task: 'copy' }).provider, 'claude');
   assert.equal(chooseRoute(catalog, { role: 'designer', task: 'copy', model: 'antigravity/auto', pinned: true }).provider, 'antigravity');
 });

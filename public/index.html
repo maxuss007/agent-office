@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="cs">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Agent Office</title>
+<script src="/i18n.js"></script>
 <style>
 :root{--bg:#f6ead2;--bg2:#efdcb9;--card:#fffaf0;--fg:#3a2a1a;--mute:#8a7355;--line:#e2cfa6;--wood:#b9783f;--acc:#e8873a;--acc2:#c96d24;--ok:#3aa876;--warn:#f0a020;--bad:#e5484d;--blue:#3b82c4;--shadow:#8a5a2b33}
 @media(prefers-color-scheme:dark){:root{--bg:#241a12;--bg2:#2d2117;--card:#33261a;--fg:#f6e8cf;--mute:#b89c74;--line:#4d3b28;--shadow:#0006}}
@@ -164,15 +165,12 @@ table.usage{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 8p
 <style>
 /* three-column project workspace: team | boss | outputs */
 header,main{max-width:1480px!important}
-.update-btn{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:var(--claude,#d97757);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;animation:upglow 2.2s ease-in-out infinite}
+#update-btn{margin-left:auto}.lang-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}.lang-seg button{border:0;background:transparent;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;color:var(--mute);cursor:pointer}.lang-seg button.on{background:var(--fg);color:var(--bg)}#update-btn.update-btn{display:inline-flex;align-items:center;gap:8px;background:var(--claude,#d97757);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;animation:upglow 2.2s ease-in-out infinite}
 .update-btn::before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
-.update-btn+#demo-btn{margin-left:0}.update-btn[hidden]{display:none}.update-btn:disabled{opacity:.7;animation:none;cursor:wait}
+.update-btn:disabled{opacity:.7;animation:none;cursor:wait}
 @keyframes upglow{0%,100%{box-shadow:0 0 0 0 rgba(217,119,87,.55)}50%{box-shadow:0 0 0 8px rgba(217,119,87,0)}}
 @media (prefers-reduced-motion:reduce){.update-btn{animation:none}}
-.ws-stage{margin-bottom:16px}#ws-scene{position:relative}.showing #ws-actions,.showing .apchat{display:none}
-.demo-cap{position:absolute;left:50%;top:52px;transform:translateX(-50%);width:max-content;max-width:min(620px,80%);background:rgba(17,19,24,.84);color:#fff;padding:10px 14px 11px;border-radius:12px;font-size:14px;line-height:1.4;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;transition:opacity .3s}
-.demo-cap small{display:block;color:#d97757;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:2px}
-.demo-cap .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.18);margin-top:8px;overflow:hidden}.demo-cap .bar i{display:block;height:100%;background:#d97757;width:0}
+.ws-stage{margin-bottom:16px}#ws-scene{position:relative}
 .ws-grid.ws3{grid-template-columns:minmax(0,1fr) minmax(260px,330px)!important}
 .stage-seg{padding:2px}.stage-seg button{padding:5px 12px;font-size:12.5px;min-height:0}.stage-seg .count{font-weight:500;color:var(--mute);margin-left:2px}
 .stage-add{margin-left:auto}
@@ -222,8 +220,8 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
 <header>
   <button id="back" class="ghost" onclick="goHall()" hidden style="padding:6px 12px">← Projekty</button>
   <h1><span>OFFICE / 01</span><b id="crumb">Agent Office</b></h1>
-  <button class="update-btn" id="update-btn" onclick="doUpdate()" hidden></button>
-  <button class="ghost" id="demo-btn" onclick="toggleShow()">Ukázka animací</button>
+  <button class="ghost" id="update-btn" onclick="doUpdate()">Aktualizace</button>
+  <span class="seg lang-seg" role="group" aria-label="Language" data-noi18n><button type="button" data-l="en" onclick="setLanguage('en')">EN</button><button type="button" data-l="cs" onclick="setLanguage('cs')">CS</button></span>
   <button class="ghost" id="home-models" onclick="openProviders()">Připojení</button>
   <button id="newgoal" class="ghost" onclick="openNew()" hidden>Zadání projektu</button>
 </header>
@@ -434,7 +432,7 @@ function render(){renderLimit();applyStageView();
   $('final').innerHTML=p.final?`<h2>Výsledek</h2><div class="card">${esc(p.final.summary)}${p.final.remaining?.length?'<br><br><b>Zbývá:</b><ul>'+p.final.remaining.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':''}<div style="color:var(--mute);font-size:12px;margin-top:8px">Detail: projects/${p.id}/office/FINAL.md</div></div>`:(p.assumptions?.length?`<h2>Předpoklady bosse (můžeš vetovat)</h2><div class="card"><ul style="margin:0;padding-left:18px">${p.assumptions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>`:'');
   $('hist').innerHTML=p.history?.length?`<h2>Dřívější cíle v téhle kanceláři</h2><div class="card">${p.history.slice().reverse().map(h=>`<div class="row"><span class="st s-${h.status==='done'?'done':'failed'}"></span><span style="flex:1">${esc(h.goal)}</span><span class="chip">${h.score??'–'}/100</span></div>`).join('')}</div>`:'';
 }
-async function load(){S=await api('/api/state');S.cast=S.cast||[];if(Q.get('demo'))demo();if(Q.get('view')==='office'&&S.repos[0]&&view==='hall')enterRepo(Q.get('repo')||S.repos[0].id);else render()}
+async function load(){S=await api('/api/state');if(S.lang&&S.lang!==AO_I18N.lang){AO_I18N.setLang(S.lang);location.reload();return}S.cast=S.cast||[];if(Q.get('demo'))demo();if(Q.get('view')==='office'&&S.repos[0]&&view==='hall')enterRepo(Q.get('repo')||S.repos[0].id);else render()}
 async function ans(qid,v){if(!v)return;await api(`/api/projects/${cur}/answer`,{method:'POST',body:JSON.stringify({qid,value:v})})}
 async function resumeProj(){const r=await api(`/api/projects/${cur}/resume`,{method:'POST',body:'{}'});if(r.error)alert(r.error)}
 async function acceptProj(){const r=await api(`/api/projects/${cur}/accept`,{method:'POST',body:'{}'});if(r.error)return alert(r.error);await refreshRepos();render()}
@@ -448,7 +446,7 @@ async function loadUsage(p){if(!$('usage')||$('project-details').hidden)return;i
   <p class="umeta">Neúspěšné pokusy spotřebovaly ${k(t.failedTokens)} tokenů.${t.unknown?` U ${t.unknown} pokusů služba tokeny nehlásí.`:''}${u.perAccepted!=null?` Spotřeba na převzatou zakázku (včetně oprav a neúspěchů): <b>${k(u.perAccepted)}</b> tokenů.`:''}</p>
   <details><summary>Podle role a modelu</summary><table class="usage"><tr><th>Role</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byRole.map(x=>row(x.key,x)).join('')}</table><table class="usage"><tr><th>Model</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byModel.map(x=>row(x.key,x)).join('')}</table></details>`}
 const PROV={claude:'Claude',codex:'Codex'};
-const untilTxt=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?'v '+d.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})};
+const untilTxt=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?'v '+d.toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'}):d.toLocaleString(LOC(),{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})};
 const leftTxt=t=>{let x=Math.max(0,Math.round((t-Date.now())/1000));const h=Math.floor(x/3600),m=Math.floor(x%3600/60),sec=x%60;return h?`${h} h ${String(m).padStart(2,'0')} min`:`${m}:${String(sec).padStart(2,'0')}`};
 function renderLimit(){const p=view==='office'?proj():null,on=p?.status==='limit',v=$('limit-veil');document.body.classList.toggle('limited',on);v.hidden=!on;if(!on){v.dataset.k='';return}
   const L=p.limit||{},k=p.id+(L.until||'');if(v.dataset.k===k)return;v.dataset.k=k;
@@ -502,7 +500,7 @@ async function openOutput(id){
   else box.textContent='Dokument je připravený. Otevři ho v příslušné aplikaci na Macu.';
 }
 const outIcon=n=>/Souhrn\.html$/.test(n)?'★':/\.html$/i.test(n)?'📄':/\.(png|jpe?g|webp|svg)$/i.test(n)?'🖼':/\.(csv|xlsx|json)$/i.test(n)?'▦':'↗';const outName=n=>n==='Souhrn.html'?'Souhrn zakázky':n.replace(/\.html$/i,'');
-function openAllOutputs(){selectedOutput=null;$('output-title').textContent='Výstupy projektu';$('output-open').hidden=true;$('output-preview').innerHTML=outputFiles.map(f=>`<button class="output-row ${f.name==='Souhrn.html'?'primary':''}" onclick="$('outputdlg').close();openOutput(this.dataset.file)" data-file="${esc(f.id)}"><span>${outIcon(f.name)}</span> ${esc(outName(f.name))}<small>${new Date(f.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p>Hotové soubory se tady objeví automaticky.</p>';$('outputdlg').showModal();}
+function openAllOutputs(){selectedOutput=null;$('output-title').textContent='Výstupy projektu';$('output-open').hidden=true;$('output-preview').innerHTML=outputFiles.map(f=>`<button class="output-row ${f.name==='Souhrn.html'?'primary':''}" onclick="$('outputdlg').close();openOutput(this.dataset.file)" data-file="${esc(f.id)}"><span>${outIcon(f.name)}</span> ${esc(outName(f.name))}<small>${new Date(f.updated).toLocaleString(LOC(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p>Hotové soubory se tady objeví automaticky.</p>';$('outputdlg').showModal();}
 async function openOutputOnMac(){if(!selectedOutput)return;const r=await api(`/api/offices/${selectedOutput.repo}/open-output?file=${encodeURIComponent(selectedOutput.id)}`,{method:'POST'});if(r.error)alert(r.error);}
 setInterval(()=>{if(view==='office')refreshOutputs()},5000);
 
@@ -533,7 +531,7 @@ async function instructBoss(ev){
 $('boss-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();instructBoss(e)}});
 async function openIn(app){if(!curRepo)return;const r=await api(`/api/offices/${curRepo}/open-in`,{method:'POST',body:JSON.stringify({app})});if(r.error)alert(r.error)}
 function openSessions(){
-  $('session-list').innerHTML=guests.length?guests.map((g,i)=>`<button class="session-item" onclick="$('sessionsdlg').close();openGuest(${i})"><b>${esc(g.title)}</b><small>${g.active?'Nedávná aktivita':new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleDateString('cs-CZ')}</small></button>`).join(''):'<p class="dialog-description">V tomto projektu zatím nejsou žádné Claude Code sessions.</p>';
+  $('session-list').innerHTML=guests.length?guests.map((g,i)=>`<button class="session-item" onclick="$('sessionsdlg').close();openGuest(${i})"><b>${esc(g.title)}</b><small>${g.active?'Nedávná aktivita':new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleDateString(LOC())}</small></button>`).join(''):'<p class="dialog-description">V tomto projektu zatím nejsou žádné Claude Code sessions.</p>';
   $('sessionsdlg').showModal();
 }
 
@@ -557,7 +555,7 @@ function renderProviders(){
 }
 async function saveRouting(change){const r=await api('/api/providers/routing',{method:'POST',body:JSON.stringify(change)});if(r.error){alert(r.error);return}PC=r;renderProviders();$('provider-note').textContent='Uloženo. Volba platí od dalšího kroku každého agenta.'}
 const WIN_LABEL=w=>{const n=w.name||'';const m=w.windowDurationMins;if(n==='five_hour'||m===300||n==='primary')return '5hodinový limit';if(/^seven_day_(.+)/.test(n))return 'Týdenní limit · '+n.replace('seven_day_','').replace(/^./,c=>c.toUpperCase());if(n==='seven_day'||m===10080||n==='secondary')return 'Týdenní limit';return n};
-function resetTxt(w){if(!w.resetsAt)return '';const d=new Date(w.resetsAt*1000);const sameDay=d.toDateString()===new Date().toDateString();return ' · obnoví se '+(sameDay?d.toLocaleTimeString('cs',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('cs',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))}
+function resetTxt(w){if(!w.resetsAt)return '';const d=new Date(w.resetsAt*1000);const sameDay=d.toDateString()===new Date().toDateString();return ' · obnoví se '+(sameDay?d.toLocaleTimeString(LOC(),{hour:'2-digit',minute:'2-digit'}):d.toLocaleString(LOC(),{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))}
 const pStatus=p=>p.pausedUntil>Date.now()?'Pozastaveno':p.blocked?'Limit vyčerpán':!p.available?'Odpojeno':'Připojeno';
 const howtoHtml=id=>HOWTO[id]?`<details class="howto"><summary>Jak připojit</summary><ol>${HOWTO[id].map(x=>`<li>${x}</li>`).join('')}</ol></details>`:'';
 function subCard(p){const ok=p.available&&!p.blocked;
@@ -581,8 +579,8 @@ function claudeFeatures(){const F=PC.features?.fast,U=PC.features?.ultrareview;i
 const HOWTO={
   claude:['Nainstaluj Claude Code: v Terminálu spusť <code>curl -fsSL https://claude.ai/install.sh | bash</code>.','Klikni na <b>Připojit znovu</b> (otevře se Terminál s <code>claude auth login</code>) a přihlas se svým účtem Claude (Pro/Max).','Aby přihlášení nevypršelo: v Terminálu spusť <code>claude setup-token</code> a vygenerovaný token vlož výše do pole „Trvalý token“. Uloží se jen do Klíčenky tohoto Macu.'],
   codex:['Nainstaluj Codex: <code>npm install -g @openai/codex</code> (nebo <code>brew install --cask codex</code>, případně aplikaci ChatGPT pro Mac).','Klikni na <b>Připojit znovu</b> (otevře se <code>codex login</code>) a přihlas se účtem ChatGPT (Plus/Pro).','Hotovo. Šéf pak dává Codexu hlavně programování; u každého agenta ho můžeš vybrat i ručně.'],
-  antigravity:['Volitelné. Nainstaluj Antigravity CLI: <code>curl -fsSL https://antigravity.google/cli/install.sh | bash</code> (příkaz <code>agy</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>agy</code> a v prohlížeči se přihlásíš účtem Google. Přihlášení se uloží do Klíčenky.','Antigravity se nepoužívá automaticky. Vybereš ho u konkrétního agenta: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.'],
-  gemini:['Volitelné, hodí se na studium a rešerše. Nainstaluj Gemini CLI: <code>npm install -g @google/gemini-cli</code> (nebo <code>brew install gemini-cli</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>gemini</code> a přihlásíš se účtem Google (nebo nastav <code>GEMINI_API_KEY</code>).','Gemini se nepoužívá automaticky. Vybereš ho u konkrétního agenta, třeba u výzkumníka: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.']
+  antigravity:['Volitelné. Nainstaluj Antigravity CLI: <code>curl -fsSL https://antigravity.google/cli/install.sh | bash</code> (příkaz <code>agy</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>agy</code> a v prohlížeči se přihlásíš účtem Google. Přihlášení se uloží do Klíčenky.','Když je připojený, šéf mu sám dává programování, hlavně když Codex chybí nebo mu dochází limit. U agenta ho můžeš vybrat i ručně: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.'],
+  gemini:['Volitelné, hodí se na studium a rešerše. Nainstaluj Gemini CLI: <code>npm install -g @google/gemini-cli</code> (nebo <code>brew install gemini-cli</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>gemini</code> a přihlásíš se účtem Google (nebo nastav <code>GEMINI_API_KEY</code>).','Když je připojené, šéf mu sám dává studium a rešerše. U agenta ho můžeš vybrat i ručně: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.']
 };
 async function storeClaudeToken(ev){
   ev.preventDefault();const input=$('claude-token'),button=$('claude-token-save');button.disabled=true;$('claude-token-note').textContent='Ukládám do Klíčenky…';
@@ -606,7 +604,7 @@ async function saveAgentRouting(ev){
 }
 async function openProviders(){$('providersdlg').showModal();await refreshProviders()}
 let editingOffice=null;
-async function manageOffice(id){editingOffice=id;const r=await api(`/api/offices/${id}`);if(r.error)return alert(r.error);$('office-name').value=r.name;$('office-description').value=r.description;$('office-error').textContent='';$('office-archive').textContent=r.archived?'Obnovit z archivu':'Archivovat';$('office-archive').dataset.archived=r.archived?'1':'0';$('office-paths').innerHTML=(Object.keys(r.tokens||{}).length?'<h2>Spotřeba tohoto projektu</h2>'+Object.entries(r.tokens).map(([name,u])=>`<p class="dialog-description">${esc(name)}: ${(u.input+u.output).toLocaleString('cs-CZ')} tokenů (vstup + výstup)</p>`).join(''):'')+[['Repozitář',r.repository],['Pracovní kopie',r.workingCopy],['Výsledky',r.outputs],['Paměť šéfa',r.office]].filter(([,v])=>v).map(([k,v])=>`<label>${k}</label><div class="path-value">${esc(v)}</div>`).join('');$('officedlg').showModal()}
+async function manageOffice(id){editingOffice=id;const r=await api(`/api/offices/${id}`);if(r.error)return alert(r.error);$('office-name').value=r.name;$('office-description').value=r.description;$('office-error').textContent='';$('office-archive').textContent=r.archived?'Obnovit z archivu':'Archivovat';$('office-archive').dataset.archived=r.archived?'1':'0';$('office-paths').innerHTML=(Object.keys(r.tokens||{}).length?'<h2>Spotřeba tohoto projektu</h2>'+Object.entries(r.tokens).map(([name,u])=>`<p class="dialog-description">${esc(name)}: ${(u.input+u.output).toLocaleString(LOC())} tokenů (vstup + výstup)</p>`).join(''):'')+[['Repozitář',r.repository],['Pracovní kopie',r.workingCopy],['Výsledky',r.outputs],['Paměť šéfa',r.office]].filter(([,v])=>v).map(([k,v])=>`<label>${k}</label><div class="path-value">${esc(v)}</div>`).join('');$('officedlg').showModal()}
 async function saveOffice(){const r=await api(`/api/offices/${editingOffice}`,{method:'PATCH',body:JSON.stringify({name:$('office-name').value,description:$('office-description').value})});if(r.error){$('office-error').textContent=r.error;return}$('officedlg').close();await refreshRepos();render()}
 async function archiveOffice(){const archived=$('office-archive').dataset.archived!=='1';const r=await api(`/api/offices/${editingOffice}`,{method:'PATCH',body:JSON.stringify({archived})});if(r.error){$('office-error').textContent=r.error;return}$('officedlg').close();await refreshRepos();if(archived&&curRepo===editingOffice)goHall();else render()}
 setInterval(()=>refreshProviders(),60000);
@@ -659,7 +657,7 @@ async function openAgent(role){
   const r=await api(`/api/projects/${cur}/feed/${role}`);if(openRole===role){feedCache=r.entries||[];renderFeed()}}
 let guestIdx=0;
 function openGuest(i=0){document.body.classList.add('has-agent');const g=guests[i];if(!g)return;guestIdx=i;openRole='guest';renderAgentRouting();$('ap').hidden=false;$('apform').hidden=true;$('aphist').hidden=true;
-  $('aproute').textContent='';$('ap-portrait').hidden=true;$('apname').textContent=g.title;$('apmeta').textContent='Claude Code · místní historie';$('apnow').innerHTML=g.active?`Nedávná aktivita: <b>${esc(g.now||'')}</b>`:`Poslední aktivita: ${new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleString('cs-CZ')}`;
+  $('aproute').textContent='';$('ap-portrait').hidden=true;$('apname').textContent=g.title;$('apmeta').textContent='Claude Code · místní historie';$('apnow').innerHTML=g.active?`Nedávná aktivita: <b>${esc(g.now||'')}</b>`:`Poslední aktivita: ${new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleString(LOC())}`;
   $('apfeed').innerHTML=(g.recent||[]).map(e=>e.kind==='tool'?`<div class="f-tool">⚙️ ${esc(e.text)}</div>`:`<div class="f-text">${esc(e.text)}</div>`).join('')||'<div class="f-tool">Zatím nic.</div>';updateScene(proj())}
 function closeAgent(){document.body.classList.remove('has-agent');openRole=null;$('ap').hidden=true;updateScene(proj())}
 async function sendMsg(ev){ev.preventDefault();const i=$('apmsg');const text=i.value.trim();if(!text||!openRole)return;i.value='';
@@ -677,42 +675,16 @@ function demo(){const nRepos=+Q.get('repos')||6,nRoles=+Q.get('n')||0;
   const RN=['agent-office','web-portfolio','tv-aplikace','home-dashboard','pitch-site','dotfiles','investor-deck','pravni-dokumenty','marketing-plan','eshop-api','analyza-trhu','novy-produkt','mobilni-app','blog','brand-manual','cenik'];const LT=['question','working','done','idle','error','idle'];const GO=['Redesign webu pro pitch','Nový design portfolia','Aplikace pro TV',null,'Landing page',null,'Pitch deck pro investory','Obchodní podmínky','Q1 marketing','Nové endpointy','Analýza konkurence',null,'Onboarding',null,'Manuál značky','Nový ceník'];
   S.repos=Array.from({length:nRepos},(_,i)=>mk('r'+(i+1),RN[i%RN.length]+(i>=RN.length?'-'+i:''),LT[i%LT.length],i===0?2:(i%7===3?1:0),GO[i%GO.length]));
   const d={id:'demo',repoId:'r1',goal:'Redesign webu pro pitch',status:'running',round:1,score:null,settings:{maxRounds:3,maxRuns:40},stats:{runs:5,cost:0},tasks:[],log:[],roles:CASTD.slice(0,nRoles).map(([c,n,t],i)=>({id:'r'+i,character:c,name:n,title:t,manual:i===0})),inbox:Q.get('guest')||nRoles?[]:[{id:'q',text:'Tmavý nebo světlý design?',options:['Tmavý','Světlý'],default:'Světlý',answer:null}],assumptions:[],history:[],agents:{boss:{status:'waiting',activity:'čeká na tebe',model:'opus',effort:'high'},researcher:{status:'idle'},designer:{status:'working',activity:'edituje hero.css',task:'Hero sekce',model:'sonnet',effort:'medium'},tester:{status:nRoles?'working':'waiting',activity:'dělá screenshot'},...Object.fromEntries(CASTD.slice(0,nRoles).map((_,i)=>['r'+i,{status:['working','idle','done','working'][i%4],activity:'pracuje'}]))}};
-  S.projects=[d];if(Q.get('show'))setTimeout(()=>runShow(d),600);if(Q.get('motion')){setTimeout(()=>{d.agents.researcher.status='waiting';render()},1000);setTimeout(()=>{d.agents.researcher.status='working';d.agents.tester.status='working';d.agents.boss.status='working';d.inbox.forEach(q=>q.answer='Světlý');render()},19000)}if(Q.get('guest')){guests=[{id:'g',title:'Oprava přihlášení v API',active:true,ageSec:3,now:'edituje auth.ts',recent:[{kind:'text',text:'Projdu místa, kde se token obnovuje.'},{kind:'tool',text:'čte src/auth.ts'},{kind:'tool',text:'edituje src/auth.ts'}]}]}}
-/* "Ukázka animací": a fake team walks through every scene state with a caption. Nothing is sent to any model. */
-function toggleShow(){const t=Q.get('t');location.href=Q.get('show')?`/?t=${t}`:`/?t=${t}&demo=1&view=office&n=7&show=1`}
-function runShow(d){
-  $('demo-btn').textContent='Ukončit ukázku';document.body.classList.add('showing');
-  const nm=id=>(document.querySelector(`#scene .people .pp[data-role="${id}"]`)?.getAttribute('aria-label')||id).split(' ')[0];
-  const A='researcher',B='r2',C='designer',D='tester',E='r1',all=Object.keys(d.agents).filter(k=>k!=='boss');
-  const set=(ids,st,act)=>ids.forEach(k=>{d.agents[k]={...d.agents[k],status:st,activity:act||d.agents[k]?.activity}});
-  const steps=[
-    [5,'Ráno v kanceláři','Tým stojí u svých stolů čelem k tobě. Harvey sedí v kanceláři, Donna na recepci.',()=>{set(all,'idle');d.agents.boss={...d.agents.boss,status:'idle',activity:'čeká na zadání'};d.inbox=[]}],
-    [5,'Šéf plánuje','Harvey dostal zadání a rozděluje práci (tečky nad hlavou).',()=>{d.agents.boss={...d.agents.boss,status:'working',activity:'rozděluje práci'}}],
-    [6,'Práce začíná',`${nm(A)}, ${nm(C)} a další si sedají ke stolům. Kdo pracuje, sedí zády k nám.`,()=>set([A,C,E,'r3'],'working','pracuje')],
-    [5,'Celý tým pracuje','Všichni sedí u počítačů.',()=>set(all,'working','pracuje')],
-    [10,'Zablokovaný agent',`${nm(A)} potřebuje rozhodnutí: vstane, dojde za Harveyem a sedne si na lavičku.`,()=>set([A],'blocked','potřebuje rozhodnutí')],
-    [9,'Druhá lavička',`${nm(B)} jde taky. U Harveyho jsou dvě lavičky.`,()=>set([B],'blocked','potřebuje rozhodnutí')],
-    [6,'Čeká na odpověď',`${nm(C)} vstane od stolu a čeká (otazník nad hlavou).`,()=>set([C],'waiting','čeká')],
-    [6,'Otázka pro tebe','Harvey se ptá tebe: otazník u šéfa.',()=>{d.agents.boss={...d.agents.boss,status:'waiting',activity:'čeká na tebe'};d.inbox=[{id:'q',text:'Tmavý nebo světlý design?',options:['Tmavý','Světlý'],default:'Světlý',answer:null}]}],
-    [11,'Odpovězeno',`Odpověděl jsi. ${nm(A)} a ${nm(B)} se vrací ke stolům a pracují dál.`,()=>{d.inbox.forEach(q=>q.answer='Světlý');d.agents.boss={...d.agents.boss,status:'working',activity:'hlídá postup'};set([A,B,C],'working','pracuje')}],
-    [6,'Hotové úkoly',`${nm(D)} a ${nm(E)} mají hotovo: vstanou a mají fajfku.`,()=>set([D,E],'done','hotovo')],
-    [7,'Konec směny','Všichni mají hotovo, Harvey kontroluje výsledek. Ukázka se teď zopakuje.',()=>{set(all,'done','hotovo');d.agents.boss={...d.agents.boss,status:'idle',activity:'kontroluje výsledek'}}],
-  ];
-  let i=0,cap=null;
-  const show=()=>{const [sec,title,text,fn]=steps[i];fn();render();
-    const host=$('ws-scene');if(!host)return;cap=host.querySelector('.demo-cap')||host.appendChild(Object.assign(document.createElement('div'),{className:'demo-cap'}));
-    cap.innerHTML=`<small>Ukázka · ${i+1}/${steps.length} · ${title}</small>${text}<div class="bar"><i></i></div>`;
-    const bar=cap.querySelector('.bar i');bar.animate([{width:'0%'},{width:'100%'}],{duration:sec*1000,easing:'linear',fill:'forwards'});
-    i=(i+1)%steps.length;setTimeout(show,sec*1000)};
-  show();
-}
+  S.projects=[d];if(Q.get('motion')){setTimeout(()=>{d.agents.researcher.status='waiting';render()},1000);setTimeout(()=>{d.agents.researcher.status='working';d.agents.tester.status='working';d.agents.boss.status='working';d.inbox.forEach(q=>q.answer='Světlý');render()},19000)}if(Q.get('guest')){guests=[{id:'g',title:'Oprava přihlášení v API',active:true,ageSec:3,now:'edituje auth.ts',recent:[{kind:'text',text:'Projdu místa, kde se token obnovuje.'},{kind:'tool',text:'čte src/auth.ts'},{kind:'tool',text:'edituje src/auth.ts'}]}]}}
 /* Updates: the server checks version.json on GitHub; a new version lights up a button in the header. */
 let UPD=null;
 async function checkUpdate(force){try{UPD=await api('/api/update'+(force?'?force=1':''));}catch{return}
-  const b=$('update-btn');b.hidden=!UPD.available;if(!UPD.available)return;
-  b.textContent=UPD.needsApp?`Nová aplikace ${UPD.latest}`:`Aktualizovat na ${UPD.latest}`;
-  b.title=(UPD.notes||'Je k dispozici nová verze Agent Office.')}
-async function doUpdate(){if(!UPD?.available)return;const b=$('update-btn');
+  const b=$('update-btn');b.classList.toggle('update-btn',!!UPD.available);
+  b.textContent=UPD.available?(UPD.needsApp?`Nová aplikace ${UPD.latest}`:`Aktualizovat na ${UPD.latest}`):'Aktualizace';
+  b.title=UPD.available?(UPD.notes||'Je k dispozici nová verze Agent Office.'):`Verze ${UPD.current}`}
+async function doUpdate(){const b=$('update-btn');
+  if(!UPD?.available){b.disabled=true;b.textContent='Hledám…';await checkUpdate(true);b.disabled=false;
+    if(!UPD?.available){alert(UPD?.error||`Máš nejnovější verzi ${UPD?.current||''}.`);return}}
   if(UPD.needsApp){if(confirm(`Verze ${UPD.latest} potřebuje novou aplikaci. Otevřít stránku ke stažení?`))window.open(UPD.download,'_blank');return}
   if(!UPD.app){alert('Ve složce s kódem aktualizuj přes git pull.');return}
   if(!confirm(`Aktualizovat Agent Office z ${UPD.current} na ${UPD.latest}?${UPD.notes?'\n\nCo je nového: '+UPD.notes:''}\n\nBěžící projekty se na chvilku přeruší a pak pokračují.`))return;
@@ -722,6 +694,11 @@ async function doUpdate(){if(!UPD?.available)return;const b=$('update-btn');
   b.textContent='Restartuji…';
   if(window.webkit?.messageHandlers?.restartServer)window.webkit.messageHandlers.restartServer.postMessage(1);
   else alert(`Staženo (${r.version}). Restartuj aplikaci.`)}
+const LOC=()=>AO_I18N.lang==='cs'?'cs-CZ':'en-GB';
+// UI language: stored by the server (agents and the Mac menu use it too) and cached in the browser
+async function setLanguage(l){try{await api('/api/settings',{method:'POST',body:JSON.stringify({lang:l})})}catch{}AO_I18N.setLang(l);location.reload()}
+function showLanguage(){document.querySelectorAll('.lang-seg button').forEach(b=>b.classList.toggle('on',b.dataset.l===AO_I18N.lang))}
+showLanguage();
 checkUpdate();setInterval(()=>checkUpdate(),6*3600e3);
 checkHealth();setInterval(checkHealth,20000);
 load();

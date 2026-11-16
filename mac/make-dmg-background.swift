@@ -10,7 +10,7 @@ NSGraphicsContext.saveGraphicsState(); NSGraphicsContext.current = NSGraphicsCon
 NSGradient(colors: [NSColor(srgbRed: 0.97, green: 0.97, blue: 0.98, alpha: 1), NSColor(srgbRed: 0.92, green: 0.93, blue: 0.95, alpha: 1)])!.draw(in: NSRect(x: 0, y: 0, width: W, height: H), angle: -90)
 // layout in window points (top-left origin; about 548 pt are visible under the title bar):
 // one drop panel holding both icons (centres y=110, x 170 and 490), the arrow, three numbered steps,
-// the Terminal command and, at the bottom, the "Příkaz pro Terminál.txt" file (centre x 330, y 446) to copy it from
+// the Terminal command and, at the bottom, the "Terminal command.txt" file (centre x 330, y 446) to copy it from
 let pt = { (y: CGFloat) in CGFloat(H) - y * 2 }
 let orange = NSColor(srgbRed: 0.85, green: 0.47, blue: 0.34, alpha: 1)
 let panel = NSBezierPath(roundedRect: NSRect(x: 40, y: pt(536), width: CGFloat(W) - 80, height: (536 - 16) * 2), xRadius: 36, yRadius: 36)
@@ -35,16 +35,16 @@ func step(_ n: Int, _ top: CGFloat) {
 }
 // a thin divider between the icons and the steps
 NSColor(white: 0, alpha: 0.07).setFill(); NSRect(x: 96, y: pt(196), width: CGFloat(W) - 192, height: 2).fill()
-step(1, 212); line("Přetáhni Agent Office na složku Aplikace.", 14, .semibold, dark, 212)
-step(2, 244); line("Otevři ho. Když macOS napíše, že aplikaci nemůže ověřit:", 14, .semibold, dark, 244)
-line("Nastavení systému → Soukromí a zabezpečení → dole klikni na Přesto otevřít.", 12.5, .regular, grey, 267)
-line("Nebo otevři Terminál a vlož tenhle příkaz (zkopírovat ho jde ze souboru dole):", 12.5, .regular, grey, 287)
+step(1, 212); line("Drag Agent Office onto the Applications folder.", 14, .semibold, dark, 212)
+step(2, 244); line("Open it. If macOS says it cannot verify the app:", 14, .semibold, dark, 244)
+line("System Settings → Privacy & Security → scroll down and click Open Anyway.", 12.5, .regular, grey, 267)
+line("Or open Terminal and paste this command (copy it from the file below):", 12.5, .regular, grey, 287)
 // the command in a code box
 let box = NSBezierPath(roundedRect: NSRect(x: 96 * 2, y: pt(338), width: (612 - 96) * 2, height: 30 * 2), xRadius: 14, yRadius: 14)
 NSColor(srgbRed: 0.12, green: 0.13, blue: 0.16, alpha: 1).setFill(); box.fill()
 line("xattr -dr com.apple.quarantine \"/Applications/Agent Office.app\"", 12, .regular, NSColor(srgbRed: 0.98, green: 0.84, blue: 0.75, alpha: 1), 316, x: 108,
      font: NSFont.monospacedSystemFont(ofSize: 24, weight: .medium))
-step(3, 362); line("Hotovo. Při prvním spuštění si zkontroluje nástroje a doinstaluje pluginy.", 14, .semibold, dark, 362)
+step(3, 362); line("Done. On first launch it checks your tools and installs the plugins it needs.", 14, .semibold, dark, 362)
 NSColor(white: 0, alpha: 0.07).setFill(); NSRect(x: 96, y: pt(388), width: CGFloat(W) - 192, height: 2).fill()
 NSGraphicsContext.restoreGraphicsState()
 save(rep, args[1])

@@ -1,187 +1,189 @@
 # Agent Office
 
-Kancelář AI agentů na tvém Macu. Zadáš šéfovi cíl a on si sestaví tým (výzkum, návrh, text, kontrola…), rozdělí práci, nechá ji ověřit a vrátí hotový výsledek jako přehledné HTML stránky. Běží nad tvými **předplatnými** Claude a ChatGPT (Codex), volitelně i Google Antigravity a Gemini. Nepotřebuje žádné API klíče.
+*[Česká verze](README.cs.md)*
 
-- Šéf (Harvey) jede na nejsilnějším dostupném modelu Claude, ostatním agentům vybírá model podle úkolu a podle toho, které předplatné má víc volného limitu.
-- Kancelář je vidět jako animovaná scéna, kde agenti sedí u stolů, chodí za šéfem s otázkami a podobně. Vedle ní je rozhovor se šéfem, úkoly a výstupy.
-- Když dojde limit, práce se uloží a po obnovení limitu sama pokračuje.
+An office of AI agents on your Mac. Give the boss a goal and it builds a team (research, design, copy, review…), splits up the work, has it verified and hands back a finished result as clear HTML pages. It runs on your **subscriptions** to Claude and ChatGPT (Codex), optionally also Google Antigravity and Gemini. No API keys needed.
 
-> Všechno běží lokálně. Server poslouchá jen na `127.0.0.1` a nic se neposílá jinam než do služeb, které připojíš (Claude, OpenAI, Google).
+- The boss (Harvey) runs on the strongest Claude model available and picks a model for every other agent by task and by which subscription has the most room left.
+- The office is an animated scene: agents sit at their desks, walk over to the boss with questions and so on. Next to it are the chat with the boss, tasks and outputs.
+- When a limit runs out, work is saved and continues by itself once the limit resets.
+- The interface is in English or Czech: the **EN | CS** switch in the top right. The boss talks to you in the same language.
+
+> Everything runs locally. The server listens only on `127.0.0.1` and nothing is sent anywhere except to the services you connect (Claude, OpenAI, Google).
 
 ---
 
-## 1. Co potřebuješ
+## 1. What you need
 
-- **macOS 13 Ventura nebo novější**, Apple silicon i Intel (samotný server běží všude, kde je Node).
+- **macOS 13 Ventura or newer**, Apple silicon or Intel (the server alone runs anywhere Node does).
 - **Node.js 20+** (`brew install node`).
-- Aspoň jednu službu:
+- At least one service:
 
-| Služba | Účet | Instalace |
+| Service | Account | Install |
 |---|---|---|
-| **Claude** (doporučeno, šéf) | Claude Pro nebo Max | `curl -fsSL https://claude.ai/install.sh \| bash` |
-| **Codex** | ChatGPT Plus nebo Pro | `npm install -g @openai/codex` nebo `brew install --cask codex` |
-| **Antigravity** (volitelné) | účet Google | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` (příkaz `agy`) |
-| **Gemini** (volitelné, studium a rešerše) | účet Google nebo `GEMINI_API_KEY` | `npm install -g @google/gemini-cli` nebo `brew install gemini-cli` |
+| **Claude** (recommended, the boss) | Claude Pro or Max | `curl -fsSL https://claude.ai/install.sh \| bash` |
+| **Codex** | ChatGPT Plus or Pro | `npm install -g @openai/codex` or `brew install --cask codex` |
+| **Antigravity** (optional) | Google account | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` (command `agy`) |
+| **Gemini** (optional, study and research) | Google account or `GEMINI_API_KEY` | `npm install -g @google/gemini-cli` or `brew install gemini-cli` |
 
-Pro Mac aplikaci navíc **Xcode Command Line Tools** (`xcode-select --install`), kvůli `swiftc`.
+To build the Mac app you also need the **Xcode Command Line Tools** (`xcode-select --install`) for `swiftc`.
 
-## 2. Spuštění
+## 2. Getting started
 
-### Jako Mac aplikace (doporučeno)
+### Download
+
+Get `Agent.Office.dmg` from [Releases](../../releases/latest), open it and drag Agent Office onto the Applications folder. On first launch the app checks your tools and installs the plugins it needs (the same as `scripts/setup.sh`). If something is missing, it tells you what and how to install it.
+
+The app is not notarized by Apple (that needs a paid developer account), so on first launch macOS blocks it, saying it cannot verify the app is free of malware. To allow it:
+1. Close the message (Done / OK).
+2. Open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** next to Agent Office, then confirm with your password or Touch ID.
+3. You only do this once.
+
+Or in Terminal: `xattr -dr com.apple.quarantine "/Applications/Agent Office.app"`. The DMG window shows this command too, and you can copy it from *Terminal command.txt* next to the app.
+
+### Build the Mac app yourself
 
 ```bash
-git clone <tento repozitář> agent-office
+git clone https://github.com/maxuss007/agent-office.git
 cd agent-office
 bash mac/build.sh
 ```
 
-Při první instalaci `mac/build.sh` sám spustí `scripts/setup.sh`: zkontroluje nástroje a nainstaluje pluginy (autoharness, oficiální tržiště). Setup jde pustit i samostatně, `bash scripts/setup.sh --check` jen vypíše, co chybí, a nic neinstaluje. Přeskočíš ho přes `AO_SKIP_SETUP=1 bash mac/build.sh`.
+On the first install `mac/build.sh` runs `scripts/setup.sh`: it checks your tools and installs the plugins (autoharness, the official marketplace). You can run setup on its own; `bash scripts/setup.sh --check` only lists what is missing and installs nothing. Skip it with `AO_SKIP_SETUP=1 bash mac/build.sh`.
 
-Skript postaví `Agent Office.app`, nainstaluje ji do `/Applications` (nebo `~/Applications`) a spustí ji. `bash mac/build.sh --no-install` aplikaci jen sestaví do `mac/build/`.
+The script builds `Agent Office.app`, installs it in `/Applications` (or `~/Applications`) and opens it. `bash mac/build.sh --no-install` only builds it into `mac/build/`, and `bash mac/make-dmg.sh` makes the installer DMG.
 
-Aplikace si sama spouští server. Data ukládá do `~/Library/Application Support/Agent Office/`, projekty do `~/Agent Office/`.
+The app starts its own server. It keeps its data in `~/Library/Application Support/Agent Office/` and projects in `~/Agent Office/`.
 
-### Instalační balíček (.dmg)
+### Updates
+
+The app watches GitHub for a new version. When there is one, the **Updates** button in the header turns orange: **Update to X.Y.Z**. Clicking it downloads only the new server and interface (a few MB) into `~/Library/Application Support/Agent Office/app/` and restarts the app. You never have to download the whole app or DMG again. If a new version fails to start, the app falls back to its own copy.
+
+To publish a new version, run one command from the folder you develop in:
 
 ```bash
-bash mac/make-dmg.sh
+bash scripts/release.sh 1.2.0 "What's new"
 ```
 
-Vyrobí `mac/build/Agent Office.dmg`. Po otevření se ukáže okno, ve kterém se Agent Office přetáhne do složky Aplikace. Při prvním spuštění si aplikace sama zkontroluje nástroje a doinstaluje pluginy (stejně jako `scripts/setup.sh`). Když něco chybí, ukáže co a jak to doinstalovat.
+The script bumps `version.json` and copies the app into the checkout of the public repository (`AO_SHARE_DIR`, default `../agent-office-sdileni/agent-office`). It then makes sure the copy holds nothing personal: home folder paths, your e-mail, tokens or the names of your projects. Finally it runs the tests and pushes to GitHub. If anything is off, it sends nothing. `--dmg` also publishes a new DMG on GitHub Releases, `--dry-run` only tries everything out.
 
-Aplikace není notarizovaná u Apple (to vyžaduje placený vývojářský účet), takže ji macOS na jiném Macu poprvé zablokuje hláškou, že nemůže ověřit, jestli neobsahuje malware. Postup:
-1. Zavři hlášku (Hotovo / OK).
-2. Otevři **Nastavení systému → Soukromí a zabezpečení**, sjeď dolů a u Agent Office klikni na **Přesto otevřít**, pak potvrď heslem nebo Touch ID.
-3. Stačí jednou, další spuštění už projdou.
+If you change `mac/AgentOffice.swift`, bump `shellVersion` in it and release with `--shell`. That part cannot be swapped by an update, so the app offers a link to the new DMG (`Releases → latest`) instead.
 
-Jde to i v Terminálu: `xattr -dr com.apple.quarantine "/Applications/Agent Office.app"`. Tenhle příkaz je vidět i v okně DMG a ke zkopírování je v souboru *Příkaz pro Terminál.txt* vedle aplikace.
-
-### Aktualizace
-
-Aplikace si sama hlídá novou verzi na GitHubu. Když je nová, v hlavičce se rozsvítí oranžové tlačítko **Aktualizovat na X.Y.Z**. Po kliknutí se stáhne jen nový server a rozhraní (pár MB), uloží se do `~/Library/Application Support/Agent Office/app/` a aplikace se sama restartuje. Celou aplikaci ani DMG není potřeba stahovat znovu. Když nová verze nenaběhne, aplikace se vrátí ke své vlastní verzi.
-
-Jak vydat novou verzi:
-1. V `version.json` nastav `repo` na svůj GitHub repozitář (`jmeno/agent-office`), stačí jednou.
-2. Uprav kód, zvyš `version` (např. `1.1.0` → `1.2.0`) a do `notes` napiš krátce, co je nového.
-3. Pushni do větve `main`. Aplikace to zjistí do 6 hodin, nebo hned po dalším spuštění.
-
-Pole `shell` zvyš jen tehdy, když změníš `mac/AgentOffice.swift`. Tuhle část přes aktualizaci vyměnit nejde, takže aplikace místo stahování nabídne odkaz na nové DMG (`Releases → latest` na GitHubu).
-
-### Jen server (bez aplikace)
+### Server only (no app)
 
 ```bash
 node server.mjs
 ```
 
-Otevři adresu, kterou vypíše (`http://localhost:4747/?t=<token>`). Token se vytvoří při prvním startu v `config.json`.
+Open the address it prints (`http://localhost:4747/?t=<token>`). The token is created on first start in `config.json`.
 
-## 3. Připojení služeb
+## 3. Connecting services
 
-V aplikaci klikni vpravo nahoře na **Připojení**. U každé služby je rozbalovací **„Jak připojit“** s kroky, stav připojení a zbývající limity (5hodinový a týdenní).
+In the app, click **Connections** in the top right. Each service has a **How to connect** section with steps, its connection status and the limits left (5-hour and weekly).
 
 **Claude**
-1. Nainstaluj Claude Code (viz tabulka).
-2. Klikni na **Připojit znovu**. Otevře se Terminál s `claude auth login`, kde se přihlásíš.
-3. Aby přihlášení nevypršelo, spusť v Terminálu `claude setup-token` a token vlož do pole **Trvalý token**. Uloží se jen do Klíčenky tvého Macu.
+1. Install Claude Code (see the table).
+2. Click **Reconnect**. Terminal opens with `claude auth login`, where you sign in.
+3. So the sign-in does not expire, run `claude setup-token` in Terminal and paste the token into the **Long-lived token** field. It is stored only in your Mac's Keychain.
 
 **Codex**
-1. Nainstaluj Codex (viz tabulka), případně stačí aplikace ChatGPT nebo Codex pro Mac.
-2. Klikni na **Připojit znovu** (`codex login`) a přihlas se účtem ChatGPT.
+1. Install Codex (see the table); the ChatGPT or Codex app for Mac also works.
+2. Click **Reconnect** (`codex login`) and sign in with your ChatGPT account.
 
-**Antigravity (volitelné)**
-1. Nainstaluj Antigravity CLI (příkaz `agy`, viz tabulka).
-2. Klikni na **Připojit znovu**. V Terminálu se spustí `agy` a v prohlížeči se přihlásíš účtem Google. Přihlášení se uloží do Klíčenky.
-3. Antigravity se nikdy nevybírá automaticky. Zvolíš ho u konkrétního agenta: klikneš na postavu a vybereš **Model**. Smí upravovat soubory, příkazy v Terminálu ne.
+**Antigravity (optional)**
+1. Install the Antigravity CLI (command `agy`, see the table).
+2. Click **Reconnect**. Terminal runs `agy` and you sign in with your Google account in the browser. The sign-in is stored in the Keychain.
+3. Once connected, the boss gives it programming by itself, mainly when Codex is missing or running low. You can also pick it for an agent: click the character and choose **Model**. It may edit files but not run Terminal commands.
 
-**Gemini (volitelné)**: přímý přístup ke Gemini, hodí se na studium, vysvětlování a rešerše.
-1. Nainstaluj Gemini CLI (viz tabulka).
-2. Klikni na **Připojit znovu**. V Terminálu se spustí `gemini` a přihlásíš se účtem Google, případně nastav `GEMINI_API_KEY`.
-3. Vybereš ho ručně u agenta, třeba u výzkumníka. Automaticky se nepoužívá.
+**Gemini (optional)**: direct access to Gemini, good for study, explanations and research.
+1. Install the Gemini CLI (see the table).
+2. Click **Reconnect**. Terminal runs `gemini` and you sign in with your Google account, or set `GEMINI_API_KEY`.
+3. Once connected, the boss gives it study and research by itself. You can also pick it for an agent.
 
-Antigravity a Gemini jsou dvě různé cesty ke Gemini modelům: Antigravity je agent zaměřený na práci s kódem a soubory, Gemini CLI je přímý chat s modelem s vyhledáváním Google. V okně Připojení najdeš Antigravity jako podsekci karty Gemini.
+Antigravity and Gemini are two routes to Google's models: Antigravity is an agent for code and files, the Gemini CLI is a direct chat with the model and Google search. In Connections, Antigravity is a subsection of the Gemini card.
 
-Agent Office si nikdy neukládá hesla. Každá služba používá vlastní přihlášení na tvém Macu. Do podprocesů se nepředávají žádné API klíče Anthropic ani OpenAI z prostředí.
+Agent Office never stores passwords. Each service uses its own sign-in on your Mac. No Anthropic or OpenAI API keys from the environment are passed to subprocesses.
 
-## 4. Jak se to používá
+## 4. How to use it
 
-1. Na stránce **Projekty** klikni na **Nový projekt** (vznikne složka a git repozitář) nebo připoj existující složku.
-2. V projektu napiš šéfovi cíl. **Nový cíl** nabízí typ práce, důkladnost a podklady.
-3. Šéf si udělá rešerši, kritéria a plán, rozdělí úkoly a nechá je ověřit. Ptá se jen na nejnutnější věci, nanejvýš na 3 otázky s tlačítky.
-4. Průběh sleduješ v kanceláři (přepínač **Kancelář | Tým**), v úkolech a v rozhovoru se šéfem. Klikem na postavu otevřeš detail agenta: co dělá, jaký model používá, lidské shrnutí a chat.
-5. Výsledky najdeš vpravo ve **Výstupech**, hlavní je `Souhrn zakázky`. Projekt jde pozastavit, zastavit, převzít nebo otevřít v Codexu či Claude Code.
+1. On the **Projects** page click **New project** (creates a folder and a git repository) or connect an existing folder.
+2. In the project, write the boss a goal. **New goal** offers the type of work, how thorough to be and room for materials.
+3. The boss researches, writes criteria and a plan, splits up the tasks and has them verified. It only asks what it really needs, at most 3 questions with buttons.
+4. Follow along in the office (the **Office | Team** switch), in the tasks and in the chat with the boss. Click a character to open the agent's details: what it does, which model it uses, a plain-language summary and a chat.
+5. Results are on the right under **Outputs**; the main one is the `Project summary`. A project can be paused, stopped, accepted or opened in Codex or Claude Code.
 
-## 5. Jak orchestrace pracuje
+## 5. How the orchestration works
 
-- **„Hotovo“ znamená ověřená povinná kritéria.** Šéf před prací napíše `SCORECARD.md` (MUST/SHOULD/NICE). Hotovo je jen tehdy, když každé MUST má doložený PASS. Jinak je projekt *Rozpracovaný* se seznamem mezer.
-- **Tabule úkolů** (`office/BOARD.md`) se zámky, **předávky s důkazy** (`office/handoffs/`), **log rozhodnutí** (`office/DECISIONS.md`).
-- **Pokračování:** po chybě, restartu nebo vyčerpaném limitu práce naváže na poslední ověřený stav.
-- **Úspora tokenů:** každý agent dostane jen nástroje a skills svého úkolu. Výpočty a testy jdou příkazem bez modelu a závěrečnou zprávu skládá kód.
-- **Spotřeba:** každé volání se zapisuje do `projects/<id>/attempts.jsonl`. Tabulka je v **Průběh a spotřeba**.
-- **Bezpečnost:** práce běží ve vlastní git větvi `office/<id>` v samostatném worktree, nic se nepushuje a Bash mají agenti jen přes allowlist.
+- **"Done" means verified must-have criteria.** Before the work the boss writes `SCORECARD.md` (MUST/SHOULD/NICE). It is done only when every MUST has a documented PASS. Otherwise the project is *In progress* with a list of gaps.
+- **Task board** (`office/BOARD.md`) with locks, **handoffs with evidence** (`office/handoffs/`), **decision log** (`office/DECISIONS.md`).
+- **Resuming:** after an error, a restart or a used-up limit, work continues from the last verified state.
+- **Saving tokens:** every agent gets only the tools and skills its task needs. Calculations and tests run as commands without a model, and code assembles the final report.
+- **Usage:** every call is logged in `projects/<id>/attempts.jsonl`. The table is under **Progress and usage**.
+- **Safety:** work happens on its own git branch `office/<id>` in a separate worktree, nothing is pushed, and agents only get Bash through an allowlist.
 
-Instrukce šéfa jsou v `boss.md`, role v `roles/*.md`, společná pravidla v `roles/_contract.md` a presety v `presets/`.
+The boss's instructions are in `boss.md`, roles in `roles/*.md`, shared rules in `roles/_contract.md` and presets in `presets/`.
 
-## 6. Skills a autoharness
+## 6. Skills and autoharness
 
-- Agenti (Claude i Codex) smí používat tvoje nainstalované skills. Codex čte `~/.agents/skills`. Agent Office tam symlinkem zpřístupní skills z `~/.claude/skills` a nic nemaže.
-- Šéf vidí katalog skills a pluginů a přiděluje je k úkolům. Oficiální pluginy si umí nainstalovat sám, komunitní jen po tvém potvrzení.
-- Plugin **autoharness** se učí nové skills z odvedené práce. Nainstaluje ho `scripts/setup.sh`, případně ručně:
+- Agents (Claude and Codex) may use your installed skills. Codex reads `~/.agents/skills`; Agent Office symlinks the skills from `~/.claude/skills` there and deletes nothing.
+- The boss sees the catalog of skills and plugins and assigns them to tasks. It can install official plugins by itself, community ones only after you confirm.
+- The **autoharness** plugin learns new skills from finished work. `scripts/setup.sh` installs it, or by hand:
   ```bash
   claude plugin marketplace add tigerless-labs/autoharness
   claude plugin install autoharness@autoharness --scope user
   ```
-  Potřebuje Python 3.11+ jako `python3`.
-- Šéf si sám instaluje pluginy z oficiálního tržiště `anthropics/claude-plugins-official`. To přidá také `scripts/setup.sh`.
-- Složka `.claude/skills/` obsahuje skills pro vývoj samotné aplikace (scéna, UI, limity, reinstalace). Claude Code je použije při úpravách tohoto repozitáře.
+  It needs Python 3.11+ as `python3`.
+- The boss installs plugins from the official `anthropics/claude-plugins-official` marketplace by itself; `scripts/setup.sh` adds it too.
+- `.claude/skills/` holds skills for developing the app itself (scene, UI, limits, reinstalling). Claude Code uses them when you work on this repository.
 
-## 7. Kancelář a grafika
+## 7. The office and its art
 
-Scéna je v `public/office-suits.js`, grafika v `public/assets/suits/`:
-- `office.png`: kancelář (Harveyho pracovna s lavicemi pro hosty, Donnina recepce, 24 stolů),
-- `stand/` a `walk/`: postavy stojící a dvě fáze kroku,
-- `seat/`: postavy sedící u stolu zády k nám,
-- `front/`: Harvey a Donna sedící čelem (klid, otázka, psaní),
-- `face/`: výřezy obličejů pro seznam týmu.
+The scene is in `public/office-suits.js`, the art in `public/assets/suits/`:
+- `office.png`: the office (Harvey's room with guest benches, Donna's reception, 24 desks),
+- `stand/` and `walk/`: standing characters and two walking frames,
+- `seat/`: characters sitting at a desk with their backs to us,
+- `front/`: Harvey and Donna sitting facing us (idle, asking, typing),
+- `face/`: face crops for the team list.
 
-Kdo pracuje, sedí u stolu. Kdo nic nedělá, čeká nebo má hotovo, stojí u židle. Kdo je zaseknutý, dojde za Harveym a sedne si na lavici. Postavy jsou inspirované seriálem Suits. Zadání pro další assety je v `art/ZADANI-PRO-CODEX.md`.
+Whoever is working sits at a desk. Whoever is idle, waiting or done stands by their chair. Whoever is stuck walks over to Harvey and sits on a bench. The characters are inspired by the TV series Suits.
 
-## 8. Vývoj
+## 8. Development
 
 ```bash
-node --test tests/          # testy (nespotřebovávají předplatné, používají falešná CLI)
-node scripts/check-providers.mjs
-node scripts/eval.mjs list  # sada zakázek pro měření kvality
+node --test tests/          # tests (use fake CLIs, no subscription usage)
 ```
 
-Struktura: `server.mjs` (HTTP + SSE) · `updater.mjs` (aktualizace z GitHubu, `version.json`) · `orchestrator.mjs` (šéf, plán, úkoly, ověření) · `providers.mjs` (Claude, Codex, Antigravity, Gemini, limity, výběr modelu) · `report.mjs` (HTML výstupy) · `public/` (UI) · `mac/` (Mac aplikace).
+Structure: `server.mjs` (HTTP + SSE) · `public/i18n.js` (English and Czech in the interface) · `updater.mjs` (updates from GitHub, `version.json`) · `orchestrator.mjs` (boss, plan, tasks, verification) · `providers.mjs` (Claude, Codex, Antigravity, Gemini, limits, model choice) · `report.mjs` (HTML outputs) · `public/` (UI) · `mac/` (Mac app).
 
-### Volitelné
+The interface source is written in Czech; `public/i18n.js` translates what is on screen into English. To add a string, put the Czech text exactly as it appears as a key in its `EN` table.
 
-- **Telefon:** `HOST=0.0.0.0 node server.mjs` vypíše adresu pro telefon ve stejné wifi. Token v odkazu je jediná ochrana, port nevystavuj do internetu.
-- **Push notifikace přes ntfy:** do `config.json` přidej `{ "ntfyTopic": "tvuj-tajny-topic" }`. Text otázek šéfa pak jde přes veřejnou službu ntfy.sh.
+### Optional
 
-## 9. Poděkování
+- **Phone:** `HOST=0.0.0.0 node server.mjs` prints an address for a phone on the same Wi-Fi. The token in the link is the only protection, so never expose the port to the internet.
+- **Push notifications via ntfy:** add `{ "ntfyTopic": "your-secret-topic" }` to `config.json`. The boss's questions then go through the public ntfy.sh service.
 
-Agent Office stojí na práci jiných lidí. Díky jim:
+## 9. Thanks
 
-**Nástroje, na kterých běží**
-- [Claude Code](https://claude.com/claude-code) a tržiště [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) od Anthropic.
-- [Codex](https://github.com/openai/codex) od OpenAI.
-- [Antigravity](https://antigravity.google) a [Gemini CLI](https://github.com/google-gemini/gemini-cli) od Google.
-- [autoharness](https://github.com/tigerless-labs/autoharness) od Tigerless Labs: plugin, který z odvedené práce učí nové skills (vznikly z něj i skills v `.claude/skills/`).
-- [Skills CLI](https://github.com/vercel-labs/skills) od Vercel Labs pro hledání a instalaci skills.
+Agent Office is built on other people's work. Thank you:
 
-**Skills, se kterými agenti v kanceláři rádi pracují** (nejsou součástí tohoto repozitáře, instalují se zvlášť)
-- SEO a reklama: [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) a [AgriciDaniel/claude-ads](https://github.com/AgriciDaniel/claude-ads).
-- Design, značka a prezentace: ClaudeKit (`design`, `brand`, `design-system`, `ui-styling`, `banner-design`, `slides`).
-- Design a animace: principy [Emila Kowalskiho](https://emilkowal.ski).
-- Marketing: skills vycházejí mimo jiné z knihy *Founding Marketing* od Coreyho Hainese.
-- Viditelnost v AI vyhledávání: [Knowatoa/ai-visibility-skills](https://github.com/Knowatoa/ai-visibility-skills).
-- Rada modelů: [karpathy/llm-council](https://github.com/karpathy/llm-council) od Andreje Karpathyho, skill podle [aiwithremy/claude-skills-llm-council](https://github.com/aiwithremy/claude-skills-llm-council).
-- Blender: blender-agent-skills. BIM a Bonsai: [OpenAEC Foundation](https://github.com/OpenAEC-Foundation). ArchiCAD: weltmaister.
+**Tools it runs on**
+- [Claude Code](https://claude.com/claude-code) and the [anthropics/claude-plugins-official](https://github.com/anthropics/claude-plugins-official) marketplace by Anthropic.
+- [Codex](https://github.com/openai/codex) by OpenAI.
+- [Antigravity](https://antigravity.google) and the [Gemini CLI](https://github.com/google-gemini/gemini-cli) by Google.
+- [autoharness](https://github.com/tigerless-labs/autoharness) by Tigerless Labs: a plugin that learns new skills from finished work (the skills in `.claude/skills/` came from it).
+- [Skills CLI](https://github.com/vercel-labs/skills) by Vercel Labs for finding and installing skills.
 
-**Grafika**
-- Postavy jsou fanouškovská pocta seriálu *Suits* (autor Aaron Korsh, USA Network). Projekt s tvůrci seriálu nijak nesouvisí a jména i podoby postav patří jejich vlastníkům.
-- Kancelář a postavy byly vygenerované v Codexu podle zadání v `art/ZADANI-PRO-CODEX.md`.
+**Skills the agents like to work with** (not part of this repository, installed separately)
+- SEO and ads: [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) and [AgriciDaniel/claude-ads](https://github.com/AgriciDaniel/claude-ads).
+- Design, brand and slides: ClaudeKit (`design`, `brand`, `design-system`, `ui-styling`, `banner-design`, `slides`).
+- Design and animation: the principles of [Emil Kowalski](https://emilkowal.ski).
+- Marketing: skills drawing among others on *Founding Marketing* by Corey Haines.
+- Visibility in AI search: [Knowatoa/ai-visibility-skills](https://github.com/Knowatoa/ai-visibility-skills).
+- Model council: [karpathy/llm-council](https://github.com/karpathy/llm-council) by Andrej Karpathy, as a skill based on [aiwithremy/claude-skills-llm-council](https://github.com/aiwithremy/claude-skills-llm-council).
+- Blender: blender-agent-skills. BIM and Bonsai: [OpenAEC Foundation](https://github.com/OpenAEC-Foundation). ArchiCAD: weltmaister.
 
-Pokud tu někdo chybí nebo je uvedený špatně, dej vědět přes issue.
+**Art**
+- The characters are a fan tribute to the TV series *Suits* (created by Aaron Korsh, USA Network). The project is not affiliated with the show's makers; the names and likenesses belong to their owners.
+- The office and characters were generated with Codex.
+
+If someone is missing or credited wrongly, please open an issue.

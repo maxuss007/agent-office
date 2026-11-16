@@ -84,6 +84,7 @@ final class ServerManager {
     // Version of this Mac shell. Bump it (and "shell" in version.json) only when this file changes in a way the server relies on.
     static let shellVersion = 2
     var runningUpdate = false
+    var onCrash: (() -> Void)?   // the server exited without being asked to
     var bundledDir: URL? { Bundle.main.resourceURL?.appendingPathComponent("server") }
     // An update downloaded from GitHub (see updater.mjs) lives in Application Support/Agent Office/app/<version>/.
     // Use it when it is newer than the copy inside the app; a newer DMG install wins over an older download.
@@ -119,10 +120,10 @@ final class ServerManager {
     }
 
     func start() -> String? { // returns an error message, or nil
-        guard let node = ServerManager.findNode() else { return "Nenašel jsem Node.js. Nainstaluj ho (brew install node) a spusť aplikaci znovu." }
-        guard let res = serverDir(), FileManager.default.fileExists(atPath: res.appendingPathComponent("server.mjs").path) else { return "V aplikaci chybí složka server/." }
+        guard let node = ServerManager.findNode() else { return L("Node.js was not found. Install it (brew install node) and open the app again.", "Nenašel jsem Node.js. Nainstaluj ho (brew install node) a spusť aplikaci znovu.") }
+        guard let res = serverDir(), FileManager.default.fileExists(atPath: res.appendingPathComponent("server.mjs").path) else { return L("The app is missing its server/ folder.", "V aplikaci chybí složka server/.") }
         runningUpdate = res != bundledDir
-        guard let free = (4747...4770).first(where: ServerManager.portFree) else { return "Žádný volný port 4747–4770." }
+        guard let free = (4747...4770).first(where: ServerManager.portFree) else { return L("No free port between 4747 and 4770.", "Žádný volný port 4747–4770.") }
         port = free
         let p = Process()
         p.executableURL = URL(fileURLWithPath: node)
@@ -136,9 +137,13 @@ final class ServerManager {
         env["PATH"] = ["\(NSHomeDirectory())/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")
         p.environment = env
         let log = support.appendingPathComponent("server.log")
-        FileManager.default.createFile(atPath: log.path, contents: nil)
-        if let h = try? FileHandle(forWritingTo: log) { p.standardOutput = h; p.standardError = h }
+        if !FileManager.default.fileExists(atPath: log.path) { FileManager.default.createFile(atPath: log.path, contents: nil) }
+        if let h = try? FileHandle(forWritingTo: log) {   // append, so a crash stays in the log after the restart
+            if (try? FileManager.default.attributesOfItem(atPath: log.path)[.size] as? Int ?? 0) ?? 0 > 2_000_000 { h.truncateFile(atOffset: 0) }
+            h.seekToEndOfFile(); p.standardOutput = h; p.standardError = h
+        }
         do { try p.run() } catch { return "Server se nespustil: \(error.localizedDescription)" }
+        p.terminationHandler = { [weak self] proc in DispatchQueue.main.async { if self?.process === proc { self?.process = nil; self?.onCrash?() } } }
         process = p
         return nil
     }
@@ -159,7 +164,16 @@ final class ServerManager {
         tick()
     }
 
-    func stop() { if let p = process, p.isRunning { p.terminate() }; process = nil }
+    func stop() { let p = process; process = nil; if let p = p, p.isRunning { p.terminate() } }
+}
+
+// MARK: - Language
+
+// The UI language chosen in the app header (EN | CS); the server keeps it in config.json. English by default.
+func L(_ en: String, _ cs: String) -> String {
+    let cfg = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Agent Office/config.json")
+    guard let d = try? Data(contentsOf: cfg), let j = try? JSONSerialization.jsonObject(with: d) as? [String: Any], j["lang"] as? String == "cs" else { return en }
+    return cs
 }
 
 // MARK: - App
@@ -171,7 +185,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
     var window: NSWindow!
     var web: WKWebView!
     let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
-    let statusLine = NSMenuItem(title: "Spouštím…", action: nil, keyEquivalent: "")
+    let statusLine = NSMenuItem(title: L("Starting…", "Spouštím…"), action: nil, keyEquivalent: "")
     var timer: Timer?
     var notified = Set<String>()
     var finishedNotified = Set<String>()
@@ -196,6 +210,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         center.delegate = self
         center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
 
+        server.onCrash = { [weak self] in self?.serverCrashed() }
         firstRunSetup { self.startServer() }
     }
 
@@ -205,7 +220,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         let mark = server.support.appendingPathComponent(".setup-done")
         guard let script = Bundle.main.resourceURL?.appendingPathComponent("server/scripts/setup.sh"),
               FileManager.default.fileExists(atPath: script.path), !FileManager.default.fileExists(atPath: mark.path) else { next(); return }
-        showHTML("<h2>První spuštění</h2><p>Kontroluji nástroje a instaluji pluginy pro Claude Code. Chvíli to potrvá…</p>")
+        showHTML(L("<h2>First launch</h2><p>Checking tools and installing Claude Code plugins. This takes a moment…</p>", "<h2>První spuštění</h2><p>Kontroluji nástroje a instaluji pluginy pro Claude Code. Chvíli to potrvá…</p>"))
         DispatchQueue.global(qos: .userInitiated).async {
             let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [script.path]
             var env = ProcessInfo.processInfo.environment
@@ -218,9 +233,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
             DispatchQueue.main.async {
                 if ok { next(); return }
                 let a = NSAlert(); a.alertStyle = .warning
-                a.messageText = "Něco chybí"
-                a.informativeText = "Doinstaluj, co je označené ✗, a otevři Agent Office znovu. Kontrola se pak spustí sama.\n\n" + out.split(separator: "\n").filter { !$0.hasPrefix("Hotovo") }.joined(separator: "\n")
-                a.addButton(withTitle: "Pokračovat"); a.addButton(withTitle: "Ukončit")
+                a.messageText = L("Something is missing", "Něco chybí")
+                a.informativeText = L("Install what is marked ✗ and open Agent Office again. The check then runs by itself.", "Doinstaluj, co je označené ✗, a otevři Agent Office znovu. Kontrola se pak spustí sama.") + "\n\n" + out.split(separator: "\n").filter { !$0.hasPrefix("Hotovo") && !$0.hasPrefix("Done") }.joined(separator: "\n")
+                a.addButton(withTitle: L("Continue", "Pokračovat")); a.addButton(withTitle: L("Quit", "Ukončit"))
                 if a.runModal() == .alertSecondButtonReturn { NSApp.terminate(nil) } else { next() }
             }
         }
@@ -228,12 +243,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
 
     func startServer() {
         if let err = server.start() { showError(err); return }
-        showHTML("<h2>Spouštím kancelář…</h2>")
+        showHTML(L("<h2>Starting the office…</h2>", "<h2>Spouštím kancelář…</h2>"))
         server.waitReady { ok in
             if ok { self.serverUp = true; self.web.load(URLRequest(url: self.pageURL())); if self.timer == nil { self.startPolling() } }
             else if self.server.runningUpdate { self.server.stop(); self.server.dropUpdate(); self.startServer() }   // broken update: fall back to the app's own copy
-            else { self.showError("Server nenaběhl. Podívej se do ~/Library/Application Support/Agent Office/server.log") }
+            else { self.showError(L("The server did not start. See ~/Library/Application Support/Agent Office/server.log", "Server nenaběhl. Podívej se do ~/Library/Application Support/Agent Office/server.log")) }
         }
+    }
+
+    // the server died (a bug, a bad update): start it again and reload, but give up after repeated crashes
+    var crashes: [Date] = []
+    func serverCrashed() {
+        serverUp = false
+        crashes = crashes.filter { $0.timeIntervalSinceNow > -120 } + [Date()]
+        if crashes.count > 5 { showError(L("The server keeps crashing. See ~/Library/Application Support/Agent Office/server.log", "Server opakovaně padá. Podívej se do ~/Library/Application Support/Agent Office/server.log")); return }
+        if server.runningUpdate && crashes.count >= 2 { server.dropUpdate() }
+        showHTML(L("<h2>Restarting the office…</h2>", "<h2>Restartuji kancelář…</h2>"))
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) { self.startServer() }
     }
 
     // after an update was downloaded: start the server again from the new files and reload the page
@@ -275,10 +301,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         if runningCount > 0 {
             showWindow()
             let a = NSAlert()
-            a.messageText = runningCount == 1 ? "Běží 1 projekt" : "Běží \(runningCount) projektů"
-            a.informativeText = "Když aplikaci ukončíš, projekty se zastaví (rozdělaná práce zůstane ve větvi office/…). Chceš ji ukončit?"
-            a.addButton(withTitle: "Nechat běžet na pozadí")
-            a.addButton(withTitle: "Ukončit a zastavit")
+            a.messageText = runningCount == 1 ? L("1 project is running", "Běží 1 projekt") : L("\(runningCount) projects are running", "Běží \(runningCount) projektů")
+            a.informativeText = L("Quitting the app stops the projects (work in progress stays on the office/… branch). Quit anyway?", "Když aplikaci ukončíš, projekty se zastaví (rozdělaná práce zůstane ve větvi office/…). Chceš ji ukončit?")
+            a.addButton(withTitle: L("Keep running in the background", "Nechat běžet na pozadí"))
+            a.addButton(withTitle: L("Quit and stop", "Ukončit a zastavit"))
             if a.runModal() == .alertFirstButtonReturn { window.orderOut(nil); return .terminateCancel }
         }
         return .terminateNow
@@ -291,7 +317,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         guard m.name == "pickFolder" else { return }
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
-        panel.prompt = "Přidat"; panel.message = "Vyber složku (repozitář), pro který vznikne nová kancelář"
+        panel.prompt = L("Add", "Přidat"); panel.message = L("Choose the folder (repository) for the new office", "Vyber složku (repozitář), pro který vznikne nová kancelář")
         panel.directoryURL = URL(fileURLWithPath: NSHomeDirectory())
         panel.beginSheetModal(for: window) { r in
             guard r == .OK, let u = panel.url else { return }
@@ -310,7 +336,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         let a = NSAlert(); a.messageText = m; a.runModal(); c()
     }
     func webView(_ w: WKWebView, runJavaScriptConfirmPanelWithMessage m: String, initiatedByFrame f: WKFrameInfo, completionHandler c: @escaping (Bool) -> Void) {
-        let a = NSAlert(); a.messageText = m; a.addButton(withTitle: "OK"); a.addButton(withTitle: "Zrušit"); c(a.runModal() == .alertFirstButtonReturn)
+        let a = NSAlert(); a.messageText = m; a.addButton(withTitle: "OK"); a.addButton(withTitle: L("Cancel", "Zrušit")); c(a.runModal() == .alertFirstButtonReturn)
     }
 
     // menus
@@ -318,20 +344,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         let main = NSMenu()
         func sub(_ title: String, _ items: [NSMenuItem]) { let i = NSMenuItem(); main.addItem(i); let m = NSMenu(title: title); items.forEach(m.addItem); i.submenu = m }
         sub("Agent Office", [
-            NSMenuItem(title: "Skrýt Agent Office", action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"),
+            NSMenuItem(title: L("Hide Agent Office", "Skrýt Agent Office"), action: #selector(NSApplication.hide(_:)), keyEquivalent: "h"),
             .separator(),
-            NSMenuItem(title: "Ukončit Agent Office", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")])
-        sub("Úpravy", [
-            NSMenuItem(title: "Zpět", action: Selector(("undo:")), keyEquivalent: "z"),
+            NSMenuItem(title: L("Quit Agent Office", "Ukončit Agent Office"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")])
+        sub(L("Edit", "Úpravy"), [
+            NSMenuItem(title: L("Undo", "Zpět"), action: Selector(("undo:")), keyEquivalent: "z"),
             .separator(),
-            NSMenuItem(title: "Vyjmout", action: #selector(NSText.cut(_:)), keyEquivalent: "x"),
-            NSMenuItem(title: "Kopírovat", action: #selector(NSText.copy(_:)), keyEquivalent: "c"),
-            NSMenuItem(title: "Vložit", action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
-            NSMenuItem(title: "Vybrat vše", action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")])
-        let reload = NSMenuItem(title: "Načíst znovu", action: #selector(reloadPage), keyEquivalent: "r"); reload.target = self
-        sub("Zobrazení", [reload])
-        sub("Okno", [NSMenuItem(title: "Zavřít okno", action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
-                     NSMenuItem(title: "Minimalizovat", action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")])
+            NSMenuItem(title: L("Cut", "Vyjmout"), action: #selector(NSText.cut(_:)), keyEquivalent: "x"),
+            NSMenuItem(title: L("Copy", "Kopírovat"), action: #selector(NSText.copy(_:)), keyEquivalent: "c"),
+            NSMenuItem(title: L("Paste", "Vložit"), action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
+            NSMenuItem(title: L("Select All", "Vybrat vše"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")])
+        let reload = NSMenuItem(title: L("Reload", "Načíst znovu"), action: #selector(reloadPage), keyEquivalent: "r"); reload.target = self
+        sub(L("View", "Zobrazení"), [reload])
+        sub(L("Window", "Okno"), [NSMenuItem(title: L("Close Window", "Zavřít okno"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
+                     NSMenuItem(title: L("Minimize", "Minimalizovat"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")])
         NSApp.mainMenu = main
     }
     @objc func reloadPage() { if serverUp { web.load(URLRequest(url: pageURL())) } }
@@ -348,9 +374,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
     func buildStatusItem() {
         statusItem.button?.image = menuBarIcon(.idle)
         let m = NSMenu()
-        let open = NSMenuItem(title: "Otevřít Agent Office", action: #selector(openFromMenu), keyEquivalent: ""); open.target = self
+        let open = NSMenuItem(title: L("Open Agent Office", "Otevřít Agent Office"), action: #selector(openFromMenu), keyEquivalent: ""); open.target = self
         m.addItem(open); statusLine.isEnabled = false; m.addItem(statusLine); m.addItem(.separator())
-        m.addItem(NSMenuItem(title: "Ukončit", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
+        m.addItem(NSMenuItem(title: L("Quit", "Ukončit"), action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
         statusItem.menu = m
     }
     @objc func openFromMenu() { showWindow() }
@@ -405,7 +431,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         statusItem.button?.image = menuBarIcon(status)
         statusItem.button?.title = waiting > 0 ? " \(waiting)" : ""
         NSApp.dockTile.badgeLabel = waiting > 0 ? "\(waiting)" : nil
-        statusLine.title = waiting > 0 ? "Čeká na tebe: \(waiting) otázek" : running > 0 ? "Pracuje: \(running) projekt(ů)" : "Nic neběží"
+        statusLine.title = waiting > 0 ? L("Waiting for you: \(waiting) question(s)", "Čeká na tebe: \(waiting) otázek") : running > 0 ? L("Working: \(running) project(s)", "Pracuje: \(running) projekt(ů)") : L("Nothing running", "Nic neběží")
         postQuestions(questions)
     }
     var notifiedOnce = false
@@ -424,7 +450,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
             for q in fresh {
                 self.notified.insert(q.id)
                 let c = UNMutableNotificationContent()
-                c.title = q.repo.isEmpty ? "Boss se ptá" : "Boss se ptá · \(q.repo)"; c.body = q.text; c.sound = .default
+                c.title = q.repo.isEmpty ? L("The boss is asking", "Boss se ptá") : L("The boss is asking", "Boss se ptá") + " · \(q.repo)"; c.body = q.text; c.sound = .default
                 c.categoryIdentifier = "q.\(q.id)"
                 c.userInfo = ["pid": q.projectId, "qid": q.id, "options": q.options]
                 center.add(UNNotificationRequest(identifier: "q-\(q.id)", content: c, trigger: nil))
@@ -434,7 +460,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
     func notifyFinished(_ p: [String: Any], _ st: String) {
         let c = UNMutableNotificationContent()
         let rn = p["repoName"] as? String ?? ""
-        c.title = (st == "done" ? "Cíl hotov" : "Cíl skončil (\(st))") + (rn.isEmpty ? "" : " · \(rn)")
+        c.title = (st == "done" ? L("Goal done", "Cíl hotov") : L("Goal ended (\(st))", "Cíl skončil (\(st))")) + (rn.isEmpty ? "" : " · \(rn)")
         c.body = (p["goal"] as? String ?? "").prefix(120).description
         c.sound = .default
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: "fin-\(p["id"] ?? "")-\(st)", content: c, trigger: nil))
