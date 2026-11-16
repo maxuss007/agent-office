@@ -1,0 +1,14 @@
+{
+  "id": "dokument",
+  "kind": "doc",
+  "preset": "general",
+  "depth": "std",
+  "goal": "Napiš obchodní podmínky pro malý český e-shop s ručně šitými taškami (fyzické zboží, doprava v ČR, platba kartou a převodem).",
+  "criteria": [
+    "Obsahuje povinné části pro spotřebitele: odstoupení od smlouvy do 14 dnů, reklamace, kontakt, ceny vč. DPH a dopravy.",
+    "Odkazy na právní předpisy jsou správné a dohledatelné (občanský zákoník, zákon o ochraně spotřebitele).",
+    "Text je srozumitelný běžnému zákazníkovi, bez zbytečného právního balastu.",
+    "Placeholdery (název firmy, IČO, adresa) jsou jasně označené a vypsané na jednom místě.",
+    "Přiznává, co musí ověřit právník (neposkytuje se za právní radu)."
+  ]
+}

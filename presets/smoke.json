@@ -1,0 +1,16 @@
+{
+  "id": "smoke",
+  "name": "Smoke test (levný, haiku)",
+  "description": "Rychlý test celé smyčky na malém úkolu – vše na haiku, 1 kolo.",
+  "defaults": {
+    "maxRounds": 1,
+    "maxRuns": 12,
+    "targetScore": 60,
+    "concurrency": 2,
+    "answerTimeoutMin": 1,
+    "forceModel": "haiku",
+    "forceEffort": "low",
+    "allowWeakBoss": true
+  },
+  "focus": "Tiny task. Do exactly ONE short research angle (not three), keep SCORECARD to at most 5 items, make at most 2 tasks. Do not browse more than 2 pages."
+}

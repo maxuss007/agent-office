@@ -1,0 +1,13 @@
+{
+  "id": "software-funkce",
+  "kind": "code",
+  "preset": "general",
+  "depth": "std",
+  "goal": "Vytvoř malý nástroj pro příkazovou řádku v Node.js, který z CSV s výdaji (datum, kategorie, částka) spočítá součty po měsících a kategoriích a vypíše je jako tabulku. Přidej testy a README.",
+  "criteria": [
+    "Funkční scénáře: běžné CSV, prázdný soubor, chybný řádek, desetinná čárka – každý má popsaný a ověřený výsledek.",
+    "Regresní testy existují a procházejí jedním příkazem (npm test).",
+    "Kontrola použitelnosti: srozumitelná nápověda (--help) a chybové hlášky, README s příkladem.",
+    "Žádné externí závislosti bez důvodu; běží na aktuálním Node.js."
+  ]
+}

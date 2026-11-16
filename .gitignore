@@ -1,0 +1,21 @@
+# runtime data and secrets (created on first run)
+config.json
+provider-state.json
+profile.md
+projects/
+workspaces/
+work/
+previews/
+.runtime/
+evals/runs/
+evals/blind/
+
+# builds
+mac/build/
+node_modules/
+art/*.zip
+
+# local tooling state
+.claude/settings.local.json
+.claude/autoharness/
+.DS_Store

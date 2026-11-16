@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Office</title>
+<style>
+:root{--bg:#f6ead2;--bg2:#efdcb9;--card:#fffaf0;--fg:#3a2a1a;--mute:#8a7355;--line:#e2cfa6;--wood:#b9783f;--acc:#e8873a;--acc2:#c96d24;--ok:#3aa876;--warn:#f0a020;--bad:#e5484d;--blue:#3b82c4;--shadow:#8a5a2b33}
+@media(prefers-color-scheme:dark){:root{--bg:#241a12;--bg2:#2d2117;--card:#33261a;--fg:#f6e8cf;--mute:#b89c74;--line:#4d3b28;--shadow:#0006}}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(900px 400px at 50% -100px,#ffe9b8 0,transparent 70%),var(--bg);color:var(--fg);font:15px/1.45 ui-rounded,"SF Pro Rounded",-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;padding:0 16px 40px;min-height:100vh}
+@media(prefers-color-scheme:dark){body{background:radial-gradient(900px 400px at 50% -100px,#5a3d1c55 0,transparent 70%),var(--bg)}}
+header{display:flex;gap:10px;align-items:center;padding:14px 0;max-width:1100px;margin:auto;flex-wrap:wrap}
+h1{font-size:21px;margin:0;flex:1;white-space:nowrap;letter-spacing:-.01em}h1 span{display:inline-block;background:linear-gradient(#ffcf6b,#f0a020);border-radius:10px;padding:2px 7px;margin-right:6px;box-shadow:0 2px 0 #b8741c}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--mute);margin:22px 0 8px}
+main{max-width:1100px;margin:auto}
+select,input,textarea,button{font:inherit;color:inherit}
+select,input,textarea{width:100%;padding:10px 12px;border:2px solid var(--line);border-radius:12px;background:var(--card)}
+button{border:0;border-radius:12px;padding:10px 15px;background:linear-gradient(var(--acc),var(--acc2));color:#fff;cursor:pointer;font-weight:700;box-shadow:0 3px 0 #9a4f14;transition:transform .08s,box-shadow .08s}
+button:active{transform:translateY(2px);box-shadow:0 1px 0 #9a4f14}
+button.ghost{background:var(--card);color:var(--fg);border:2px solid var(--line);box-shadow:0 3px 0 var(--line)}
+.card{background:var(--card);border:2px solid var(--line);border-radius:16px;padding:14px;box-shadow:0 4px 0 var(--line)}
+.chip{display:inline-block;font-size:11px;padding:1px 8px;border-radius:99px;background:var(--bg2);color:var(--mute);font-weight:600}
+.q{border:3px solid var(--warn);border-radius:16px;padding:14px;margin-bottom:12px;background:var(--card);box-shadow:0 4px 0 #c88410;animation:pop .35s}
+.q .opts{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 0}
+@keyframes pop{from{transform:scale(.96);opacity:0}}
+.grid{display:grid;grid-template-columns:1fr;gap:16px}@media(min-width:860px){.grid{grid-template-columns:3fr 2fr}}
+.row{display:flex;gap:8px;align-items:center;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.row:last-child{border:0}.st{width:9px;height:9px;border-radius:50%;background:var(--line);flex:none}
+.s-done{background:var(--ok)}.s-running{background:var(--blue)}.s-failed{background:var(--bad)}
+.log{font-size:12px;color:var(--mute);max-height:340px;overflow:auto}.log b{color:var(--fg)}
+.bar{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mute);align-items:center}.bar b{color:var(--fg)}
+dialog{border:3px solid var(--line);border-radius:20px;padding:18px;max-width:520px;width:calc(100% - 32px);background:var(--bg);color:var(--fg)}
+dialog::backdrop{background:#2a1a0a88}label{display:block;font-size:12px;color:var(--mute);margin:12px 0 4px;font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+
+/* scene */
+.scene{border-radius:22px;overflow:hidden;border:4px solid #8a5a2b;box-shadow:0 6px 0 #6b4220,0 18px 40px var(--shadow);background:#c98f57;line-height:0}
+.scene svg{width:100%;height:auto;display:block}
+.zone{transition:filter .3s}.zone .mover{transition:transform 1.6s cubic-bezier(.45,0,.25,1)}
+.zone[data-role=plus]{cursor:pointer}.zone[data-role=plus]:hover .plusbtn{transform:scale(1.12)}.zone[data-role=plus]:focus-visible{outline:none}.zone[data-role=plus]:focus-visible .plusbtn{stroke:#fff;stroke-width:4}
+.plusbtn{transform-box:fill-box;transform-origin:center;transition:transform .15s}
+.badge{opacity:0;transform-box:fill-box;transform-origin:50% 100%}
+.st-waiting .b-q,.st-done .b-ok,.st-blocked .b-bad{opacity:1;animation:hop 1s ease-in-out infinite alternate}
+@keyframes hop{to{transform:translateY(-5px)}}
+.glow{opacity:0;transition:opacity .4s}.st-working .glow{opacity:.55}
+.mouth-big,.mouth-o{display:none}.st-done .mouth{display:none}.st-done .mouth-big{display:block}.st-blocked .mouth{display:none}.st-blocked .mouth-o{display:block}
+.paper{transform:translate(-30px,6px);transition:transform .5s}.st-idle .paper,.st-done .paper{transform:translate(0,-50px)}
+.lens{transform-box:fill-box;transform-origin:50% 100%}.st-working .lens{animation:scan 1.4s ease-in-out infinite alternate}@keyframes scan{from{transform:translate(0,0) rotate(-10deg)}to{transform:translate(26px,-8px) rotate(14deg)}}
+.steam{animation:steam 2.4s ease-in-out infinite;opacity:0}.steam.s2{animation-delay:1.2s}@keyframes steam{0%{opacity:0;transform:translateY(0)}40%{opacity:.6}100%{opacity:0;transform:translateY(-10px)}}
+.sway{transform-box:fill-box;transform-origin:50% 100%;animation:plant 5s ease-in-out infinite alternate}@keyframes plant{from{transform:rotate(-1.6deg)}to{transform:rotate(1.6deg)}}
+.cloud{animation:cloud 60s linear infinite alternate}@keyframes cloud{to{transform:translateX(34px)}}
+.bub{animation:bub 2.5s ease-in infinite}.bub.b2{animation-delay:1.2s}@keyframes bub{0%{opacity:0;transform:translateY(6px)}30%{opacity:.9}100%{opacity:0;transform:translateY(-8px)}}
+.dust{animation:dust 9s ease-in-out infinite alternate}@keyframes dust{to{transform:translate(12px,-10px)}}
+.page{transform-box:fill-box;transform-origin:0 50%;animation:flip 6s ease-in-out infinite}@keyframes flip{0%,70%,100%{transform:scaleX(1)}80%{transform:scaleX(-.2)}}
+.ring{opacity:0;transition:opacity .3s}.st-working .ring{opacity:.5;fill:#3aa876}.st-waiting .ring{opacity:.6;fill:#f0a020}.st-blocked .ring{opacity:.6;fill:#e5484d}.st-done .ring{opacity:.5;fill:#3b82c4}
+
+
+.seg{display:flex;gap:2px;background:var(--bg2);border-radius:12px;padding:3px}.seg button{background:transparent;color:var(--mute);box-shadow:none;padding:5px 11px;font-size:12px}.seg button.on{background:var(--card);color:var(--fg);box-shadow:0 1px 0 var(--line)}
+.zone:not([data-role=plus]){cursor:pointer}.zone.sel{filter:drop-shadow(0 0 8px #ffd56b)}
+.ap{position:fixed;z-index:30;right:14px;top:64px;bottom:14px;width:400px;max-width:calc(100vw - 28px);display:flex;flex-direction:column;background:var(--card);border:3px solid var(--line);border-radius:20px;box-shadow:0 10px 40px #0005;padding:12px;gap:8px;animation:pop .25s}
+.ap[hidden]{display:none}
+@media(max-width:640px){.ap{left:0;right:0;bottom:0;top:auto;height:82vh;width:auto;max-width:none;border-radius:20px 20px 0 0;padding-bottom:max(12px,env(safe-area-inset-bottom))}}
+.aph{display:flex;justify-content:space-between;align-items:center;gap:8px}.apnow{font-size:12px;color:var(--mute)}.apnow b{color:var(--fg)}
+.feed{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px;padding:4px 2px;min-height:80px}
+.feed>div{font-size:13px;line-height:1.4;word-break:break-word}
+.f-text{background:var(--bg2);border-radius:12px 12px 12px 4px;padding:7px 10px;max-width:92%}
+.f-reply{background:#ffe7bf;color:#3a2a1a;border-radius:12px 12px 12px 4px;padding:7px 10px;max-width:92%;border:2px solid #f0a020}
+.f-user{align-self:flex-end;background:linear-gradient(var(--acc),var(--acc2));color:#fff;border-radius:12px 12px 4px 12px;padding:7px 10px;max-width:88%}
+.f-tool{color:var(--mute);font-size:12px!important;font-family:ui-monospace,Menlo,monospace}.f-tool.ch{color:var(--ok)}
+.f-task{font-weight:700;border-top:1px dashed var(--line);padding-top:8px;margin-top:4px}.f-end{color:var(--ok);font-size:12px!important}.f-err{color:var(--bad)}
+.f-shot img{max-width:150px;max-height:110px;border-radius:10px;border:2px solid var(--line);cursor:zoom-in;display:block}
+.apchat{display:flex;gap:8px}.apchat[hidden],#aphist[hidden]{display:none}.apchat input{flex:1}
+details summary{cursor:pointer;font-size:12px;color:var(--mute)}#aphistbody{font-size:12px;max-height:120px;overflow:auto;margin-top:4px}
+#zoom{display:none;position:fixed;inset:0;z-index:50;background:#000c;align-items:center;justify-content:center;padding:16px}#zoom img{max-width:100%;max-height:100%;border-radius:10px}
+.rc{cursor:pointer}.rc:hover{border-color:var(--acc)}
+
+/* ===== character rig: whole-body motion (rig → torso → head, arms with elbows) ===== */
+.rig,.torso,.head,.ua,.fa,.legL,.legR,.stubL,.stubR{transform-box:view-box}
+.rig{transform-origin:0 12px;animation:rigIdle var(--per,7s) ease-in-out var(--dl,0s) infinite}
+@keyframes rigIdle{0%,100%{transform:translateY(0) rotate(0)}25%{transform:translateY(-.9px) rotate(-.8deg)}55%{transform:translateY(.4px) rotate(.9deg)}80%{transform:translateY(-.5px) rotate(-.3deg)}}
+.torso{transform-origin:0 12px;animation:breathe 3.8s ease-in-out var(--dl,0s) infinite}
+@keyframes breathe{50%{transform:scale(1.012,1.022)}}
+.head{transform-origin:0 -52px;animation:look calc(var(--per,7s)*1.6) ease-in-out var(--dl,0s) infinite}
+@keyframes look{0%,100%{transform:rotate(0) translateX(0)}18%{transform:rotate(-3deg) translateX(-1px)}40%{transform:rotate(2deg) translateX(1px)}62%{transform:rotate(0)}78%{transform:rotate(3.5deg) translateX(1.2px)}}
+.eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.6s var(--dl,0s) infinite}
+@keyframes blink{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+.armL .ua{transform-origin:-27px -38px}.armL .fa{transform-origin:-37px -6px}.armR .ua{transform-origin:27px -38px}.armR .fa{transform-origin:37px -6px}
+.legs{opacity:0}.legL{transform-origin:-10px 12px}.legR{transform-origin:10px 12px}.stubL{transform-origin:-32px -36px}.stubR{transform-origin:32px -36px}
+/* working: lean into the screen, head scans, elbows and wrists type */
+.st-working .rig{animation:rigWork 1.2s ease-in-out infinite}
+@keyframes rigWork{0%,100%{transform:translateY(1px) rotate(1.6deg)}50%{transform:translateY(.2px) rotate(2.8deg)}}
+.st-working .head{animation:headWork 2.6s ease-in-out infinite}
+@keyframes headWork{0%,100%{transform:rotate(3deg) translateX(1.5px)}35%{transform:rotate(5deg) translateX(2.4px)}60%{transform:rotate(1deg) translateX(1px)}80%{transform:rotate(4deg) translateX(2px)}}
+.st-working .armL .ua{animation:uaL .42s ease-in-out infinite alternate}.st-working .armR .ua{animation:uaR .37s ease-in-out .1s infinite alternate}
+.st-working .armL .fa{animation:faL .21s ease-in-out infinite alternate}.st-working .armR .fa{animation:faR .19s ease-in-out .05s infinite alternate}
+@keyframes uaL{from{transform:rotate(-2deg)}to{transform:rotate(3deg)}}@keyframes uaR{from{transform:rotate(2deg)}to{transform:rotate(-3deg)}}
+@keyframes faL{from{transform:rotate(-5deg)}to{transform:rotate(7deg)}}@keyframes faR{from{transform:rotate(5deg)}to{transform:rotate(-7deg)}}
+/* idle: every person has their own habit */
+.st-idle.g-boss .rig,.st-done.g-boss .rig{animation:leanBack 13s ease-in-out infinite}
+@keyframes leanBack{0%,28%,72%,100%{transform:rotate(0) translateY(0)}38%,62%{transform:rotate(-3deg) translateY(2px)}}
+.st-idle.g-boss .armR .fa{animation:tap 13s ease-in-out infinite}
+@keyframes tap{0%,52%,100%{transform:rotate(0)}55%{transform:rotate(-10deg)}58%{transform:rotate(0)}61%{transform:rotate(-10deg)}64%{transform:rotate(0)}67%{transform:rotate(-10deg)}70%{transform:rotate(0)}}
+.st-idle.g-tie .armR .ua{animation:tie 11s ease-in-out infinite}.st-idle.g-tie .armR .fa{animation:tieF 11s ease-in-out infinite}
+@keyframes tie{0%,30%,60%,100%{transform:rotate(0)}38%,52%{transform:rotate(62deg)}}@keyframes tieF{0%,30%,60%,100%{transform:rotate(0)}38%,52%{transform:rotate(38deg)}}
+.st-idle.g-chin .armL .ua{animation:chin 12s ease-in-out infinite}.st-idle.g-chin .armL .fa{animation:chinF 12s ease-in-out infinite}.st-idle.g-chin .head{animation:tilt 12s ease-in-out infinite}
+@keyframes chin{0%,25%,70%,100%{transform:rotate(0)}35%,60%{transform:rotate(-72deg)}}@keyframes chinF{0%,25%,70%,100%{transform:rotate(0)}35%,60%{transform:rotate(-58deg)}}@keyframes tilt{0%,25%,70%,100%{transform:rotate(0)}35%,60%{transform:rotate(-6deg) translateX(-1px)}}
+.st-idle.g-pen .armR .fa{animation:pen 3.2s ease-in-out infinite}.st-idle.g-pen .rig{animation:leanFwd 9s ease-in-out infinite}
+@keyframes pen{0%,100%{transform:rotate(0)}10%{transform:rotate(-8deg)}20%{transform:rotate(3deg)}30%{transform:rotate(-8deg)}40%,90%{transform:rotate(0)}}@keyframes leanFwd{0%,40%,100%{transform:rotate(0)}55%,75%{transform:rotate(3deg) translateY(1px)}}
+.st-idle.g-page .armL .ua{animation:page 8s ease-in-out infinite}
+@keyframes page{0%,55%,100%{transform:rotate(0)}65%{transform:rotate(-14deg)}75%{transform:rotate(2deg)}}
+.st-idle.r-guest .head,.st-working.r-guest .head{animation:headWork 3s ease-in-out infinite}
+/* waiting: the boss drums his fingers and looks around; everyone else gets up and walks to the boss */
+.st-waiting.r-boss .armR .fa{animation:faR .3s ease-in-out infinite alternate}.st-waiting.r-boss .head{animation:look 3s ease-in-out infinite}
+.walker.st-waiting .legs{opacity:1}.walker.st-waiting .armsg{opacity:0}
+.walker.st-waiting .rig{animation:walkBob .46s ease-in-out infinite}
+@keyframes walkBob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-4px) rotate(2deg)}}
+.walker.st-waiting .legL{animation:legsw .46s ease-in-out infinite alternate}.walker.st-waiting .legR{animation:legsw .46s ease-in-out infinite alternate-reverse}
+@keyframes legsw{from{transform:rotate(-22deg)}to{transform:rotate(22deg)}}
+.walker.st-waiting .stubL{animation:armsw .46s ease-in-out infinite alternate}.walker.st-waiting .stubR{animation:armsw .46s ease-in-out infinite alternate-reverse}
+@keyframes armsw{from{transform:rotate(14deg)}to{transform:rotate(-14deg)}}
+/* done: relaxed and happy; blocked: shaking, arms up */
+.st-done .rig{animation:doneB 2.6s ease-in-out infinite}@keyframes doneB{50%{transform:translateY(-2px) rotate(-1deg)}}
+.st-blocked .rig{animation:shake .25s linear infinite}@keyframes shake{25%{transform:translateX(-1.5px)}75%{transform:translateX(1.5px)}}
+.st-blocked .armL .ua{transform:rotate(-38deg)}.st-blocked .armR .ua{transform:rotate(38deg)}
+
+/* hallway + transitions */
+.hint{font-size:12px;color:var(--mute);margin:2px 0 8px}
+.scene.hall{background:#1c2842}.hallwrap,#hallscene{transition:transform .25s cubic-bezier(.5,0,.8,.4),opacity .25s}
+#hallscene.go{transform:scale(2.6);opacity:0}
+.enter{animation:enterIn .32s ease-out}@keyframes enterIn{from{opacity:0;transform:scale(.94)}}
+.door{cursor:pointer;outline:none}.door .leaf{transition:transform .25s;transform-box:fill-box;transform-origin:left center}
+.door:hover .leaf,.door:focus-visible .leaf{transform:scaleX(.82)}.door:hover .dglow,.door:focus-visible .dglow{opacity:.85}.door .dglow{transition:opacity .25s}
+.door.question .slight,.door.working .slight{animation:blinkL 1.4s ease-in-out infinite}@keyframes blinkL{50%{opacity:.45}}
+.door.question .dbadge{animation:hop 1s ease-in-out infinite alternate}
+.sugg{display:flex;flex-direction:column;gap:6px;max-height:210px;overflow:auto}.sg{text-align:left;font-weight:500}.sg .act{font-size:11px;color:var(--mute)}
+.rc.guest{border-style:dashed}
+.provider-card{border:2px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0;background:var(--card)}.provider-card summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none}.provider-card summary::-webkit-details-marker{display:none}.provider-card summary::after{content:'▾';margin-left:6px;color:var(--mute)}.provider-card[open] summary::after{content:'▴'}
+.pst{margin-left:auto;font-size:12px;color:var(--ok)}.pst.bad{color:var(--bad);font-weight:700}.relink{font-size:17px;cursor:pointer;color:var(--bad);padding:0 4px}.relink:hover{transform:rotate(90deg)}
+.pbody{margin-top:10px;display:flex;flex-direction:column;gap:10px;text-align:left;align-items:stretch}.pbody .limit{width:100%}.pbody .dialog-description,.pbody form,.pbody label{text-align:left!important;margin:0;max-width:none}.limit div span{color:var(--mute)}.limit progress{display:block;margin:4px 0 2px}.limit div{display:flex;justify-content:space-between;gap:12px;font-size:13px;width:100%}.limit progress{width:100%;height:8px}.limit small{color:var(--mute);font-size:11px}.tokenform label{font-size:12px}.icon-btn{align-self:flex-start;padding:6px 12px}
+.pdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;background:var(--bad)}.pdot.ok{background:var(--ok)}
+.feedbar{display:flex;align-items:center;gap:10px;justify-content:space-between}.feedbar button{padding:5px 11px;font-size:12px}.detail-toggle{font-size:12px;color:var(--mute);display:flex;gap:5px;align-items:center;margin:0}.detail-toggle input{width:auto}
+.feed-closed{display:flex;flex-direction:column;align-items:center;gap:10px;padding:28px 10px;text-align:center;color:var(--mute);font-size:13px}
+.brief{max-width:600px}.brief-head{display:flex;justify-content:space-between;align-items:flex-start}.brief-head h3{margin:2px 0 12px;font-size:20px}
+.kinds{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}.kinds button{background:var(--card);color:var(--fg);border:1.5px solid var(--line);box-shadow:none;padding:6px 11px;font-size:13px;font-weight:600;border-radius:99px}.kinds button.on{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 16%,var(--card))}
+.brief textarea#goal{font-size:15px;line-height:1.45;min-height:120px;resize:vertical}
+.depth{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}.depth>span{font-size:13px;font-weight:600}.depth .seg button{font-size:12.5px}
+.depth-hint{font-size:12px;color:var(--mute);margin:6px 0 0}.brief-more{margin-top:12px}.brief-more summary{font-size:13px;cursor:pointer;color:var(--mute)}.brief-more textarea{margin-top:8px}
+.brief-foot{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px;flex-wrap:wrap}.brief-foot p{font-size:12px;color:var(--mute);margin:0;flex:1 1 220px}.brief-foot div{display:flex;gap:8px}
+table.usage{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 8px}table.usage th{text-align:left;color:var(--mute);font-weight:600;padding:4px 6px;border-bottom:1px solid var(--line)}table.usage td{padding:4px 6px;border-bottom:1px dashed var(--line)}table.usage tr.sum td{font-weight:700;border-bottom:0}.bad{color:var(--bad)}.umeta{font-size:12px;color:var(--mute)}
+.output-row{display:flex;align-items:center;gap:10px;width:100%;text-align:left}.output-row small{margin-left:auto;color:var(--mute);font-weight:400;font-size:12px}.output-row.primary{border-color:var(--acc)}#outputdlg{max-width:min(980px,calc(100vw - 32px));width:100%}
+/* roster */
+.roster{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-top:12px}
+.rc{display:flex;gap:8px;align-items:flex-start;background:var(--card);border:2px solid var(--line);border-radius:14px;padding:8px 10px;min-width:0}
+.rc .dot{width:11px;height:11px;border-radius:50%;margin-top:5px;flex:none;background:var(--line)}
+.rc.working .dot{background:var(--ok)}.rc.waiting .dot{background:var(--warn)}.rc.blocked .dot{background:var(--bad)}.rc.done .dot{background:var(--blue)}
+.rc b{font-size:13px}.rc .act{font-size:12px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rc>div{min-width:0}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.agent-routing{padding:10px 16px;border-bottom:1px solid var(--line);display:grid;gap:6px;flex-shrink:0}.agent-routing[hidden]{display:none}.agent-routing summary{cursor:pointer;min-height:44px;align-content:center}.agent-routing form{display:grid;gap:6px;max-height:35vh;overflow:auto}.agent-routing label{margin:0;font-size:12px}.agent-routing select,.agent-routing button{min-height:44px;width:100%;min-width:0}.agent-routing small{font-size:12px;color:var(--mute)}
+</style>
+<link rel="stylesheet" href="/game.css">
+<link rel="stylesheet" href="/pro.css">
+<style>
+/* three-column project workspace: team | boss | outputs */
+header,main{max-width:1480px!important}
+.update-btn{margin-left:auto;display:inline-flex;align-items:center;gap:8px;background:var(--claude,#d97757);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;animation:upglow 2.2s ease-in-out infinite}
+.update-btn::before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
+.update-btn+#demo-btn{margin-left:0}.update-btn[hidden]{display:none}.update-btn:disabled{opacity:.7;animation:none;cursor:wait}
+@keyframes upglow{0%,100%{box-shadow:0 0 0 0 rgba(217,119,87,.55)}50%{box-shadow:0 0 0 8px rgba(217,119,87,0)}}
+@media (prefers-reduced-motion:reduce){.update-btn{animation:none}}
+.ws-stage{margin-bottom:16px}#ws-scene{position:relative}.showing #ws-actions,.showing .apchat{display:none}
+.demo-cap{position:absolute;left:50%;top:52px;transform:translateX(-50%);width:max-content;max-width:min(620px,80%);background:rgba(17,19,24,.84);color:#fff;padding:10px 14px 11px;border-radius:12px;font-size:14px;line-height:1.4;z-index:5;box-shadow:0 8px 24px rgba(0,0,0,.25);pointer-events:none;transition:opacity .3s}
+.demo-cap small{display:block;color:#d97757;font-size:10.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;margin-bottom:2px}
+.demo-cap .bar{height:3px;border-radius:2px;background:rgba(255,255,255,.18);margin-top:8px;overflow:hidden}.demo-cap .bar i{display:block;height:100%;background:#d97757;width:0}
+.ws-grid.ws3{grid-template-columns:minmax(0,1fr) minmax(260px,330px)!important}
+.stage-seg{padding:2px}.stage-seg button{padding:5px 12px;font-size:12.5px;min-height:0}.stage-seg .count{font-weight:500;color:var(--mute);margin-left:2px}
+.stage-add{margin-left:auto}
+#officeview .team-view{height:clamp(240px,34vh,380px);overflow:auto;padding:12px 14px;border-top:1px solid var(--line);overscroll-behavior:contain}
+#officeview .team-view[hidden]{display:none}
+.team-grid{display:grid!important;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:10px!important;align-content:start}
+.team-grid .member{border:1px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;min-height:72px;align-items:start}
+.team-grid .member:hover{border-color:var(--acc);background:var(--card)}
+.team-grid .member{grid-template-columns:auto minmax(0,1fr)!important;grid-template-areas:"av who" "av what" "av chip"!important;row-gap:2px}
+.team-grid .member .av-wrap{grid-area:av;align-self:start}
+.team-grid .member .who{flex-direction:column;gap:0!important;align-items:flex-start!important}
+.team-grid .member .who b{max-width:100%!important;font-size:13.5px}
+.team-grid .member .who small{display:block!important;color:var(--mute);max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.team-grid .member .chip{justify-self:start;margin-top:4px}
+.team-grid .member .what{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+#officeview .ws-scene{overflow-x:auto}#officeview .ws-scene>summary{cursor:default}#officeview .ws-scene>summary::before{display:none!important}
+#officeview .scene{height:auto!important;min-width:760px;background:transparent!important;line-height:0;padding:6px 8px 4px}
+#officeview .team-view{height:auto!important;aspect-ratio:2112/628;min-height:250px}
+.library-heading .eyebrow,.eyebrow,.connection,.project-state{color:var(--claude)!important}
+.library-heading p,.dialog-description{color:var(--mute)!important}
+.project-card{background:linear-gradient(160deg,#2b2e35,#202227)!important;border:1px solid #33363e!important;box-shadow:0 1px 2px #0003,0 10px 24px #0000001f!important;transition:transform .18s ease,box-shadow .18s ease!important}
+.project-card:hover{transform:scale(1.015);border-color:#33363e!important;background:linear-gradient(160deg,#2b2e35,#202227)!important;box-shadow:0 2px 4px #0003,0 16px 34px #00000029!important}
+.project-card .project-open b{color:#f4f4f6!important}.project-card .project-open p{color:#b6bbc5!important}
+.project-card-footer{color:#9aa0ab!important;border-color:#3a3d45!important}.project-card .quiet{color:#c9cdd5!important}.project-card .quiet:hover{background:#ffffff14!important}
+.project-open:hover,.project-open:focus-visible{background:transparent!important;color:inherit!important}
+.boss-compose button,#boss-send,.apchat button,#retrybtn{background:var(--send)!important;color:var(--send-fg)!important;border-color:transparent!important}.boss-compose button:hover,#boss-send:hover,.apchat button:hover{filter:brightness(.96)}.boss-compose textarea:focus{border-color:var(--acc)!important}
+.feats{display:grid;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.feat{display:flex;align-items:center;gap:12px}.feat>div{flex:1}.feat b{font-size:13px}.feat .dialog-description{margin:2px 0 0;font-size:12px}
+.subcard{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:4px;background:var(--bg2)}.subcard summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none}.subcard summary::-webkit-details-marker{display:none}.subcard summary small{color:var(--mute);font-size:11.5px}.subcard summary::after{content:'▾';margin-left:6px;color:var(--mute)}.subcard[open] summary::after{content:'▴'}.subcard .pst{font-size:12px}.feat .pst{margin-left:0;white-space:nowrap}
+.howto{margin-top:4px;text-align:left;align-self:stretch}.howto summary{font-size:12.5px;color:var(--acc);cursor:pointer}.howto ol{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--mute)}.howto li{margin:3px 0}.howto code{font-size:11.5px;background:var(--bg2);padding:1px 5px;border-radius:5px;color:var(--fg)}
+.avatar.portrait{background-color:var(--bg2);background-repeat:no-repeat;background-size:cover;background-position:center}
+.project-open:hover b{color:#f4f4f6!important}
+.apchat input,select,input,textarea{background:var(--card)!important;color:var(--fg)!important;border-color:var(--line2)!important}
+#ap-portrait{width:56px!important;height:56px!important;border-radius:50%!important;overflow:hidden;background:none!important;margin-right:12px}#ap-portrait .avatar{display:block;width:56px;height:56px;border-radius:50%}
+@media(min-width:641px){.ap{left:50%!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(560px,calc(100vw - 48px))!important;max-width:none!important;height:min(80vh,760px)!important;box-shadow:0 0 0 100vmax #0b0d1259,0 24px 60px #0006!important}}
+@media(max-width:820px){.ws-grid.ws3{grid-template-columns:1fr!important}.ws-right{position:static}#officeview .team-view{aspect-ratio:auto;height:300px!important}.team-grid{grid-template-columns:1fr 1fr!important}.ws-scene .office-location{display:none!important}.stage-add{white-space:nowrap;padding:4px 8px}}
+.limit-veil{position:fixed;inset:0;z-index:25;display:grid;place-items:center;padding:20px;background:color-mix(in srgb,var(--bg) 55%,transparent);backdrop-filter:grayscale(1) blur(1.5px);-webkit-backdrop-filter:grayscale(1) blur(1.5px)}
+.limit-veil[hidden]{display:none}
+.limit-veil .card{max-width:420px;text-align:center;padding:24px}
+.limit-veil h3{margin:0 0 6px;font-size:19px}.limit-veil .cd{font-size:28px;font-weight:700;font-variant-numeric:tabular-nums;margin:12px 0 2px}
+body.limited #officeview{filter:grayscale(1);opacity:.6}
+.library-empty{background:var(--card)!important;border-color:var(--line2)!important;color:var(--mute)!important}.library-empty b{color:var(--fg)!important}.library-empty p{color:var(--mute)!important}
+.project-open b{color:var(--fg)!important}.project-open p{color:var(--mute)!important}
+</style>
+<script type="module" src="/office-suits.js"></script>
+</head>
+<body>
+<header>
+  <button id="back" class="ghost" onclick="goHall()" hidden style="padding:6px 12px">← Projekty</button>
+  <h1><span>OFFICE / 01</span><b id="crumb">Agent Office</b></h1>
+  <button class="update-btn" id="update-btn" onclick="doUpdate()" hidden></button>
+  <button class="ghost" id="demo-btn" onclick="toggleShow()">Ukázka animací</button>
+  <button class="ghost" id="home-models" onclick="openProviders()">Připojení</button>
+  <button id="newgoal" class="ghost" onclick="openNew()" hidden>Zadání projektu</button>
+</header>
+<main>
+  <div id="health"></div>
+  <section id="hallview">
+    <div class="library-heading"><div><p class="eyebrow">TVŮJ PRACOVNÍ PROSTOR</p><h2>Projekty</h2><p>Jeden projekt. Vlastní repozitář. Vlastní kancelář.</p></div><button onclick="openRepoDlg()">+ Nový projekt</button></div>
+    <div class="library-toolbar"><label class="sr-only" for="project-search">Hledat projekt</label><input id="project-search" placeholder="Hledat podle názvu nebo zadání…" oninput="renderHall()"><select id="project-filter" aria-label="Zobrazení projektů" onchange="renderHall()"><option value="active">Aktivní projekty</option><option value="archived">Archiv</option></select><span class="connection" id="connection"></span></div>
+    <div class="project-library" id="hall-list"></div>
+    <details id="connected-projects"><summary>Propojené pracovní složky z Claude Code</summary><div class="project-library" id="external-list"></div></details>
+    <div id="hallscene" hidden></div>
+  </section>
+  <section id="officeview" hidden>
+    <div class="ws-head">
+      <div class="ws-title"><span class="pill" id="ws-status">Připraveno</span><p id="ws-goal"></p></div>
+      <div class="ws-actions" id="ws-actions"></div>
+    </div>
+    <ol class="ws-steps" id="ws-steps" aria-label="Postup projektu"></ol>
+    <div class="ws-stage">
+        <details class="panel ws-scene" id="ws-scene" open><summary onclick="if(!event.target.closest('button'))event.preventDefault()"><span class="seg stage-seg" role="tablist" aria-label="Zobrazení"><button type="button" role="tab" data-v="office" onclick="event.preventDefault();setStageView('office')">Kancelář</button><button type="button" role="tab" data-v="team" onclick="event.preventDefault();setStageView('team')">Tým <span id="team-count" class="count"></span></button></span><span class="office-location"><span class="live-dot"></span><span id="office-status">Kancelář šéfa</span></span><button type="button" class="quiet stage-add" onclick="event.preventDefault();openRoleDlg()">+ Přidat roli</button></summary>
+          <div class="scene" id="scene" aria-label="Kancelář agentů"></div>
+          <div class="team-view" id="team-view" hidden><div id="ws-team" class="ws-team team-grid"></div></div>
+        </details>
+    </div>
+    <div class="ws-grid ws3">
+      <div class="ws-col ws-main">
+        <section class="panel boss-dock" id="boss-dock" aria-label="Rozhovor se šéfem">
+      <div class="boss-heading"><button class="boss-name" onclick="openAgent('boss')">Harvey Specter <span>Šéf projektu</span></button><button class="quiet" id="login-nudge" onclick="openProviders()" hidden>Připojit model</button></div>
+      <div id="boss-reply" class="boss-reply">Jsem tady. Co má tým zařídit?</div><button id="boss-summary" class="ghost" hidden onclick="openOutput('deliverables/Souhrn.html')" style="margin-top:8px;padding:6px 12px">★ Zobrazit souhrn zakázky</button>
+      <div id="inbox"></div>
+      <form class="boss-compose" onsubmit="instructBoss(event)"><label class="sr-only" for="boss-input">Pokyn pro šéfa</label><textarea id="boss-input" rows="1" placeholder="Řekni šéfovi, co potřebuješ…"></textarea><button id="boss-send" aria-label="Poslat šéfovi">↑</button></form>
+      <div id="boss-error" role="status"></div>
+    </section>
+        <section class="panel"><div class="panel-head"><h3>Úkoly</h3><span class="count" id="ws-board-count"></span></div><div id="ws-board" class="ws-board"></div></section>
+      </div>
+      <div class="ws-col ws-right">
+        <section class="panel"><div class="panel-head"><h3>Výstupy</h3><button class="quiet" onclick="openAllOutputs()">Všechny</button></div><div id="ws-outputs" class="ws-outputs"></div></section>
+        
+      </div>
+    </div>
+
+    <section id="project-details" class="project-details" hidden><div class="details-heading"><b>Průběh projektu</b><button class="quiet" onclick="toggleProjectDetails()" aria-label="Zavřít průběh">✕</button></div><div class="bar" id="bar"></div><h2>Úkoly</h2><div id="tasks"></div><h2>Aktivita</h2><div class="log" id="log"></div><div id="final"></div><div id="usage"></div><div id="hist"></div></section>
+  </section>
+</main>
+<div class="limit-veil" id="limit-veil" hidden></div>
+
+<aside id="ap" class="ap" hidden>
+  <div class="aph"><div id="ap-portrait" class="ap-portrait" hidden></div><div><b id="apname"></b> <span class="chip" id="apmeta"></span></div><button class="ghost" style="padding:4px 10px" onclick="closeAgent()" aria-label="Zavřít">✕</button></div>
+  <div class="apnow" id="apnow"></div><div class="route-reason" id="aproute"></div>
+  <details id="agent-routing" class="agent-routing"><summary>Model a intenzita tohoto agenta</summary><form onsubmit="saveAgentRouting(event)">
+    <label for="agent-model">Model tohoto agenta</label><select id="agent-model"></select>
+    <label for="agent-effort">Intenzita práce</label><select id="agent-effort"><option value="auto">Automaticky (Boss rozhodne)</option><option value="low">Nízká</option><option value="medium">Střední</option><option value="high">Vysoká</option><option value="xhigh">Velmi vysoká</option><option value="max">Maximální</option><option value="ultra">Ultra (Codex)</option></select>
+    <button id="agent-routing-save" class="ghost">Uložit pro tohoto agenta</button><small id="agent-routing-note" role="status">Platí od dalšího kroku v této kanceláři.</small>
+  </form></details>
+  <div class="feedbar"><button class="ghost" id="sumbtn" onclick="summarize()">✦ Shrnout lidsky</button><label class="detail-toggle"><input type="checkbox" id="feeddetail" onchange="renderFeed()"> Podrobnosti</label></div><div id="apsum" class="f-reply" hidden></div>
+  <div class="feed" id="apfeed"></div>
+  <details id="aphist"><summary>Historie úkolů</summary><div id="aphistbody"></div></details>
+  <form class="apchat" id="apform" onsubmit="sendMsg(event)"><input id="apmsg" autocomplete="off" placeholder=""><button>Poslat</button></form>
+</aside>
+<div id="zoom" onclick="this.style.display='none'"><img id="zoomimg"></div>
+
+<dialog id="outputdlg"><div class="details-heading"><h3 id="output-title">Výstupy projektu</h3><button class="quiet" onclick="$('outputdlg').close()" aria-label="Zavřít výstup">✕</button></div><div id="output-preview"></div><button id="output-open" onclick="openOutputOnMac()">Otevřít v Macu ↗</button></dialog>
+<dialog id="dlg" class="brief"><form method="dialog" onsubmit="start();return false">
+  <div class="brief-head"><div><p class="eyebrow">ZADÁNÍ PRO ŠÉFA</p><h3>Co má tým udělat?</h3></div><button type="button" class="quiet" onclick="dlg.close()" aria-label="Zavřít">✕</button></div>
+  <div class="kinds" id="kinds">
+    <button type="button" data-k="web">🌐 Web</button><button type="button" data-k="doc">📄 Dokument</button><button type="button" data-k="deck">📊 Prezentace</button><button type="button" data-k="research">🔎 Průzkum</button><button type="button" data-k="code">⌨️ Kód</button><button type="button" data-k="marketing">📣 Marketing</button><button type="button" data-k="other">✳️ Jiné</button>
+  </div>
+  <label>Délka výsledné zprávy <select id="reportLength"><option value="brief">Stručná</option><option value="standard" selected>Přehledná</option><option value="full">Podrobná</option></select></label><textarea id="goal" rows="5" placeholder="Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám."></textarea>
+  <div class="depth"><span>Jak důkladně</span><div class="seg" id="depth"><button type="button" data-d="fast">Rychle</button><button type="button" data-d="std" class="on">Pečlivě</button><button type="button" data-d="max">Do posledního detailu</button></div></div>
+  <p class="depth-hint" id="depth-hint"></p>
+  <details class="brief-more"><summary>Přidat odkazy, podklady nebo poznámky</summary><textarea id="notes" rows="3" placeholder="Odkazy na weby, cesty k souborům, co se ti líbí nebo nelíbí, termín…"></textarea></details>
+  <select id="preset" hidden></select><input id="maxRounds" type="hidden"><input id="maxRuns" type="hidden"><input id="targetScore" type="hidden">
+  <div class="brief-foot"><p id="repoline"></p><div><button type="button" class="ghost" onclick="dlg.close()">Zrušit</button><button type="submit">Předat šéfovi →</button></div></div>
+</form></dialog>
+
+<dialog id="roledlg"><form method="dialog" onsubmit="return false">
+  <h3 style="margin:0 0 4px">Přidat roli do kanceláře</h3>
+  <div style="font-size:12px;color:var(--mute)">Boss s ní bude počítat v plánu. Projekt se přidává v přehledu projektů.</div>
+  <label>Vzhled zaměstnance</label><select id="rchar"></select><input id="rname" placeholder="Vlastní jméno" style="margin-top:6px" hidden>
+  <label>Název role</label><input id="rtitle" placeholder="Např. Finance, Právník, Copywriter, Analytik">
+  <label>Za co odpovídá</label><textarea id="rresp" rows="3" placeholder="Např. finanční model a čísla v pitch decku, kontrola, že vše sedí"></textarea>
+  <div class="two" style="grid-template-columns:1fr 1fr"><div><label>Model</label><select id="rmodel"><option value="auto">Nechat na Bossovi</option><option>haiku</option><option>sonnet</option><option>opus</option></select></div><div><label>Effort</label><select id="reffort"><option value="auto">Nechat na Bossovi</option><option>low</option><option>medium</option><option>high</option><option>xhigh</option></select></div></div>
+  <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end"><button type="button" class="ghost" onclick="roledlg.close()">Zrušit</button><button onclick="addRole()">Přidat</button></div>
+</form></dialog>
+
+<dialog id="rdlg"><form method="dialog" onsubmit="createProjectOffice();return false">
+  <h3 style="margin:0 0 8px">Nový projekt</h3>
+  <p class="dialog-description">Projekt dostane vlastní kancelář i repozitář. Všechno založím za tebe.</p>
+  <label for="project-name">Název projektu</label><input id="project-name" placeholder="Např. Pitch pro klienta" maxlength="80" autocomplete="off">
+  <div id="create-error" class="form-error" role="status"></div>
+  <div class="dialog-buttons"><button type="button" class="ghost" onclick="rdlg.close()">Zrušit</button><button type="submit" id="create-office">Založit projekt</button></div>
+  <details class="connect-existing"><summary>Připojit existující projekt</summary>
+    <div id="pick" style="margin:12px 0 4px"><button class="ghost" id="pickbtn" onclick="pickFolder()">Vybrat složku…</button></div>
+    <label for="rpath">Cesta ke složce</label><div style="display:flex;gap:8px"><input id="rpath" placeholder="/Users/ty/projekt"><button onclick="addRepoPath($('rpath').value)">Připojit</button></div>
+    <label>Nedávné projekty</label><div id="sugg" class="sugg"></div>
+  </details>
+</form></dialog>
+<dialog id="sessionsdlg"><div class="details-heading"><h3>Claude Code</h3><button class="quiet" onclick="$('sessionsdlg').close()" aria-label="Zavřít">✕</button></div><div id="session-list"></div></dialog>
+
+<dialog id="providersdlg"><div class="details-heading"><div><h3>Připojení</h3><p class="dialog-description">Boss používá Claude Opus, ostatním agentům vybírá model sám. Model konkrétního agenta změníš kliknutím na něj.</p></div><button class="quiet" onclick="$('providersdlg').close()" aria-label="Zavřít">✕</button></div>
+<div id="provider-list"></div>
+
+<div id="legacy-routing" hidden></div><div id="provider-models" hidden></div><p class="dialog-description" id="provider-note"></p></dialog>
+<dialog id="officedlg"><div class="details-heading"><h3>Projekt a repozitář</h3><button class="quiet" onclick="$('officedlg').close()" aria-label="Zavřít">✕</button></div><label for="office-name">Název projektu</label><input id="office-name" maxlength="80"><label for="office-description">O čem projekt je</label><textarea id="office-description" rows="2"></textarea><div id="office-paths"></div><p class="dialog-description">Název mění pouze označení kanceláře. Soubory ani repozitář se nepřesouvají.</p><div id="office-error" class="form-error" role="status"></div><div class="dialog-buttons"><button class="ghost" id="office-archive" onclick="archiveOffice()">Archivovat</button><button onclick="saveOffice()">Uložit</button></div></dialog>
+<script src="/art.js"></script>
+<script>
+const T=new URLSearchParams(location.search).get('t')||localStorage.t;try{localStorage.t=T}catch{}
+const Q=new URLSearchParams(location.search);
+const api=(p,o={})=>fetch(p+(p.includes('?')?'&':'?')+'t='+T,{headers:{'content-type':'application/json'},...o}).then(r=>r.json());
+let S={repos:[],projects:[],presets:[],cwd:''},view='hall',curRepo=null,cur=null,openRole=null,feedCache=[],panelProject=null,guests=[];const $=id=>document.getElementById(id);
+const dark=matchMedia('(prefers-color-scheme: dark)');const themeKey=()=>dark.matches?'night':'day';
+const isTall=()=>matchMedia('(max-width:640px)').matches;
+const repoOf=id=>S.repos.find(r=>r.id===id);
+const proj=()=>S.projects.find(x=>x.id===cur);
+function agents(){const p=proj(),r=repoOf(curRepo);const extra=(p?.roles?.length?p.roles:(r?.roles||[]));const seen=new Set(BASE_AGENTS.map(a=>a.id));
+  return [...BASE_AGENTS,...extra.filter(x=>!seen.has(x.id)&&seen.add(x.id)).map(x=>({id:x.id,char:x.character&&x.character!=='guest'&&window.OfficeAvatars?.info(x.character)?x.character:(window.OfficeAvatars?.face(x.id)||'guest'),name:x.name||x.title,title:x.title,manual:x.manual}))]}
+const agentInfo=id=>{const a=id==='boss'?BOSS_AGENT:agents().find(a=>a.id===id)||{id,name:id,title:''};return {...a,name:window.OfficeAvatars?.name(a.char,a.name)||a.name}};
+
+/* ---------- scene glue ---------- */
+let sceneSig='';
+let LAY=null;
+function buildScene(){
+  const ag=agents();const sig=curRepo+ag.map(a=>a.id+a.char+a.name).join()+guests.map(g=>g.id).join();
+  if(!window.OfficeGame)return;
+  if(sig!==sceneSig){sceneSig=sig;OfficeGame.office(ag,guests)}
+}
+function updateScene(p){if(window.OfficeGame&&view==='office')OfficeGame.update(p,guests)}
+
+function rethemed(){sceneSig='';hallSig='';render()}
+dark.addEventListener('change',rethemed);matchMedia('(max-width:640px)').addEventListener('change',rethemed);
+$('scene').addEventListener('click',e=>{const z=e.target.closest('[data-role]');if(!z||z.dataset.role==='plus')return;z.dataset.role==='guest'?openGuest():openAgent(z.dataset.role)});
+
+/* ---------- hallway ---------- */
+let hallSig='';
+function renderHall(){
+  const query=($('project-search').value||'').trim().toLocaleLowerCase('cs-CZ'),archived=$('project-filter').value==='archived';
+  const matches=S.repos.filter(r=>!!r.archived===archived&&`${r.name} ${r.goal||''} ${r.description||''}`.toLocaleLowerCase('cs-CZ').includes(query));
+  const projects=matches.filter(r=>r.managed||r.projectId||r.source!=='claude'),external=matches.filter(r=>!projects.includes(r));
+  const status=r=>r.archived?'Archivováno':r.light==='working'?'Pracuje':r.waiting?`${r.waiting} otázek`:r.status==='done'?'Hotovo':'Připraveno';
+  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state state-${r.light}">${esc(status(r))}</span><button class="quiet" onclick="manageOffice('${r.id}')" aria-label="Spravovat projekt ${esc(r.name)}">•••</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button><div class="project-card-footer"><span>${r.git?'Git repozitář':'Pracovní složka'}${r.totalTasks?` · ${r.completedTasks}/${r.totalTasks} úkolů`:''}</span><span>${r.sessions?`${r.sessions} sessions`:''}</span></div></article>`;
+  $('hall-list').innerHTML=projects.length?projects.map(card).join(''):`<div class="library-empty"><b>${archived?'Archiv je prázdný':'Vytvoř projekt a otevři jeho kancelář'}</b><p>${query?'Žádný projekt neodpovídá hledání.':'Projekt si sám založí vlastní repozitář. Existující práce z Claude Code je oddělená níže.'}</p>${!archived&&!query?'<button onclick="openRepoDlg()">+ Vytvořit projekt</button>':''}</div>`;
+  $('external-list').innerHTML=external.map(card).join('');$('connected-projects').hidden=!external.length;
+  $('connection').textContent=`${projects.length} projektů · ${external.length} propojených složek`;
+  // Projects use cards; no hallway renderer is allocated.
+}
+
+$('hallscene').addEventListener('click',e=>{const d=e.target.closest('.door');if(!d)return;
+  if(d.dataset.add){openRepoDlg();return}
+  const box=d.getBoundingClientRect(),w=$('hallscene').getBoundingClientRect();
+  $('hallscene').style.transformOrigin=`${box.left+box.width/2-w.left}px ${box.top+box.height/2-w.top}px`;
+  $('hallscene').classList.add('go');setTimeout(()=>{enterRepo(d.dataset.repo);$('hallscene').classList.remove('go')},230)});
+$('hallscene').addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){const d=e.target.closest?.('.door');if(d)d.dispatchEvent(new MouseEvent('click',{bubbles:true}))}});
+function enterRepo(id){document.body.classList.remove('has-agent');curRepo=id;cur=repoOf(id)?.projectId||null;view='office';openRole=null;$('ap').hidden=true;if(!Q.get('demo'))guests=[];sceneSig='';
+  $('officeview').classList.remove('enter');void $('officeview').offsetWidth;$('officeview').classList.add('enter');render();pollGuests();window.scrollTo(0,0);$('project-details').hidden=true;}
+function goHall(){view='hall';$('project-details').hidden=true;closeAgent();curRepo=null;cur=null;hallSig='';$('hallview').classList.remove('enter');void $('hallview').offsetWidth;$('hallview').classList.add('enter');render();window.scrollTo(0,0)}
+
+/* ---------- render ---------- */
+const IC={play:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg>',pause:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg>',stop:'<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5"/></svg>',check:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.4 11.6 3.2 8.4l1.1-1.1 2.1 2.1 5.3-5.3 1.1 1.1z"/></svg>',dot:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>',ring:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',half:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3a5 5 0 0 1 0 10z"/></svg>',x:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.2 5.3 1.1-1.1L8 6.9l2.7-2.7 1.1 1.1L9.1 8l2.7 2.7-1.1 1.1L8 9.1l-2.7 2.7-1.1-1.1L6.9 8z"/></svg>',doc:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5.5L13 5v9.5H4z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 8h5M6 10.5h5" stroke="currentColor" stroke-width="1.2"/></svg>',star:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg>'};
+const STAT={running:'Pracuje',waiting_user:'Čeká na tebe',done:'Hotovo',partial:'Rozpracováno',error:'Chyba',stopped:'Zastaveno',paused:'Pozastaveno',interrupted:'Přerušeno',budget:'Došel rozpočet',limit:'Došel limit'};
+const STEPS=[['intake','Zadání'],['research','Rešerše'],['synthesis','Kritéria'],['plan','Plán'],['execute','Práce'],['verify','Kontrola'],['judge','Hodnocení'],['finish','Výsledek']];
+function avatarHtml(ch,name){const art=window.OfficeAvatars?.info(ch);if(art?.portrait)return `<span class="avatar portrait" style="background-image:url(${art.image})"></span>`;if(!art)return `<span class="avatar">${esc((name||'?').slice(0,1))}</span>`;const rows=2,col=art.index%art.columns,row=Math.floor(art.index/art.columns);return `<span class="avatar" style="background-image:url(${art.image});background-size:${art.columns*100}% ${rows*100}%;background-position:${art.columns>1?col/(art.columns-1)*100:0}% ${row/(rows-1)*100}%"></span>`}
+async function pauseProj(){const r=await api(`/api/projects/${cur}/pause`,{method:'POST',body:'{}'});if(r.error)alert(r.error)}
+function renderWorkspace(p){
+  const st=p?.status||'idle',active=st==='running'||st==='waiting_user'||st==='limit';
+  $('ws-status').textContent=p?(STAT[st]||st):'Připraveno';$('ws-status').className='pill s-'+(p?st:'idle');
+  $('ws-goal').textContent=p?.goal||'Zadej šéfovi první cíl.';
+  const canResume=p&&['error','partial','stopped','paused','interrupted','budget'].includes(st),canAccept=p&&['done','partial'].includes(st)&&!p.accepted;
+  $('ws-actions').innerHTML=`${active?`<button class="btn" onclick="pauseProj()">${IC.pause}Pozastavit</button><button class="btn danger" onclick="stop()">${IC.stop}Zastavit</button>`:''}${canResume?`<button class="btn primary" onclick="resumeProj()">${IC.play}Pokračovat</button>`:''}${canAccept?`<button class="btn" onclick="acceptProj()">${IC.check}Převzít</button>`:''}${p?.accepted?`<span class="pill s-done">Převzato</span>`:''}${!active?`<button class="btn ${p?'':'primary'}" onclick="openNew()">Nový cíl</button>`:''}<button class="btn" onclick="toggleProjectDetails()">Průběh a spotřeba</button><details class="more"><summary class="btn" aria-label="Další akce">⋯</summary><div class="menu"><button onclick="openProviders()">Připojení a limity</button><button onclick="manageOffice(curRepo)">Nastavení projektu</button><button onclick="openIn('codex')">Otevřít v Codexu</button><button onclick="openIn('claude')">Otevřít v Claude Code</button><button onclick="openSessions()">Hosté ve složce</button></div></details>`;
+  const cur_=STEPS.findIndex(s=>s[0]===p?.phase),doneAll=st==='done';
+  $('ws-steps').innerHTML=STEPS.map(([k,l],i)=>`<li class="${doneAll||i<cur_?'done':i===cur_&&p?(active?'now':'halt'):''}"><span>${i+1}</span>${l}</li>`).join('');
+  const must=(p?.checkpoint?.judged?.criteria||[]).filter(c=>c.level==='MUST');
+  // team
+  const SA={working:'Pracuje',waiting:'Čeká',blocked:'Zablokováno',done:'Hotovo',idle:'Volno'};
+  $('ws-team').innerHTML=[BOSS_AGENT,...agents()].map(a0=>{const ai=agentInfo(a0.id),a=p?.agents?.[a0.id]||{status:'idle'};return `<button class="member" onclick="openAgent('${a0.id}')"><span class="av-wrap">${avatarHtml(ai.char,ai.name)}<i class="sd s-${a.status}"></i></span><span class="who"><b>${esc(ai.name)}</b><small>${esc(ai.title)}</small></span><span class="what">${a.status==='working'?esc(a.task||a.activity||'pracuje'):SA[a.status]||''}</span>${a.model?`<span class="chip">${esc(String(a.model).replace(/^(claude|codex)\//,''))}</span>`:''}</button>`}).join('');
+  // board
+  const ts=p?.tasks||[],grp={running:[],pending:[],done:[],failed:[]};for(const t of ts)(grp[t.status]||grp.pending).push(t);
+  const row=t=>`<div class="task t-${t.status}"><span class="ti">${{running:IC.half,pending:IC.ring,done:IC.check,failed:IC.x}[t.status]||IC.ring}</span><span class="tt">${esc(t.title)}${t.critical?' <em title="Kritické – dvojí ověření">kritické</em>':''}</span><span class="tr">${esc(agentInfo(t.claimedBy||t.role).name||t.role)}</span></div>`;
+  $('ws-board-count').textContent=ts.length?`${grp.done.length}/${ts.length} hotovo${must.length?` · kritéria ${must.filter(c=>c.status==='PASS').length}/${must.length}`:''}`:'';
+  $('ws-board').innerHTML=ts.length?[['running','Probíhá'],['pending','Čeká'],['failed','Nepovedlo se'],['done','Hotovo']].filter(([k])=>grp[k].length).map(([k,l])=>`<div class="tgroup"><h4>${l} <span>${grp[k].length}</span></h4>${grp[k].slice(k==='done'?-8:0).reverse().map(row).join('')}</div>`).join(''):`<p class="empty">Úkoly se objeví, jakmile šéf sestaví plán.</p>`;
+  // outputs
+  $('ws-outputs').innerHTML=outputRepo===curRepo&&outputFiles.length?outputFiles.slice(0,6).map(f=>`<button class="out ${f.name==='Souhrn.html'?'primary':''}" onclick="openOutput(this.dataset.file)" data-file="${esc(f.id)}">${f.name==='Souhrn.html'?IC.star:IC.doc}<span>${esc(outName(f.name))}</span></button>`).join(''):`<p class="empty">Hotové soubory se tady objeví samy.</p>`;
+}
+$('ws-scene').addEventListener('toggle',()=>{try{localStorage.wsScene=$('ws-scene').open?'1':'0'}catch{}window.dispatchEvent(new Event('resize'))});
+
+document.addEventListener('click',e=>{for(const d of document.querySelectorAll('details.more[open]'))if(!d.contains(e.target))d.open=false});
+let stageView='office';try{stageView=localStorage.aoStageView||'office'}catch{}
+function setStageView(v){stageView=v;try{localStorage.aoStageView=v}catch{};if(!$('ws-scene').open)$('ws-scene').open=true;applyStageView()}
+function applyStageView(){const team=stageView==='team';$('scene').hidden=team;$('team-view').hidden=!team;document.querySelectorAll('.stage-seg button').forEach(b=>{const on=b.dataset.v===stageView;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});$('office-status').parentElement.hidden=team;$('team-count').textContent=1+agents().length}
+function render(){renderLimit();applyStageView();
+  const inOffice=view==='office';document.body.dataset.view=inOffice?'office':'hall';document.body.dataset.repo=curRepo||'';
+  $('hallview').hidden=inOffice;$('officeview').hidden=!inOffice;$('back').hidden=!inOffice;$('newgoal').hidden=!inOffice;
+  const r=repoOf(curRepo);$('crumb').textContent=inOffice&&r?r.name:'Agent Office';
+  if(!inOffice){renderHall();return}
+  cur=r?.projectId||cur;
+  if(openRole&&panelProject&&panelProject!==cur&&openRole!=='guest'){openAgent(openRole)}
+  buildScene();const p=proj();updateScene(p);if(openRole)headPanel();
+  updateBossDock(p);refreshOutputs();renderWorkspace(p);
+  if(!p){['inbox','tasks','log','final','bar','hist'].forEach(i=>$(i).innerHTML='');$('bar').innerHTML='<span>Řekni šéfovi, co má tým zařídit.</span>';return}
+  const canResume=['error','partial','stopped','interrupted','budget'].includes(p.status),canAccept=['done','partial'].includes(p.status);
+  $('bar').innerHTML=`<span>Stav <b>${STAT[p.status]||p.status}</b></span><span>Kolo <b>${p.round}/${p.settings.maxRounds}</b></span><span>Běhy <b>${p.stats.runs}/${p.settings.maxRuns}</b></span>${p.human?`<span>Tvé zásahy <b>${(p.human.answers||0)+(p.human.messages||0)+(p.human.directives||0)+(p.human.roles||0)}</b></span>`:''}${p.status==='running'||p.status==='waiting_user'?`<button class="ghost" style="margin-left:auto;padding:4px 10px" onclick="stop()">Zastavit</button>`:''}${canResume?`<button style="margin-left:auto;padding:4px 12px" onclick="resumeProj()">⟳ Pokračovat</button>`:''}${canAccept?(p.accepted?`<span class="chip">✓ Převzato</span>`:`<button class="ghost" style="padding:4px 12px" onclick="acceptProj()">Převzít zakázku</button>`):''}`;
+  loadUsage(p);
+  const open=p.inbox.filter(q=>q.answer===null);
+  const keep=document.activeElement?.id?.startsWith('f-')?[document.activeElement.id,document.activeElement.value]:null;
+  $('inbox').innerHTML=open.map(q=>`<div class="q"><b>Šéf:</b> ${esc(q.text)}<div class="opts">${q.options.map(o=>`<button class="${o===q.default?'':'ghost'}" onclick="ans('${q.id}',this.dataset.v)" data-v="${esc(o)}">${esc(o)}${o===q.default?' ✓':''}</button>`).join('')}</div></div>`).join('');
+  if(keep){const e=$(keep[0]);if(e){e.value=keep[1];e.focus()}}
+  $('tasks').innerHTML=(p.tasks.length?p.tasks.slice().reverse().map(t=>`<div class="row"><span class="st s-${t.status}"></span><span style="flex:1">${esc(t.title)}</span><span class="chip">${t.role}</span><span class="chip">${t.model}/${t.effort}</span></div>`).join(''):'<span style="color:var(--mute)">zatím nic</span>');
+  $('log').innerHTML=p.log.slice().reverse().map(l=>`<div><b>${esc(l.who)}</b> ${esc(l.msg)}</div>`).join('');
+  $('final').innerHTML=p.final?`<h2>Výsledek</h2><div class="card">${esc(p.final.summary)}${p.final.remaining?.length?'<br><br><b>Zbývá:</b><ul>'+p.final.remaining.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':''}<div style="color:var(--mute);font-size:12px;margin-top:8px">Detail: projects/${p.id}/office/FINAL.md</div></div>`:(p.assumptions?.length?`<h2>Předpoklady bosse (můžeš vetovat)</h2><div class="card"><ul style="margin:0;padding-left:18px">${p.assumptions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>`:'');
+  $('hist').innerHTML=p.history?.length?`<h2>Dřívější cíle v téhle kanceláři</h2><div class="card">${p.history.slice().reverse().map(h=>`<div class="row"><span class="st s-${h.status==='done'?'done':'failed'}"></span><span style="flex:1">${esc(h.goal)}</span><span class="chip">${h.score??'–'}/100</span></div>`).join('')}</div>`:'';
+}
+async function load(){S=await api('/api/state');S.cast=S.cast||[];if(Q.get('demo'))demo();if(Q.get('view')==='office'&&S.repos[0]&&view==='hall')enterRepo(Q.get('repo')||S.repos[0].id);else render()}
+async function ans(qid,v){if(!v)return;await api(`/api/projects/${cur}/answer`,{method:'POST',body:JSON.stringify({qid,value:v})})}
+async function resumeProj(){const r=await api(`/api/projects/${cur}/resume`,{method:'POST',body:'{}'});if(r.error)alert(r.error)}
+async function acceptProj(){const r=await api(`/api/projects/${cur}/accept`,{method:'POST',body:'{}'});if(r.error)return alert(r.error);await refreshRepos();render()}
+const PHASE={intake:'Zadání',research:'Rešerše',synthesis:'Kritéria',plan:'Plán',execute:'Práce',verify:'Kontrola',judge:'Hodnocení',finish:'Závěr',other:'Ostatní'};
+let usageAt=0,usageFor='';
+async function loadUsage(p){if(!$('usage')||$('project-details').hidden)return;if(usageFor===p.id+p.status+p.stats.runs&&Date.now()-usageAt<15000)return;usageFor=p.id+p.status+p.stats.runs;usageAt=Date.now();
+  let u;try{u=await api(`/api/projects/${p.id}/usage`)}catch{return}if(!u||u.error){$('usage').innerHTML='';return}
+  const k=n=>n>=1e6?(n/1e6).toFixed(1)+' M':n>=1e3?Math.round(n/1e3)+' k':String(n||0);const row=(name,x)=>`<tr><td>${esc(name)}</td><td>${x.attempts}${x.failed?` <span class="bad">(${x.failed}✕)</span>`:''}</td><td>${k(x.input)}</td><td>${k(x.output)}</td><td>${k(x.cacheRead)}</td><td>${Math.round(x.ms/60000)} min</td></tr>`;
+  const t=u.current.total;
+  $('usage').innerHTML=`<h2>Spotřeba tohoto cíle</h2><table class="usage"><tr><th>Fáze</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byPhase.map(x=>row(PHASE[x.key]||x.key,x)).join('')}<tr class="sum">${row('Celkem',t).slice(4)}</table>
+  <p class="umeta">Neúspěšné pokusy spotřebovaly ${k(t.failedTokens)} tokenů.${t.unknown?` U ${t.unknown} pokusů služba tokeny nehlásí.`:''}${u.perAccepted!=null?` Spotřeba na převzatou zakázku (včetně oprav a neúspěchů): <b>${k(u.perAccepted)}</b> tokenů.`:''}</p>
+  <details><summary>Podle role a modelu</summary><table class="usage"><tr><th>Role</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byRole.map(x=>row(x.key,x)).join('')}</table><table class="usage"><tr><th>Model</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byModel.map(x=>row(x.key,x)).join('')}</table></details>`}
+const PROV={claude:'Claude',codex:'Codex'};
+const untilTxt=t=>{const d=new Date(t);return d.toDateString()===new Date().toDateString()?'v '+d.toLocaleTimeString('cs-CZ',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('cs-CZ',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})};
+const leftTxt=t=>{let x=Math.max(0,Math.round((t-Date.now())/1000));const h=Math.floor(x/3600),m=Math.floor(x%3600/60),sec=x%60;return h?`${h} h ${String(m).padStart(2,'0')} min`:`${m}:${String(sec).padStart(2,'0')}`};
+function renderLimit(){const p=view==='office'?proj():null,on=p?.status==='limit',v=$('limit-veil');document.body.classList.toggle('limited',on);v.hidden=!on;if(!on){v.dataset.k='';return}
+  const L=p.limit||{},k=p.id+(L.until||'');if(v.dataset.k===k)return;v.dataset.k=k;
+  v.innerHTML=`<div class="card"><h3>Došel limit${L.provider?` (${esc(PROV[L.provider]||L.provider)})`:''}</h3><p class="dialog-description">Nic se neztratilo. ${L.until?`Pokračuji automaticky ${esc(untilTxt(L.until))}.`:'Pokračuji automaticky, jakmile se limit obnoví.'}</p>${L.until?`<div class="cd" id="lim-cd">${leftTxt(L.until)}</div><p class="dialog-description">do obnovení</p>`:''}<div style="display:flex;gap:8px;justify-content:center;margin-top:16px"><button id="retrybtn" onclick="retryLimit()">Zkusit znovu</button><button class="ghost" onclick="pauseProj()">Pozastavit</button><button class="ghost" onclick="goHall()">Projekty</button></div><p class="form-error" id="lim-err"></p></div>`}
+setInterval(()=>{const e=$('lim-cd'),L=proj()?.limit;if(e&&L?.until)e.textContent=leftTxt(L.until)},1000);
+async function retryLimit(){const b=$('retrybtn');b.disabled=true;b.textContent='Zkouším…';try{const r=await api(`/api/projects/${cur}/retry`,{method:'POST',body:'{}'});if(r.error||r.ok===false)$('lim-err').textContent=r.error||'Limit ještě platí, zkusím to sám později.';else{await refreshRepos();render()}}catch{$('lim-err').textContent='Nepodařilo se spojit s kanceláří.'}b.disabled=false;b.textContent='Zkusit znovu'}
+async function stop(){await api(`/api/projects/${cur}/stop`,{method:'POST',body:'{}'})}
+
+/* ---------- dialogs ---------- */
+const dlg=$('dlg'),rdlg=$('rdlg'),roledlg=$('roledlg');
+function openRoleDlg(){if(!curRepo)return;const fruit=[['harvey','Banán'],['mike','Avokádo'],['louis','Ananas'],['donna','Pomeranč'],['jessica','Jahoda'],['rachel','Mango'],['harold','Pitaya'],['scottie','Citron']];$('rchar').innerHTML='<option value="">Vybere šéf podle role</option>'+fruit.map(([id,name])=>`<option value="${id}">${name}</option>`).join('');
+  $('rmodel').innerHTML='<option value="auto">Vybere šéf podle úkolu a kapacity</option>'+PC.models.map(m=>`<option value="${esc(m.id)}" ${m.available?'':'disabled'}>${esc(m.name)}${m.available?'':' · nedostupný'}</option>`).join('');$('rchar').value='';$('rname').hidden=true;['rtitle','rresp','rname'].forEach(i=>$(i).value='');roledlg.showModal();$('rtitle').focus()}
+$('rchar').onchange=()=>{$('rname').hidden=$('rchar').value!=='custom'};
+async function addRole(){const c=$('rchar').value;const body={title:$('rtitle').value.trim(),responsibility:$('rresp').value.trim(),model:$('rmodel').value,effort:$('reffort').value,character:c&&c!=='custom'?c:undefined,name:c==='custom'?$('rname').value.trim()||undefined:undefined};
+  const r=await api(`/api/repos/${curRepo}/roles`,{method:'POST',body:JSON.stringify(body)});if(r.error)return alert(r.error);roledlg.close();await refreshRepos();sceneSig='';render()}
+const KIND={web:{preset:'web-redesign',ph:'Např. Přepracuj web firmy X pro pitch investorům. Důležitý je první dojem a mobil. Web je ve složce projektu.'},doc:{preset:'general',ph:'Např. Napiš obchodní podmínky pro e-shop s ručně šitými taškami, srozumitelně a podle českého práva.'},deck:{preset:'general',ph:'Např. Pitch deck pro investory na 12 slajdů: problém, řešení, trh, byznys model, tým, finance.'},research:{preset:'general',ph:'Např. Zjisti, jaké jsou nejlepší nástroje na e-mailový marketing pro malé české firmy, a doporuč jeden.'},code:{preset:'general',ph:'Např. Přidej do aplikace přihlášení přes Google a napiš k tomu testy.'},marketing:{preset:'general',ph:'Např. Marketingový plán na 3 měsíce pro spuštění nového produktu, s rozpočtem do 50 000 Kč.'},other:{preset:'general',ph:'Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám.'}};
+const DEPTH={fast:{maxRounds:1,maxRuns:15,targetScore:75,hint:'Jedno kolo práce a kontroly. Vhodné na rychlé věci.'},std:{maxRounds:3,maxRuns:40,targetScore:88,hint:'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.'},max:{maxRounds:5,maxRuns:80,targetScore:93,hint:'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.'}};
+let briefKind='other',briefDepth='std';
+function setKind(k){briefKind=k;document.querySelectorAll('#kinds button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));$('goal').placeholder=KIND[k].ph}
+function setDepth(d){briefDepth=d;document.querySelectorAll('#depth button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));$('depth-hint').textContent=DEPTH[d].hint}
+$('kinds').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setKind(b.dataset.k)});
+$('depth').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setDepth(b.dataset.d)});
+function showBrief(){const p=proj();if(!p)return;const d=document.createElement('dialog'),h=document.createElement('h2'),body=document.createElement('p'),b=document.createElement('button');h.textContent='Zadání projektu';body.style.whiteSpace='pre-wrap';body.textContent=[p.goal,p.notes].filter(Boolean).join('\n\n');b.textContent='Zavřít';b.onclick=()=>d.close();d.onclose=()=>d.remove();d.append(h,body,b);document.body.append(d);d.showModal()}
+function openNew(){const r=repoOf(curRepo);if(!r)return;if(proj()&&['running','waiting_user'].includes(proj().status)){showBrief();return}
+  $('repoline').textContent=proj()?'Šéf naváže na to, co se v tomhle projektu už naučil.':'Šéf si sám udělá průzkum, plán i kontrolu kvality. Zeptá se jen na to nejnutnější.';
+  setKind(briefKind);setDepth(briefDepth);dlg.showModal();$('goal').focus()}
+function presetChange(){}
+async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').focus();return}const D=DEPTH[briefDepth];const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore}})});if(r.error)return alert(r.error);cur=r.id;dlg.close();$('goal').value='';await refreshRepos();render()}
+async function refreshRepos(){const s=await api('/api/state');S.repos=s.repos;S.projects=s.projects;S.cast=s.cast}
+async function openRepoDlg(){rdlg.showModal();$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
+  $('sugg').innerHTML=(r.suggestions||[]).map(s=>`<button class="ghost sg" onclick="addRepoPath(this.dataset.p)" data-p="${esc(s.path)}"><b>${esc(s.name)}</b> ${s.git?'<span class="chip">git</span>':''}<div class="act">${esc(s.path)}</div></button>`).join('')||'<div style="color:var(--mute);font-size:12px">Nic k nabídnutí.</div>'}
+function pickFolder(){window.webkit?.messageHandlers?.pickFolder?.postMessage(1)}
+window.onFolderPicked=p=>{if(p)addRepoPath(p)};
+async function addRepoPath(p){p=(p||'').trim();if(!p)return;const r=await api('/api/repos',{method:'POST',body:JSON.stringify({path:p})});if(r.error)return alert(r.error);await refreshRepos();rdlg.close();hallSig='';render();enterRepo(r.id);$('boss-input').focus()}
+
+let outputFiles=[],outputRepo=null,outputAt=0,outputBusy=false,selectedOutput=null;
+async function refreshOutputs(force=false){
+  if(view!=='office'||!curRepo||outputBusy)return;
+  if(outputRepo===curRepo&&!force&&Date.now()-outputAt<5000){OfficeGame.outputs?.(outputFiles);return;}
+  outputBusy=true;const id=curRepo;
+  try{const r=await api(`/api/offices/${id}/outputs`);if(curRepo===id){outputFiles=r.files||[];outputRepo=id;outputAt=Date.now();OfficeGame.outputs?.(outputFiles);renderWorkspace(proj());}}finally{outputBusy=false;}
+}
+async function openOutput(id){
+  selectedOutput={repo:curRepo,id};$('output-title').textContent='Načítám soubor…';$('output-preview').textContent='';$('output-open').hidden=false;$('outputdlg').showModal();
+  const selected=selectedOutput,r=await api(`/api/offices/${selected.repo}/output?file=${encodeURIComponent(id)}`);if(selectedOutput!==selected)return;
+  $('output-title').textContent=r.name||'Výstup';const box=$('output-preview');box.replaceChildren();
+  if(r.error){box.textContent=r.error;$('output-open').hidden=true;return;}
+  if(r.kind==='image'){const img=document.createElement('img');img.alt=r.name;img.src=`/api/offices/${selected.repo}/output?file=${encodeURIComponent(id)}&image=1&t=${encodeURIComponent(T)}`;box.append(img);}
+  else if(r.kind==='text' && /\.html$/i.test(r.name)){const frame=document.createElement('iframe');frame.title=r.name;frame.setAttribute('sandbox','');frame.style.cssText='width:100%;height:72vh;border:0;border-radius:12px;background:transparent';frame.srcdoc=`<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data:; form-action 'none'">${r.content}`;box.append(frame)}
+  else if(r.kind==='text'){const pre=document.createElement('pre');pre.textContent=r.content+(r.truncated?'\n… Náhled zkrácen. Celý soubor otevři v Macu.':'');box.append(pre);}
+  else box.textContent='Dokument je připravený. Otevři ho v příslušné aplikaci na Macu.';
+}
+const outIcon=n=>/Souhrn\.html$/.test(n)?'★':/\.html$/i.test(n)?'📄':/\.(png|jpe?g|webp|svg)$/i.test(n)?'🖼':/\.(csv|xlsx|json)$/i.test(n)?'▦':'↗';const outName=n=>n==='Souhrn.html'?'Souhrn zakázky':n.replace(/\.html$/i,'');
+function openAllOutputs(){selectedOutput=null;$('output-title').textContent='Výstupy projektu';$('output-open').hidden=true;$('output-preview').innerHTML=outputFiles.map(f=>`<button class="output-row ${f.name==='Souhrn.html'?'primary':''}" onclick="$('outputdlg').close();openOutput(this.dataset.file)" data-file="${esc(f.id)}"><span>${outIcon(f.name)}</span> ${esc(outName(f.name))}<small>${new Date(f.updated).toLocaleString('cs-CZ',{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p>Hotové soubory se tady objeví automaticky.</p>';$('outputdlg').showModal();}
+async function openOutputOnMac(){if(!selectedOutput)return;const r=await api(`/api/offices/${selectedOutput.repo}/open-output?file=${encodeURIComponent(selectedOutput.id)}`,{method:'POST'});if(r.error)alert(r.error);}
+setInterval(()=>{if(view==='office')refreshOutputs()},5000);
+
+const bossReplies=new Map();
+function updateBossDock(p){
+  const need=!!p?.inbox?.some(q=>q.answer===null);$('boss-input').placeholder=need?'Odpověz šéfovi…':'Řekni šéfovi, co potřebuješ…';$('boss-dock').classList.toggle('attention',need);
+  const state=p?.status;const activity=p?.agents?.boss?.activity;
+  $('office-status').textContent=need?'Šéf potřebuje tvou odpověď':state==='running'?'Tým pracuje':state==='done'?'Hotovo':state==='error'?'Projekt potřebuje pozornost':'Kancelář šéfa';
+  $('boss-reply').textContent=bossReplies.get(curRepo)||p?.final?.summary||activity||'Jsem tady. Co má tým zařídit?';
+  $('boss-summary').hidden=!(p?.final&&['done','partial','error'].includes(p.status));
+}
+function toggleProjectDetails(){ $('project-details').hidden=!$('project-details').hidden; if(!$('project-details').hidden){closeAgent();usageFor='';const p=proj();if(p)loadUsage(p)} }
+async function createProjectOffice(){
+  const button=$('create-office');if(button.disabled)return;button.disabled=true;$('create-error').textContent='';
+  try{const r=await api('/api/offices',{method:'POST',body:JSON.stringify({name:$('project-name').value})});if(r.error){$('create-error').textContent=r.error;return}await refreshRepos();rdlg.close();$('project-name').value='';enterRepo(r.id);$('boss-input').focus()}catch{$('create-error').textContent='Projekt se nepodařilo vytvořit. Zkus to znovu.'}finally{button.disabled=false}
+}
+async function instructBoss(ev){
+  ev.preventDefault();const input=$('boss-input'),text=input.value.trim(),button=$('boss-send');if(!text||button.disabled||!curRepo)return;
+  button.disabled=true;$('boss-error').textContent='';
+  try{
+    const p=proj(),active=p&&['running','waiting_user'].includes(p.status),pending=p?.inbox?.find(q=>q.answer===null);
+    const route=pending?`/api/projects/${cur}/answer`:active?`/api/projects/${cur}/agents/boss/message`:'/api/start';
+    const r=await api(route,{method:'POST',body:JSON.stringify(pending?{qid:pending.id,value:text}:active?{text}:{repoId:curRepo,preset:'general',goal:text})});
+    if(r.error||r.ok===false){$('boss-error').textContent=r.error||'Pokyn se nepodařilo předat.';return}
+    input.value='';bossReplies.set(curRepo,pending?'Díky, odpověď jsem předal šéfovi.':active?'Předávám tvůj pokyn šéfovi…':'Šéf přebírá zadání a připravuje tým…');if(r.id)cur=r.id;await refreshRepos();render();
+  }catch{$('boss-error').textContent='Nepodařilo se spojit s kanceláří. Zkus to znovu.'}finally{button.disabled=false}
+}
+$('boss-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();instructBoss(e)}});
+async function openIn(app){if(!curRepo)return;const r=await api(`/api/offices/${curRepo}/open-in`,{method:'POST',body:JSON.stringify({app})});if(r.error)alert(r.error)}
+function openSessions(){
+  $('session-list').innerHTML=guests.length?guests.map((g,i)=>`<button class="session-item" onclick="$('sessionsdlg').close();openGuest(${i})"><b>${esc(g.title)}</b><small>${g.active?'Nedávná aktivita':new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleDateString('cs-CZ')}</small></button>`).join(''):'<p class="dialog-description">V tomto projektu zatím nejsou žádné Claude Code sessions.</p>';
+  $('sessionsdlg').showModal();
+}
+
+/* ---------- live updates ---------- */
+const es=new EventSource('/events?t='+T);
+es.onmessage=e=>{const s=JSON.parse(e.data);const i=S.projects.findIndex(x=>x.id===s.id);if(i>=0)S.projects[i]=s;else S.projects.unshift(s);
+  const r=repoOf(s.repoId);if(r){r.projectId=s.id;r.waiting=s.inbox.filter(q=>q.answer===null).length;r.light=r.waiting?'question':s.status==='running'?'working':s.status==='partial'||s.status==='paused'||s.status==='limit'?'partial':s.status==='done'?'done':['error','budget'].includes(s.status)?'error':'idle';r.goal=s.goal;r.status=s.status;r.lastActive=new Date().toISOString();S.repos.sort((a,b)=>String(b.lastActive).localeCompare(String(a.lastActive)));if(view==='office'&&curRepo===r.id)cur=s.id}
+  render()};
+let PC={providers:[],models:[]};
+async function checkHealth(force){await refreshProviders(force)}
+async function doLogin(provider='claude',mode){const r=await api('/api/login',{method:'POST',body:JSON.stringify({provider,mode})});if(r.error)return alert(r.error);$('provider-note').textContent='Dokonči přihlášení v Terminálu. Při tvorbě tokenu ho potom vlož do pole pro Klíčenku.'}
+async function refreshProviders(force=false){try{PC=await api('/api/providers'+(force?'?force=1':''));$('login-nudge').hidden=PC.models?.some(m=>m.available);renderProviders()}catch{$('provider-note').textContent='Kapacitu se nepodařilo načíst.'}}
+function renderProviders(){
+  if(!PC.providers)return;
+  $('legacy-routing').hidden=!PC.routing?.model||PC.routing.model==='auto';
+  renderAgentRouting();
+  // Antigravity is shown as a subsection of the Gemini card (both are Google; Gemini for study and research, Antigravity for code)
+  const ag=PC.providers.find(p=>p.id==='antigravity'),hasG=PC.providers.some(p=>p.id==='gemini');
+  $('provider-list').innerHTML=PC.providers.filter(p=>!(hasG&&p.id==='antigravity')).map(p=>p.id==='gemini'?providerCard(p,ag):providerCard(p)).join('');
+  $('provider-note').textContent=PC.note||'';
+}
+async function saveRouting(change){const r=await api('/api/providers/routing',{method:'POST',body:JSON.stringify(change)});if(r.error){alert(r.error);return}PC=r;renderProviders();$('provider-note').textContent='Uloženo. Volba platí od dalšího kroku každého agenta.'}
+const WIN_LABEL=w=>{const n=w.name||'';const m=w.windowDurationMins;if(n==='five_hour'||m===300||n==='primary')return '5hodinový limit';if(/^seven_day_(.+)/.test(n))return 'Týdenní limit · '+n.replace('seven_day_','').replace(/^./,c=>c.toUpperCase());if(n==='seven_day'||m===10080||n==='secondary')return 'Týdenní limit';return n};
+function resetTxt(w){if(!w.resetsAt)return '';const d=new Date(w.resetsAt*1000);const sameDay=d.toDateString()===new Date().toDateString();return ' · obnoví se '+(sameDay?d.toLocaleTimeString('cs',{hour:'2-digit',minute:'2-digit'}):d.toLocaleString('cs',{weekday:'short',day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'}))}
+const pStatus=p=>p.pausedUntil>Date.now()?'Pozastaveno':p.blocked?'Limit vyčerpán':!p.available?'Odpojeno':'Připojeno';
+const howtoHtml=id=>HOWTO[id]?`<details class="howto"><summary>Jak připojit</summary><ol>${HOWTO[id].map(x=>`<li>${x}</li>`).join('')}</ol></details>`:'';
+function subCard(p){const ok=p.available&&!p.blocked;
+  return `<details class="subcard"><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><small>na kód a úpravy souborů</small><span class="pst ${ok?'':'bad'}">${pStatus(p)}</span></summary><div class="pbody"><p class="dialog-description">${esc(p.message||'')}</p>${p.installed?`<button class="ghost icon-btn" onclick="event.preventDefault();doLogin('${p.id}')">⟳ Připojit znovu</button>`:''}${howtoHtml(p.id)}</div></details>`}
+function providerCard(p,sub){const ok=p.available&&!p.blocked||!!(sub&&sub.available&&!sub.blocked);const st=sub&&!(p.available&&!p.blocked)&&ok?'Připojeno přes Antigravity':pStatus(p);
+  const wins=(p.windows||[]).filter(w=>Number.isFinite(w.usedPercent)).map(w=>{const left=Math.max(0,100-w.usedPercent);return `<div class="limit"><div><span>${WIN_LABEL(w)}</span><b>${Math.round(left)} % zbývá</b></div><progress max="100" value="${left}"></progress><small>${resetTxt(w)}</small></div>`}).join('')||'<small>Limity zatím nejsou známé.</small>';
+  const reconnect=`<button class="ghost icon-btn" title="Připojit znovu" onclick="event.preventDefault();doLogin('${p.id}')">⟳ Připojit znovu</button>`;
+  const settings=p.id==='claude'?`${claudeFeatures()}<p class="dialog-description">Přihlášení: ${p.auth==='oauth-token'?'trvalý token z Klíčenky':'účet v Terminálu (může vypršet)'}.</p>${reconnect}<form onsubmit="storeClaudeToken(event)" class="tokenform"><label for="claude-token">Trvalý token (platí rok) – v Terminálu spusť <code>claude setup-token</code> a vlož ho sem</label><div style="display:flex;gap:8px"><input id="claude-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token"><button id="claude-token-save">Uložit</button></div><p id="claude-token-note" role="status"></p></form>`
+    :p.id==='codex'?`<p class="dialog-description">Používá přihlášení aplikace Codex / ChatGPT na tomhle Macu.</p>${reconnect}`
+    :`${sub?`<div class="feat"><div><b>Gemini CLI</b><p class="dialog-description">Na studium a rešerše s vyhledáváním Google. ${esc(p.message||'')}</p></div><span class="pst ${p.available&&!p.blocked?'':'bad'}">${pStatus(p)}</span></div>`:`<p class="dialog-description">${esc(p.message||'')}</p>`}${p.installed?reconnect:''}`;
+  const guide=howtoHtml(p.id)+(sub?subCard(sub):'');
+  const optional=['antigravity','gemini'].includes(p.id)&&!p.installed&&!(sub&&sub.installed);
+  return `<details class="provider-card" ${!ok&&!optional?'open':''}><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><span class="pst ${ok?'':'bad'}">${st}</span>${!ok?`<span class="relink" title="Připojit znovu" onclick="event.preventDefault();event.stopPropagation();doLogin('${p.id}')">⟳</span>`:''}</summary><div class="pbody">${['antigravity','gemini'].includes(p.id)?'':wins}${settings}${guide}</div></details>`}
+// Claude account features, shown inside the Claude card: fast mode and the cloud code review (ultrareview).
+function claudeFeatures(){const F=PC.features?.fast,U=PC.features?.ultrareview;if(!F&&!U)return '';
+  const sel=(id,opts,cur,dis,on)=>`<select id="${id}" style="width:auto" onchange="${on}" ${dis?'disabled':''}>${opts.map(([v,l])=>`<option value="${v}" ${v===cur?'selected':''}>${l}</option>`).join('')}</select>`;
+  const row=(title,desc,ctl)=>`<div class="feat"><div><b>${title}</b><p class="dialog-description">${desc}</p></div>${ctl}</div>`;
+  return `<div class="feats">${F?row('Fast mode',F.available===false?(F.reason==='extra_usage_disabled'?'Teď nedostupný: v účtu Claude jsou vypnuté usage credits.':'Teď nedostupný pro tento účet.'):'Rychlejší odpovědi Opus/Fable v rozhovoru za vyšší spotřebu.',sel('fastsel',[['auto','Automaticky'],['off','Vypnuto'],['always','Vždy']],F.pref||'auto',F.available===false,"saveRouting({fast:this.value})")):''}${U?row('Ultrareview',U.available?'Cloudová kontrola kódu více agenty, když šéf mění kód. Účtuje se zvlášť a trvá až 45 minut.':'Není k dispozici (vyžaduje novější Claude Code a přihlášení).',sel('ultrasel',[['ask','Ptát se'],['auto','Automaticky'],['off','Vypnuto']],U.pref||'ask',!U.available,"saveRouting({ultrareview:this.value})")):''}</div>`}
+// Short setup guides shown in the Connections dialog. Each service signs in with its own account on this Mac;
+// Agent Office never stores passwords, only an optional Claude token in the macOS Keychain.
+const HOWTO={
+  claude:['Nainstaluj Claude Code: v Terminálu spusť <code>curl -fsSL https://claude.ai/install.sh | bash</code>.','Klikni na <b>Připojit znovu</b> (otevře se Terminál s <code>claude auth login</code>) a přihlas se svým účtem Claude (Pro/Max).','Aby přihlášení nevypršelo: v Terminálu spusť <code>claude setup-token</code> a vygenerovaný token vlož výše do pole „Trvalý token“. Uloží se jen do Klíčenky tohoto Macu.'],
+  codex:['Nainstaluj Codex: <code>npm install -g @openai/codex</code> (nebo <code>brew install --cask codex</code>, případně aplikaci ChatGPT pro Mac).','Klikni na <b>Připojit znovu</b> (otevře se <code>codex login</code>) a přihlas se účtem ChatGPT (Plus/Pro).','Hotovo. Šéf pak dává Codexu hlavně programování; u každého agenta ho můžeš vybrat i ručně.'],
+  antigravity:['Volitelné. Nainstaluj Antigravity CLI: <code>curl -fsSL https://antigravity.google/cli/install.sh | bash</code> (příkaz <code>agy</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>agy</code> a v prohlížeči se přihlásíš účtem Google. Přihlášení se uloží do Klíčenky.','Antigravity se nepoužívá automaticky. Vybereš ho u konkrétního agenta: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.'],
+  gemini:['Volitelné, hodí se na studium a rešerše. Nainstaluj Gemini CLI: <code>npm install -g @google/gemini-cli</code> (nebo <code>brew install gemini-cli</code>).','Klikni na <b>Připojit znovu</b>. V Terminálu se spustí <code>gemini</code> a přihlásíš se účtem Google (nebo nastav <code>GEMINI_API_KEY</code>).','Gemini se nepoužívá automaticky. Vybereš ho u konkrétního agenta, třeba u výzkumníka: klikni na postavu → Model. Smí upravovat soubory, příkazy v Terminálu ne.']
+};
+async function storeClaudeToken(ev){
+  ev.preventDefault();const input=$('claude-token'),button=$('claude-token-save');button.disabled=true;$('claude-token-note').textContent='Ukládám do Klíčenky…';
+  try{const r=await api('/api/providers/claude/token',{method:'POST',body:JSON.stringify({token:input.value})});if(r.error)throw new Error(r.error);input.value='';$('claude-token-note').textContent='Uloženo v Klíčence. Token se použije při dalších spuštěních Claude.';await refreshProviders(true)}catch(e){$('claude-token-note').textContent=e.message}finally{button.disabled=false}
+}
+let agentRoutingSignature='';
+function renderAgentRouting(){
+  const form=$('agent-routing');form.hidden=!openRole||openRole==='guest'||!curRepo;if(form.hidden)return;
+  const role=[...(repoOf(curRepo)?.roles||[]),...(proj()?.roles||[])].find(a=>a.id===openRole&&a.manual)||{};
+  const legacyModel=role.model&&role.model!=='auto'?(['opus','sonnet','haiku'].includes(role.model)?'claude/'+role.model:role.model.replace(/^(claude|codex|ollama):/,'$1/')):'auto';
+  const manual=repoOf(curRepo)?.agentOverrides?.[openRole]||proj()?.agentOverrides?.[openRole]||{model:legacyModel,effort:role.effort||'auto'};
+  const signature=JSON.stringify([curRepo,openRole,manual,(PC.models||[]).map(m=>[m.id,m.name,m.available])]);if(signature===agentRoutingSignature)return;agentRoutingSignature=signature;
+  const models=[['auto','Automaticky (Boss rozhodne)'],...(PC.models||[]).map(m=>[m.id,m.name+(m.available?'':' · nedostupný')])];
+  if(manual.model!=='auto'&&!models.some(([id])=>id===manual.model))models.push([manual.model,manual.model+' · nedostupný']);
+  form.querySelector('summary').textContent='Model · '+(models.find(([id])=>id===manual.model)?.[1]||manual.model);
+  $('agent-model').innerHTML=models.map(([id,label])=>`<option value="${esc(id)}">${esc(label)}</option>`).join('');$('agent-model').value=manual.model;$('agent-effort').value=manual.effort;
+}
+async function saveAgentRouting(ev){
+  ev.preventDefault();const repoId=curRepo,role=openRole,button=$('agent-routing-save'),note=$('agent-routing-note');button.disabled=true;note.textContent='Ukládám…';
+  try{const r=await api(`/api/repos/${repoId}/agents/${role}/routing`,{method:'PATCH',body:JSON.stringify({model:$('agent-model').value,effort:$('agent-effort').value})});if(r.error)throw new Error(r.error);const repo=repoOf(repoId);(repo.agentOverrides||={})[role]=r;if(repo.projectId){const p=S.projects.find(p=>p.id===repo.projectId);if(p)(p.agentOverrides||={})[role]=r}if(curRepo===repoId&&openRole===role){renderAgentRouting();note.textContent='Uloženo. Platí od dalšího kroku pouze pro tohoto agenta.'}}catch(e){note.textContent=e.message}finally{button.disabled=false}
+}
+async function openProviders(){$('providersdlg').showModal();await refreshProviders()}
+let editingOffice=null;
+async function manageOffice(id){editingOffice=id;const r=await api(`/api/offices/${id}`);if(r.error)return alert(r.error);$('office-name').value=r.name;$('office-description').value=r.description;$('office-error').textContent='';$('office-archive').textContent=r.archived?'Obnovit z archivu':'Archivovat';$('office-archive').dataset.archived=r.archived?'1':'0';$('office-paths').innerHTML=(Object.keys(r.tokens||{}).length?'<h2>Spotřeba tohoto projektu</h2>'+Object.entries(r.tokens).map(([name,u])=>`<p class="dialog-description">${esc(name)}: ${(u.input+u.output).toLocaleString('cs-CZ')} tokenů (vstup + výstup)</p>`).join(''):'')+[['Repozitář',r.repository],['Pracovní kopie',r.workingCopy],['Výsledky',r.outputs],['Paměť šéfa',r.office]].filter(([,v])=>v).map(([k,v])=>`<label>${k}</label><div class="path-value">${esc(v)}</div>`).join('');$('officedlg').showModal()}
+async function saveOffice(){const r=await api(`/api/offices/${editingOffice}`,{method:'PATCH',body:JSON.stringify({name:$('office-name').value,description:$('office-description').value})});if(r.error){$('office-error').textContent=r.error;return}$('officedlg').close();await refreshRepos();render()}
+async function archiveOffice(){const archived=$('office-archive').dataset.archived!=='1';const r=await api(`/api/offices/${editingOffice}`,{method:'PATCH',body:JSON.stringify({archived})});if(r.error){$('office-error').textContent=r.error;return}$('officedlg').close();await refreshRepos();if(archived&&curRepo===editingOffice)goHall();else render()}
+setInterval(()=>refreshProviders(),60000);
+async function pollGuests(){if(view!=='office'||!curRepo||Q.get('demo'))return;try{const r=await api(`/api/repos/${curRepo}/guests`);const old=JSON.stringify(guests.map(g=>[g.id,g.active,g.now]));guests=r.guests||[];if(JSON.stringify(guests.map(g=>[g.id,g.active,g.now]))!==old){render();if(openRole==='guest')openGuest(guestIdx)}}catch{}}
+setInterval(pollGuests,5000);
+setInterval(async()=>{if(Q.get('demo'))return;try{await refreshRepos();render()}catch{}},10000);
+document.addEventListener('office-game-ready',()=>{sceneSig='';hallSig='';document.querySelector('.boss-name').innerHTML=esc(OfficeAvatars.name('harvey','Harvey Specter'))+' <span>Šéf projektu</span>';render()});
+
+/* ---------- agent panel: live feed + chat ---------- */
+const imgUrl=f=>`/api/projects/${cur}/file?t=${T}&path=${encodeURIComponent(f)}`;
+const ICON={Read:'📖',Edit:'✏️',MultiEdit:'✏️',Write:'📝',WebFetch:'🌐',WebSearch:'🔎',Glob:'🗂️',Grep:'🔍',Bash:'⚙️'};
+function feedHtml(e){
+  const detail=$('feeddetail')?.checked;
+  if(!detail){ if(e.kind==='tool'||e.kind==='sys')return ''; if(openRole==='boss'&&(e.kind==='task'||e.kind==='shot'))return ''; if(e.kind==='text'){const t=e.text.length>260?e.text.slice(0,257)+'…':e.text;return `<div class="f-text">${esc(t)}</div>`} if(e.kind==='taskend')return `<div class="f-end">✓ Hotovo: ${esc(e.text.split(':')[0])}</div>`; if(e.kind==='task')return `<div class="f-task">▶ ${esc(e.text)}</div>` }
+  switch(e.kind){
+    case 'task':return `<div class="f-task">▶ ${esc(e.text)} ${e.model?`<span class="chip">${esc(e.model)}/${esc(e.effort)}</span>`:''}</div>`;
+    case 'text':return `<div class="f-text">${esc(e.text)}</div>`;
+    case 'reply':return `<div class="f-reply">${esc(e.text)}</div>`;
+    case 'user':return `<div class="f-user">${esc(e.text)}</div>`;
+    case 'tool':return `<div class="f-tool ${e.changed?'ch':''}">${/screenshot/.test(e.text)?'📸':ICON[e.tool]||'•'} ${esc(e.text)}</div>`;
+    case 'shot':return `<div class="f-shot"><img loading="lazy" src="${imgUrl(e.file)}" alt="${esc(e.text)}" onclick="zoomImg(this.src)"><div class="f-tool">${esc(e.text)}</div></div>`;
+    case 'taskend':return `<div class="f-end">✓ ${esc(e.text)}${e.files?.length?'<br>Změněno: '+e.files.map(esc).join(', '):''}</div>`;
+    case 'error':return `<div class="f-err">⚠ ${esc(e.text)}</div>`;
+    case 'sys':return `<div class="f-tool">${esc(e.text)}</div>`;
+  }return ''}
+async function summarize(){if(!cur||!openRole)return;const b=$('sumbtn');b.disabled=true;b.textContent='Shrnuji…';
+  try{const r=await api(`/api/projects/${cur}/agents/${openRole}/summary`,{method:'POST',body:'{}'});$('apsum').hidden=false;$('apsum').textContent=r.text||r.error||'Nepovedlo se.'}catch{}b.disabled=false;b.textContent='✦ Shrnout lidsky'}
+function zoomImg(src){$('zoomimg').src=src;$('zoom').style.display='flex'}
+let feedOpen=false;
+function renderFeed(stick=true){
+  const f=$('apfeed');const near=f.scrollHeight-f.scrollTop-f.clientHeight<80;
+  const hidden=openRole!=='boss'&&!feedOpen;
+  f.innerHTML=hidden?`<div class="feed-closed"><p>Průběh práce se nezobrazuje, aby tě nerušil.</p><button class="ghost" onclick="feedOpen=true;renderFeed()">Zobrazit průběh</button></div>`
+    :feedCache.length?feedCache.map(feedHtml).join(''):'<div class="f-tool">Zatím nic. Až agent začne pracovat, uvidíš tady, co dělá.</div>';
+  if(stick||near)f.scrollTop=f.scrollHeight;
+  const tasks=[];for(const e of feedCache){if(e.kind==='task')tasks.push({t:e.text,done:null});else if(e.kind==='taskend'&&tasks.length)tasks[tasks.length-1].done=e.text}
+  $('aphistbody').innerHTML=tasks.length?tasks.slice(0,-1).reverse().map(t=>`<div>${t.done?'✓':'•'} ${esc(t.t)}</div>`).join('')||'<div style="color:var(--mute)">zatím žádné dřívější úkoly</div>':'<div style="color:var(--mute)">zatím nic</div>';
+  headPanel()}
+function headPanel(){
+  renderAgentRouting();
+  if(openRole==='guest')return;
+  const p=proj();const a=p?.agents?.[openRole]||{};
+  const ai=agentInfo(openRole);const art=window.OfficeAvatars?.info(ai.char);const portrait=$('ap-portrait');portrait.hidden=!art;if(art)portrait.innerHTML=`<span class="avatar portrait" role="img" aria-label="${esc(ai.name)}" style="background-image:url(${art.image})"></span>`;$('apname').textContent=(window.OfficeAvatars?.name(ai.char,ai.name)||ai.name)+' – '+ai.title;$('apmeta').textContent=a.model?`${a.status==='working'?'Aktuální krok':'Poslední model'} · ${a.provider||'claude'} · ${a.model}/${a.effort}`:'';
+  $('apnow').innerHTML=a.status==='working'?`Teď: <b>${esc(a.task||'pracuje')}</b> · ${esc(a.activity||'')}`:a.status==='waiting'?`Čeká: <b>${esc(a.activity||'')}</b>`:a.status==='blocked'?`Zablokováno: ${esc(a.activity||'')}`:`Teď: <b>${a.status==='done'?'hotovo':'volno'}</b>`;
+  $('aproute').textContent=a.routeReason||'';$('apmsg').placeholder=openRole==='boss'?'Změň směr celého projektu… (Boss upraví vkus, scorecard a plán)':`Napiš: ${ai.name.split(' ')[0]}…`}
+async function openAgent(role){
+  document.body.classList.add('has-agent');$('project-details').hidden=true;openRole=role;feedOpen=false;panelProject=cur;if($('apsum'))$('apsum').hidden=true;$('ap').hidden=false;$('apform').hidden=!cur;$('aphist').hidden=!cur;feedCache=[];renderFeed();updateScene(proj());
+  refreshProviders();
+  if(!cur){$('apfeed').innerHTML='<div class="f-tool">Tento zaměstnanec zatím nedostal úkol. Řekni šéfovi dole, co má tým zařídit.</div>';return}
+  const r=await api(`/api/projects/${cur}/feed/${role}`);if(openRole===role){feedCache=r.entries||[];renderFeed()}}
+let guestIdx=0;
+function openGuest(i=0){document.body.classList.add('has-agent');const g=guests[i];if(!g)return;guestIdx=i;openRole='guest';renderAgentRouting();$('ap').hidden=false;$('apform').hidden=true;$('aphist').hidden=true;
+  $('aproute').textContent='';$('ap-portrait').hidden=true;$('apname').textContent=g.title;$('apmeta').textContent='Claude Code · místní historie';$('apnow').innerHTML=g.active?`Nedávná aktivita: <b>${esc(g.now||'')}</b>`:`Poslední aktivita: ${new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleString('cs-CZ')}`;
+  $('apfeed').innerHTML=(g.recent||[]).map(e=>e.kind==='tool'?`<div class="f-tool">⚙️ ${esc(e.text)}</div>`:`<div class="f-text">${esc(e.text)}</div>`).join('')||'<div class="f-tool">Zatím nic.</div>';updateScene(proj())}
+function closeAgent(){document.body.classList.remove('has-agent');openRole=null;$('ap').hidden=true;updateScene(proj())}
+async function sendMsg(ev){ev.preventDefault();const i=$('apmsg');const text=i.value.trim();if(!text||!openRole)return;i.value='';
+  const r=await api(`/api/projects/${cur}/agents/${openRole}/message`,{method:'POST',body:JSON.stringify({text})});
+  if(!r.ok){feedCache.push({kind:'error',text:r.error||'Nepodařilo se odeslat'});renderFeed()}
+  else if(r.mode==='interrupt'){feedCache.push({kind:'sys',text:'Předávám zprávu. Agent zohlední rozdělanou práci a pokračuje…'});renderFeed()}}
+es.addEventListener('feed',e=>{const f=JSON.parse(e.data);if(f.id===cur&&f.agent==='boss'&&['text','reply','taskend'].includes(f.entry.kind)){bossReplies.set(curRepo,f.entry.text);updateBossDock(proj())}if(f.id===cur&&f.agent===openRole){feedCache.push(f.entry);if(feedCache.length>400)feedCache.shift();renderFeed(false)}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAgent();$('zoom').style.display='none'}});
+{const o=Q.get('open');if(o)setTimeout(()=>{const t=setInterval(()=>{if(cur||o==='guest'){clearInterval(t);o==='guest'?openGuest(0):openAgent(o)}},400)},700)}
+
+/* demo mode (?demo=1[&view=office]): fake repos/office for screenshots */
+function demo(){const nRepos=+Q.get('repos')||6,nRoles=+Q.get('n')||0;
+  const CASTD=[['donna','Donna Paulsen','Copywriter'],['jessica','Jessica Pearson','Strategie'],['harold','Harold Gunderson','Analytik'],['norma','Norma','Dokumenty'],['kyle','Kyle Durant','Finance'],['scottie','Dana Scott','Obchod'],['hardman','Daniel Hardman','Právník'],['jenny','Jenny Griffith','Komunikace'],['trevor','Trevor Evans','Výzkum trhu'],['tanner','Travis Tanner','Red team'],['harvey','Harvey Specter II','Vyjednávání'],['mike','Mike Ross II','Data'],['louis','Louis Litt II','Compliance']];
+  const mk=(id,name,light,waiting,goal)=>({id,name,path:'~/Projects/'+name,git:true,projectId:id==='r1'?'demo':null,lastActive:new Date(Date.now()-(+id.slice(1))*1e5).toISOString(),light,waiting,goal});
+  const RN=['agent-office','web-portfolio','tv-aplikace','home-dashboard','pitch-site','dotfiles','investor-deck','pravni-dokumenty','marketing-plan','eshop-api','analyza-trhu','novy-produkt','mobilni-app','blog','brand-manual','cenik'];const LT=['question','working','done','idle','error','idle'];const GO=['Redesign webu pro pitch','Nový design portfolia','Aplikace pro TV',null,'Landing page',null,'Pitch deck pro investory','Obchodní podmínky','Q1 marketing','Nové endpointy','Analýza konkurence',null,'Onboarding',null,'Manuál značky','Nový ceník'];
+  S.repos=Array.from({length:nRepos},(_,i)=>mk('r'+(i+1),RN[i%RN.length]+(i>=RN.length?'-'+i:''),LT[i%LT.length],i===0?2:(i%7===3?1:0),GO[i%GO.length]));
+  const d={id:'demo',repoId:'r1',goal:'Redesign webu pro pitch',status:'running',round:1,score:null,settings:{maxRounds:3,maxRuns:40},stats:{runs:5,cost:0},tasks:[],log:[],roles:CASTD.slice(0,nRoles).map(([c,n,t],i)=>({id:'r'+i,character:c,name:n,title:t,manual:i===0})),inbox:Q.get('guest')||nRoles?[]:[{id:'q',text:'Tmavý nebo světlý design?',options:['Tmavý','Světlý'],default:'Světlý',answer:null}],assumptions:[],history:[],agents:{boss:{status:'waiting',activity:'čeká na tebe',model:'opus',effort:'high'},researcher:{status:'idle'},designer:{status:'working',activity:'edituje hero.css',task:'Hero sekce',model:'sonnet',effort:'medium'},tester:{status:nRoles?'working':'waiting',activity:'dělá screenshot'},...Object.fromEntries(CASTD.slice(0,nRoles).map((_,i)=>['r'+i,{status:['working','idle','done','working'][i%4],activity:'pracuje'}]))}};
+  S.projects=[d];if(Q.get('show'))setTimeout(()=>runShow(d),600);if(Q.get('motion')){setTimeout(()=>{d.agents.researcher.status='waiting';render()},1000);setTimeout(()=>{d.agents.researcher.status='working';d.agents.tester.status='working';d.agents.boss.status='working';d.inbox.forEach(q=>q.answer='Světlý');render()},19000)}if(Q.get('guest')){guests=[{id:'g',title:'Oprava přihlášení v API',active:true,ageSec:3,now:'edituje auth.ts',recent:[{kind:'text',text:'Projdu místa, kde se token obnovuje.'},{kind:'tool',text:'čte src/auth.ts'},{kind:'tool',text:'edituje src/auth.ts'}]}]}}
+/* "Ukázka animací": a fake team walks through every scene state with a caption. Nothing is sent to any model. */
+function toggleShow(){const t=Q.get('t');location.href=Q.get('show')?`/?t=${t}`:`/?t=${t}&demo=1&view=office&n=7&show=1`}
+function runShow(d){
+  $('demo-btn').textContent='Ukončit ukázku';document.body.classList.add('showing');
+  const nm=id=>(document.querySelector(`#scene .people .pp[data-role="${id}"]`)?.getAttribute('aria-label')||id).split(' ')[0];
+  const A='researcher',B='r2',C='designer',D='tester',E='r1',all=Object.keys(d.agents).filter(k=>k!=='boss');
+  const set=(ids,st,act)=>ids.forEach(k=>{d.agents[k]={...d.agents[k],status:st,activity:act||d.agents[k]?.activity}});
+  const steps=[
+    [5,'Ráno v kanceláři','Tým stojí u svých stolů čelem k tobě. Harvey sedí v kanceláři, Donna na recepci.',()=>{set(all,'idle');d.agents.boss={...d.agents.boss,status:'idle',activity:'čeká na zadání'};d.inbox=[]}],
+    [5,'Šéf plánuje','Harvey dostal zadání a rozděluje práci (tečky nad hlavou).',()=>{d.agents.boss={...d.agents.boss,status:'working',activity:'rozděluje práci'}}],
+    [6,'Práce začíná',`${nm(A)}, ${nm(C)} a další si sedají ke stolům. Kdo pracuje, sedí zády k nám.`,()=>set([A,C,E,'r3'],'working','pracuje')],
+    [5,'Celý tým pracuje','Všichni sedí u počítačů.',()=>set(all,'working','pracuje')],
+    [10,'Zablokovaný agent',`${nm(A)} potřebuje rozhodnutí: vstane, dojde za Harveyem a sedne si na lavičku.`,()=>set([A],'blocked','potřebuje rozhodnutí')],
+    [9,'Druhá lavička',`${nm(B)} jde taky. U Harveyho jsou dvě lavičky.`,()=>set([B],'blocked','potřebuje rozhodnutí')],
+    [6,'Čeká na odpověď',`${nm(C)} vstane od stolu a čeká (otazník nad hlavou).`,()=>set([C],'waiting','čeká')],
+    [6,'Otázka pro tebe','Harvey se ptá tebe: otazník u šéfa.',()=>{d.agents.boss={...d.agents.boss,status:'waiting',activity:'čeká na tebe'};d.inbox=[{id:'q',text:'Tmavý nebo světlý design?',options:['Tmavý','Světlý'],default:'Světlý',answer:null}]}],
+    [11,'Odpovězeno',`Odpověděl jsi. ${nm(A)} a ${nm(B)} se vrací ke stolům a pracují dál.`,()=>{d.inbox.forEach(q=>q.answer='Světlý');d.agents.boss={...d.agents.boss,status:'working',activity:'hlídá postup'};set([A,B,C],'working','pracuje')}],
+    [6,'Hotové úkoly',`${nm(D)} a ${nm(E)} mají hotovo: vstanou a mají fajfku.`,()=>set([D,E],'done','hotovo')],
+    [7,'Konec směny','Všichni mají hotovo, Harvey kontroluje výsledek. Ukázka se teď zopakuje.',()=>{set(all,'done','hotovo');d.agents.boss={...d.agents.boss,status:'idle',activity:'kontroluje výsledek'}}],
+  ];
+  let i=0,cap=null;
+  const show=()=>{const [sec,title,text,fn]=steps[i];fn();render();
+    const host=$('ws-scene');if(!host)return;cap=host.querySelector('.demo-cap')||host.appendChild(Object.assign(document.createElement('div'),{className:'demo-cap'}));
+    cap.innerHTML=`<small>Ukázka · ${i+1}/${steps.length} · ${title}</small>${text}<div class="bar"><i></i></div>`;
+    const bar=cap.querySelector('.bar i');bar.animate([{width:'0%'},{width:'100%'}],{duration:sec*1000,easing:'linear',fill:'forwards'});
+    i=(i+1)%steps.length;setTimeout(show,sec*1000)};
+  show();
+}
+/* Updates: the server checks version.json on GitHub; a new version lights up a button in the header. */
+let UPD=null;
+async function checkUpdate(force){try{UPD=await api('/api/update'+(force?'?force=1':''));}catch{return}
+  const b=$('update-btn');b.hidden=!UPD.available;if(!UPD.available)return;
+  b.textContent=UPD.needsApp?`Nová aplikace ${UPD.latest}`:`Aktualizovat na ${UPD.latest}`;
+  b.title=(UPD.notes||'Je k dispozici nová verze Agent Office.')}
+async function doUpdate(){if(!UPD?.available)return;const b=$('update-btn');
+  if(UPD.needsApp){if(confirm(`Verze ${UPD.latest} potřebuje novou aplikaci. Otevřít stránku ke stažení?`))window.open(UPD.download,'_blank');return}
+  if(!UPD.app){alert('Ve složce s kódem aktualizuj přes git pull.');return}
+  if(!confirm(`Aktualizovat Agent Office z ${UPD.current} na ${UPD.latest}?${UPD.notes?'\n\nCo je nového: '+UPD.notes:''}\n\nBěžící projekty se na chvilku přeruší a pak pokračují.`))return;
+  b.disabled=true;b.textContent='Stahuji…';
+  const r=await api('/api/update',{method:'POST',body:'{}'}).catch(e=>({error:e.message}));
+  if(r.error){b.disabled=false;b.textContent=`Aktualizovat na ${UPD.latest}`;alert(r.error);return}
+  b.textContent='Restartuji…';
+  if(window.webkit?.messageHandlers?.restartServer)window.webkit.messageHandlers.restartServer.postMessage(1);
+  else alert(`Staženo (${r.version}). Restartuj aplikaci.`)}
+checkUpdate();setInterval(()=>checkUpdate(),6*3600e3);
+checkHealth();setInterval(checkHealth,20000);
+load();
+</script>
+</body>
+</html>

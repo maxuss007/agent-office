@@ -1,0 +1,26 @@
+---
+name: agent-office-reinstall
+description: Use when rebuilding or reinstalling the Agent Office app.
+category: deployment
+---
+
+# Agent Office reinstall and test
+
+Do not reinstall the app while a user project may be running. Ask the user first, or stop the project before rebuilding.
+
+Do not build or install while another session is editing the app's UI files (for example `public/`). A build packages their half-finished work into the installed app. Send that session the build request via cross-session message and leave the build to it; say in the report that nothing was installed.
+
+Procedure:
+1. Check active projects through `/api/state` on port 4747, using the token from `defaults read com.agentoffice.app token`. An empty ACTIVE list is not proof of safety: a reinstall still interrupted a running project, and auto-resume restarted it later.
+2. Free the dev port before tests: `lsof -ti tcp:4796 | xargs kill`.
+3. Run `node --test tests/*.test.mjs` from the repo root and expect `fail 0`.
+4. Build and install with `cd mac && ./build.sh`, then wait about 6 s before probing.
+5. Probe `localhost:4747/pro.css` and `localhost:4747/avatars.js`; both must return 200.
+6. Open a project in the installed app and confirm members render, the office view is visible, and the project workspace is not blank after entering (a stuck entrance animation once left it empty). Verify the installed build, not only the dev server.
+
+Before the reinstall, read each `state.json` under `~/Library/Application Support/Agent Office/projects/*/` and stop if any status is `running`, `waiting_user` or `limit`. Build from the repo root with `bash mac/build.sh`; a successful run ends with `Installed: /Applications/Agent Office.app`. Stop a dev server only by matching its PORT in the process environment, not by killing every `node server.mjs`.
+
+Pitfalls:
+- A bulk rename on 11-11 corrupted the character asset file, so the office loaded without characters. After any bulk rename or move, check the members render.
+- Tests passing does not prove the installed app works.
+- The build uses `mac/AppIcon.png` when it exists (sized with `sips`, packed with `iconutil`) and falls back to `make-icon.swift` otherwise. After an icon change, quit and relaunch the installed app before judging it, since the Dock can keep the old icon.
