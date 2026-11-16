@@ -58,6 +58,15 @@ http.createServer(async (req, res) => {
       let c = {}; try { c = JSON.parse(fs.readFileSync(cfgPath, 'utf8')); } catch {}
       c.lang = b.lang; cfg.lang = b.lang; fs.writeFileSync(cfgPath, JSON.stringify(c, null, 2)); return json(res, 200, { lang: b.lang });
     }
+    if (url.pathname === '/api/install' && req.method === 'GET') { // what is installed (tools, plugins, recommended skills)
+      const out = await new Promise((ok) => _execFile('/bin/bash', [path.join(ROOT, 'scripts', 'install.sh'), '--status'], { timeout: 30000, env: { ...process.env, PATH: [path.join(DATA, 'runtime', 'node', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH].join(':') } }, (err, so) => ok(String(so || '{}'))));
+      try { return json(res, 200, JSON.parse(out)); } catch { return json(res, 200, {}); }
+    }
+    if (url.pathname === '/api/install' && req.method === 'POST') { // one-click install of a missing tool (scripts/install.sh)
+      const item = (await body(req)).item; if (!['node', 'claude', 'codex', 'gemini', 'antigravity', 'plugins', 'skills'].includes(item)) return json(res, 400, { error: 'unknown item' });
+      const out = await new Promise((ok) => _execFile('/bin/bash', [path.join(ROOT, 'scripts', 'install.sh'), item], { timeout: 600000, maxBuffer: 1 << 22, env: { ...process.env, PATH: [path.join(DATA, 'runtime', 'node', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH].join(':') } }, (err, so, se) => ok({ ok: !err, log: String(so || '') + String(se || '') })));
+      return json(res, 200, { ...out, log: out.log.split('\n').filter(Boolean).slice(-12).join('\n') });
+    }
     if (url.pathname === '/api/update' && req.method === 'POST') { try { return json(res, 200, await applyUpdate()); } catch (e) { return json(res, 200, { error: e.message }); } }
     if (url.pathname === '/api/update') return json(res, 200, await checkUpdate(url.searchParams.has('force')));
     if (url.pathname === '/api/health') return json(res, 200, await health(url.searchParams.has('force')));

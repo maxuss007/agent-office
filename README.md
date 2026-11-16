@@ -41,9 +41,9 @@ It runs on the subscriptions you already pay for (Claude, ChatGPT/Codex, optiona
 
 ## 1. What you need
 
-- **macOS 13 Ventura or newer**, Apple silicon or Intel (the server alone runs anywhere Node does).
-- **Node.js 20+** (`brew install node`).
-- At least one service:
+- **macOS 13 Ventura or newer**, Apple silicon or Intel.
+- Nothing else to prepare: on first launch the app installs what is missing with one click each – Node.js, Claude Code, Codex, Gemini CLI, Antigravity, the Claude Code plugins and a set of recommended skills. No Homebrew and no admin password needed.
+- At least one subscription:
 
 | Service | Account | Install |
 |---|---|---|
@@ -52,13 +52,26 @@ It runs on the subscriptions you already pay for (Claude, ChatGPT/Codex, optiona
 | **Antigravity** (optional) | Google account | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` (command `agy`) |
 | **Gemini** (optional, study and research) | Google account or `GEMINI_API_KEY` | `npm install -g @google/gemini-cli` or `brew install gemini-cli` |
 
-To build the Mac app you also need the **Xcode Command Line Tools** (`xcode-select --install`) for `swiftc`.
+To build the Mac app from source you also need **Node.js 20+** and the **Xcode Command Line Tools** (`xcode-select --install`) for `swiftc`.
 
 ## 2. Getting started
 
 ### Download
 
-Get `Agent.Office.dmg` from [Releases](../../releases/latest), open it and drag Agent Office onto the Applications folder. On first launch the app checks your tools and installs the plugins it needs (the same as `scripts/setup.sh`). If something is missing, it tells you what and how to install it.
+Get `Agent.Office.dmg` from [Releases](../../releases/latest), open it and drag Agent Office onto the Applications folder.
+
+On first launch a setup screen shows what is installed and installs the rest on a click (**View → Set Up Tools…** opens it again later):
+
+| | How it is installed |
+|---|---|
+| **Node.js** (required) | official LTS build from nodejs.org, checksum verified, into `~/Library/Application Support/Agent Office/runtime/` |
+| **Claude Code** | the official installer from claude.ai |
+| **Codex**, **Gemini CLI** | npm packages `@openai/codex`, `@google/gemini-cli` into `~/.local` |
+| **Antigravity** | the official installer from antigravity.google |
+| **Claude Code plugins** | autoharness and the official marketplace (autoharness needs Python 3.11+) |
+| **Skills** | the packs in [`scripts/skill-packs.txt`](scripts/skill-packs.txt), downloaded from their authors' GitHub repositories; skills you already have are never overwritten |
+
+Each row also shows the command to run it yourself and a link to the official page. Missing tools can be installed later from **Connections** too. The same installer works from Terminal: `bash scripts/install.sh --status`, `bash scripts/install.sh node`, `… skills` and so on.
 
 The app is not notarized by Apple (that needs a paid developer account), so on first launch macOS blocks it, saying it cannot verify the app is free of malware. To allow it:
 1. Close the message (Done / OK).
@@ -199,14 +212,14 @@ Agent Office is built on other people's work. Thank you:
 - [autoharness](https://github.com/tigerless-labs/autoharness) by Tigerless Labs: a plugin that learns new skills from finished work (the skills in `.claude/skills/` came from it).
 - [Skills CLI](https://github.com/vercel-labs/skills) by Vercel Labs for finding and installing skills.
 
-**Skills the agents like to work with** (not part of this repository, installed separately)
+**Skills the agents like to work with** (not part of this repository; the setup screen installs them from these repositories, see `scripts/skill-packs.txt`)
 - SEO and ads: [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) and [AgriciDaniel/claude-ads](https://github.com/AgriciDaniel/claude-ads).
-- Design, brand and slides: ClaudeKit (`design`, `brand`, `design-system`, `ui-styling`, `banner-design`, `slides`).
-- Design and animation: the principles of [Emil Kowalski](https://emilkowal.ski).
-- Marketing: skills drawing among others on *Founding Marketing* by Corey Haines.
+- UI/UX, design, brand and slides: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill).
+- Design engineering and animation: [emilkowalski/skill](https://github.com/emilkowalski/skill) by Emil Kowalski.
+- Marketing: [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) by Corey Haines.
 - Visibility in AI search: [Knowatoa/ai-visibility-skills](https://github.com/Knowatoa/ai-visibility-skills).
 - Model council: [karpathy/llm-council](https://github.com/karpathy/llm-council) by Andrej Karpathy, as a skill based on [aiwithremy/claude-skills-llm-council](https://github.com/aiwithremy/claude-skills-llm-council).
-- Blender: blender-agent-skills. BIM and Bonsai: [OpenAEC Foundation](https://github.com/OpenAEC-Foundation). ArchiCAD: weltmaister.
+- Coding guidelines: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills). Finding more skills: [vercel-labs/skills](https://github.com/vercel-labs/skills).
 
 **Art**
 - The characters are a fan tribute to the TV series *Suits* (created by Aaron Korsh, USA Network). The project is not affiliated with the show's makers; the names and likenesses belong to their owners.

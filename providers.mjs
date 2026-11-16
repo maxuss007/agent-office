@@ -14,7 +14,7 @@ let cached, pending;
 const metric = () => { try { return JSON.parse(fs.readFileSync(stateFile(), 'utf8')); } catch { return {}; } };
 export function locate(name) {
   const explicit = process.env[`${name.toUpperCase()}_BIN`];
-  const files = [explicit, ...[`${home}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', ...(process.env.PATH || '').split(':')].filter(Boolean).map((d) => path.join(d, name))];
+  const files = [explicit, ...[path.join(process.env.AGENT_OFFICE_HOME || path.join(home, 'Library/Application Support/Agent Office'), 'runtime/node/bin'), `${home}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', ...(process.env.PATH || '').split(':')].filter(Boolean).map((d) => path.join(d, name))];
   if (name === 'codex') files.push('/Applications/Codex.app/Contents/Resources/codex', '/Applications/ChatGPT.app/Contents/Resources/codex-cli/CodexCLI.app/Contents/MacOS/codex');
   return files.find((f) => { try { fs.accessSync(f, fs.constants.X_OK); return fs.statSync(f).isFile(); } catch { return false; } }) || null;
 }

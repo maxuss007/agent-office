@@ -1,0 +1,12 @@
+# General skills the office's agents work well with. `bash scripts/install.sh skills` downloads each pack
+# from GitHub and copies the skills you do not have yet into ~/.claude/skills (it never overwrites one).
+# repo                                  folder in the repo   marker skill (installed = present)   name for a skill at the folder root
+coreyhaines31/marketingskills           skills               copywriting
+AgriciDaniel/claude-seo                 skills               seo-audit
+AgriciDaniel/claude-ads                 skills               ads-audit
+AgriciDaniel/claude-ads                 ads                  ads                                  ads
+nextlevelbuilder/ui-ux-pro-max-skill    .claude/skills       ui-ux-pro-max
+emilkowalski/skill                      skills               emil-design-eng
+aiwithremy/claude-skills-llm-council    .                    llm-council                          llm-council
+forrestchang/andrej-karpathy-skills     skills               karpathy-guidelines
+vercel-labs/skills                      skills               find-skills

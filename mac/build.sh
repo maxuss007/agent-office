@@ -22,6 +22,7 @@ swiftc -O -swift-version 5 -target arm64-apple-macos$MINOS AgentOffice.swift -o 
 swiftc -O -swift-version 5 -target x86_64-apple-macos$MINOS AgentOffice.swift -o build/AgentOffice-x86_64
 lipo -create build/AgentOffice-arm64 build/AgentOffice-x86_64 -output "$APP/Contents/MacOS/AgentOffice"; rm -f build/AgentOffice-arm64 build/AgentOffice-x86_64
 cp Info.plist "$APP/Contents/"
+cp setup.html "$APP/Contents/Resources/"   # first-launch screen that installs the tools
 /usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MINOS" "$APP/Contents/Info.plist"
 # icon
 rm -rf build/AppIcon.iconset
@@ -37,6 +38,7 @@ for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-au
 mkdir -p "$APP/Contents/Resources/server/scripts"
 cp "$ROOT/scripts/claude-usage-pty.py" "$APP/Contents/Resources/server/scripts/"
 cp "$ROOT/scripts/setup.sh" "$APP/Contents/Resources/server/scripts/"
+cp "$ROOT/scripts/install.sh" "$ROOT/scripts/skill-packs.txt" "$APP/Contents/Resources/server/scripts/"
 cp -R "$ROOT/roles" "$ROOT/presets" "$ROOT/public" "$APP/Contents/Resources/server/"
 codesign --force --deep --sign - "$APP"
 echo "Built: $PWD/$APP"

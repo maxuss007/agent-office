@@ -41,7 +41,7 @@ export function loadConfig() {
 
 // ---------- locating claude / node (GUI apps and some shells lack ~/.local/bin in PATH) ----------
 const HOME = os.homedir();
-const EXTRA_PATH = [`${HOME}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', `${HOME}/.claude/local`, `${HOME}/.npm-global/bin`, `${HOME}/.bun/bin`];
+const EXTRA_PATH = [path.join(process.env.AGENT_OFFICE_HOME || path.join(HOME, 'Library/Application Support/Agent Office'), 'runtime/node/bin'), `${HOME}/.local/bin`, '/opt/homebrew/bin', '/usr/local/bin', `${HOME}/.claude/local`, `${HOME}/.npm-global/bin`, `${HOME}/.bun/bin`];
 export function findBin(name) {
   if (name === 'claude' && process.env.CLAUDE_BIN) {
     try { fs.accessSync(process.env.CLAUDE_BIN, fs.constants.X_OK); if (fs.statSync(process.env.CLAUDE_BIN).isFile()) return process.env.CLAUDE_BIN; } catch {}

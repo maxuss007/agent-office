@@ -42,7 +42,7 @@ for f in README.md README.cs.md .gitignore boss.md server.mjs orchestrator.mjs p
 for d in roles presets scripts public/assets/suits; do mkdir -p "$SHARE/$d"; "${RS[@]}" "$ROOT/$d/" "$SHARE/$d/"; done
 "${RS[@]}" --exclude office-motion.test.mjs "$ROOT/tests/" "$SHARE/tests/"
 for f in index.html i18n.js pro.css game.css art.js avatars.js office-suits.js; do cp "$ROOT/public/$f" "$SHARE/public/$f"; done
-for f in AgentOffice.swift build.sh Info.plist AppIcon.png make-dmg.sh make-dmg-background.swift; do cp "$ROOT/mac/$f" "$SHARE/mac/$f"; done
+for f in AgentOffice.swift build.sh Info.plist AppIcon.png setup.html make-dmg.sh make-dmg-background.swift; do cp "$ROOT/mac/$f" "$SHARE/mac/$f"; done
 # files that are no longer part of the app (development leftovers)
 rm -rf "$SHARE/art" "$SHARE/evals" "$SHARE/mac/make-icon.swift" "$SHARE/scripts/eval.mjs" "$SHARE/scripts/check-providers.mjs"
 # skills for working on the app itself (they live next to the app or one level up in a larger repo)

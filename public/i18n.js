@@ -202,6 +202,10 @@
     'Tato role nemá povoleno zapisovat.': 'This role is not allowed to write.', 'Obsah souboru není platný.': 'The file content is not valid.', 'Neznámý nástroj.': 'Unknown tool.', 'Místní úkol dokončen.': 'Local task finished.',
     'Místní model překročil 12 kroků. Úkol potřebuje silnější model.': 'The local model went over 12 steps. The task needs a stronger model.', 'Místní model překročil časový limit kroku; soubory zůstaly zachované.': 'The local model ran out of time for the step; files were kept.',
     'Blokováno:': 'Blocked:', 'Předpoklad:': 'Assumption:', 'Rozhodnutí:': 'Decisions:', 'Výstupy:': 'Outputs:', 'Předávky a důkazy:': 'Handoffs and evidence:', 'Nezávislé ověření:': 'Independent check:',
+    // installing tools from Connections
+    'Klikni výše na': 'Click', ', nebo v Terminálu spusť': ', or run this in Terminal:', '. Stačí i aplikace ChatGPT pro Mac.': '. The ChatGPT app for Mac also works.',
+    'Volitelné. Klikni výše na': 'Optional. Click', 'Volitelné, hodí se na studium a rešerše. Klikni výše na': 'Optional, good for study and research. Click', 'Nainstalovat': 'Install',
+    'Instaluji…': 'Installing…', 'Instalace se nepovedla.': 'Installation failed.', 'Skills: doporučené balíčky jsou nainstalované.': 'Skills: the recommended packs are installed.', '↓ Nainstalovat skills': '↓ Install skills',
     // labels without accents that the first pass missed
     'Archiv': 'Archive', 'Archivovat': 'Archive', 'Obnovit z archivu': 'Restore from archive', 'Aktivita': 'Activity', 'Podrobnosti': 'Details', 'Poslat': 'Send',
     'Nechat na Bossovi': 'Leave it to the boss', 'Effort': 'Effort', 'Chyba': 'Error', 'Volno': 'Free', 'volno': 'free', 'Nepovedlo se': 'Failed', 'Nepovedlo se.': 'Failed.',
@@ -293,6 +297,7 @@
     [/^(\w+): ([\d,\s]+) tokenů \(vstup \+ výstup\)$/, '$1: $2 tokens (input + output)'],
     // generic: "• text", "a – b" and "a · b · c" get their known parts translated
     [/^Kolo (\d+)\/(\d+)$/, 'Round $1/$2'],
+    [/^↓ Nainstalovat (.+)$/, '↓ Install $1'], [/^Skills: (\d+) doporučených balíčků chybí\.$/, 'Skills: $1 recommended packs are missing.'],
     [/^([•✓✕◐○●⚑⟳★]) (.+)$/, (m, a, b) => a + ' ' + tr(b)],
     [/^(.+?) – ([^–]+)$/, (m, a, b) => { const t = tr(b); return t === b ? m : a + ' – ' + t; }],
     [/^[^·]+(?: · [^·]+)+$/, (m) => m.split(' · ').map((x) => tr(x)).join(' · ')],

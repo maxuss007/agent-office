@@ -41,9 +41,9 @@ Běží nad předplatnými, která už máš (Claude, ChatGPT/Codex, volitelně 
 
 ## 1. Co potřebuješ
 
-- **macOS 13 Ventura nebo novější**, Apple silicon i Intel (samotný server běží všude, kde je Node).
-- **Node.js 20+** (`brew install node`).
-- Aspoň jednu službu:
+- **macOS 13 Ventura nebo novější**, Apple silicon i Intel.
+- Nic dalšího připravovat nemusíš: při prvním spuštění aplikace nainstaluje, co chybí, vždy jedním kliknutím – Node.js, Claude Code, Codex, Gemini CLI, Antigravity, pluginy Claude Code a sadu doporučených skills. Bez Homebrew a bez hesla správce.
+- Aspoň jedno předplatné:
 
 | Služba | Účet | Instalace |
 |---|---|---|
@@ -52,13 +52,15 @@ Běží nad předplatnými, která už máš (Claude, ChatGPT/Codex, volitelně 
 | **Antigravity** (volitelné) | účet Google | `curl -fsSL https://antigravity.google/cli/install.sh \| bash` (příkaz `agy`) |
 | **Gemini** (volitelné, studium a rešerše) | účet Google nebo `GEMINI_API_KEY` | `npm install -g @google/gemini-cli` nebo `brew install gemini-cli` |
 
-Pro Mac aplikaci navíc **Xcode Command Line Tools** (`xcode-select --install`), kvůli `swiftc`.
+Pro sestavení Mac aplikace ze zdrojáků navíc **Node.js 20+** a **Xcode Command Line Tools** (`xcode-select --install`), kvůli `swiftc`.
 
 ## 2. Spuštění
 
 ### Stažení
 
 Stáhni `Agent.Office.dmg` z [Releases](../../releases/latest), otevři ho a přetáhni Agent Office do složky Applications. Pak pokračuj podle odstavce o notarizaci níže.
+
+Při prvním spuštění se ukáže obrazovka, která zkontroluje nástroje a chybějící nainstaluje jedním kliknutím: Node.js (z nodejs.org do složky aplikace), Claude Code, Codex, Gemini CLI, Antigravity, pluginy Claude Code a doporučené skills ze [`scripts/skill-packs.txt`](scripts/skill-packs.txt). U každé položky je i příkaz pro ruční instalaci a odkaz na oficiální stránku. Znovu ji otevřeš přes **Zobrazení → Instalace nástrojů…**, chybějící nástroje jdou doinstalovat i v okně Připojení.
 
 ### Sestavení Mac aplikace
 
@@ -205,14 +207,14 @@ Agent Office stojí na práci jiných lidí. Díky jim:
 - [autoharness](https://github.com/tigerless-labs/autoharness) od Tigerless Labs: plugin, který z odvedené práce učí nové skills (vznikly z něj i skills v `.claude/skills/`).
 - [Skills CLI](https://github.com/vercel-labs/skills) od Vercel Labs pro hledání a instalaci skills.
 
-**Skills, se kterými agenti v kanceláři rádi pracují** (nejsou součástí tohoto repozitáře, instalují se zvlášť)
+**Skills, se kterými agenti v kanceláři rádi pracují** (nejsou součástí repozitáře; instalační obrazovka je stáhne z těchto repozitářů, viz `scripts/skill-packs.txt`)
 - SEO a reklama: [AgriciDaniel/claude-seo](https://github.com/AgriciDaniel/claude-seo) a [AgriciDaniel/claude-ads](https://github.com/AgriciDaniel/claude-ads).
-- Design, značka a prezentace: ClaudeKit (`design`, `brand`, `design-system`, `ui-styling`, `banner-design`, `slides`).
-- Design a animace: principy [Emila Kowalskiho](https://emilkowal.ski).
-- Marketing: skills vycházejí mimo jiné z knihy *Founding Marketing* od Coreyho Hainese.
+- UI/UX, design, značka a prezentace: [nextlevelbuilder/ui-ux-pro-max-skill](https://github.com/nextlevelbuilder/ui-ux-pro-max-skill).
+- Design engineering a animace: [emilkowalski/skill](https://github.com/emilkowalski/skill) od Emila Kowalského.
+- Marketing: [coreyhaines31/marketingskills](https://github.com/coreyhaines31/marketingskills) od Coreyho Hainese.
 - Viditelnost v AI vyhledávání: [Knowatoa/ai-visibility-skills](https://github.com/Knowatoa/ai-visibility-skills).
 - Rada modelů: [karpathy/llm-council](https://github.com/karpathy/llm-council) od Andreje Karpathyho, skill podle [aiwithremy/claude-skills-llm-council](https://github.com/aiwithremy/claude-skills-llm-council).
-- Blender: blender-agent-skills. BIM a Bonsai: [OpenAEC Foundation](https://github.com/OpenAEC-Foundation). ArchiCAD: weltmaister.
+- Zásady programování: [forrestchang/andrej-karpathy-skills](https://github.com/forrestchang/andrej-karpathy-skills). Hledání dalších skills: [vercel-labs/skills](https://github.com/vercel-labs/skills).
 
 **Grafika**
 - Postavy jsou fanouškovská pocta seriálu *Suits* (autor Aaron Korsh, USA Network). Projekt s tvůrci seriálu nijak nesouvisí a jména i podoby postav patří jejich vlastníkům.

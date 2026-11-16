@@ -1,7 +1,7 @@
 {
-  "version": "1.2.2",
-  "shell": 2,
+  "version": "1.3.0",
+  "shell": 3,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "The whole interface is now in English: task states (Failed), the progress panel (Status, Round, Attempts), the new-goal types, limit messages, server errors and agent activity. Generated files (task board, plan, brief, final report, HTML summary) follow the chosen language too."
+  "notes": "One-click setup: on first launch the app installs what is missing – Node.js (from nodejs.org, no Homebrew needed), Claude Code, Codex, Gemini CLI, Antigravity, the Claude Code plugins and recommended skills from their authors on GitHub. Each item also shows the command to run yourself and the official link. Missing tools can be installed from Connections too. Needs the new app (DMG)."
 }

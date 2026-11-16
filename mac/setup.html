@@ -1,0 +1,90 @@
+<!doctype html>
+<!-- First-launch screen of the Mac app: shows which tools are installed and installs the missing ones on a click.
+     The app fills in {{LANG}} and {{STATUS}} and talks to this page through window.webkit.messageHandlers.setup. -->
+<html lang="{{LANG}}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--bg:#0f1115;--card:#171a20;--line:#272b33;--fg:#eef0f3;--mute:#9aa1ac;--ok:#3ccf91;--bad:#ff7a6b;--acc:#d97757;--code:#0b0d10}
+@media(prefers-color-scheme:light){:root{--bg:#f6f6f4;--card:#fff;--line:#e4e2dc;--fg:#1d1d1f;--mute:#6b6f76;--ok:#12865b;--bad:#c2413b;--code:#f1efe9}}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,system-ui,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:36px 24px 60px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);font-weight:700}
+h1{font-size:28px;margin:6px 0 6px}p.lead{color:var(--mute);margin:0 0 22px}
+.row{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:10px 0}
+.top{display:flex;align-items:center;gap:12px}.top .name{font-weight:700}.top .tag{font-size:11px;font-weight:700;color:var(--mute);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
+.top .tag.req{color:var(--acc);border-color:var(--acc)}.top .st{margin-left:auto;font-size:13px;font-weight:600;white-space:nowrap}.st.ok{color:var(--ok)}.st.bad{color:var(--bad)}.st.busy{color:var(--acc)}
+.desc{color:var(--mute);font-size:13.5px;margin:4px 0 0}
+button{font:inherit;font-weight:600;font-size:13.5px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--fg);padding:7px 14px;cursor:pointer}
+button.primary{background:var(--acc);border-color:var(--acc);color:#fff}button:disabled{opacity:.45;cursor:default}
+details{margin-top:8px}summary{font-size:13px;color:var(--mute);cursor:pointer}
+.cmd{display:flex;gap:8px;align-items:center;margin-top:8px}.cmd code{flex:1;background:var(--code);border:1px solid var(--line);border-radius:9px;padding:7px 10px;font:12.5px/1.4 ui-monospace,Menlo,monospace;overflow-x:auto;white-space:nowrap}
+.cmd button{padding:6px 10px;font-size:12px}a{color:var(--acc);cursor:pointer}
+.foot{display:flex;gap:10px;align-items:center;margin-top:22px;flex-wrap:wrap}.foot .note{color:var(--mute);font-size:13px;flex:1;min-width:220px}
+pre#log{background:var(--code);border:1px solid var(--line);border-radius:12px;padding:12px;font:12px/1.45 ui-monospace,Menlo,monospace;max-height:200px;overflow:auto;white-space:pre-wrap;margin-top:16px}
+pre#log:empty{display:none}
+</style></head><body><div class="wrap">
+<div class="eyebrow" data-t="eyebrow"></div><h1 data-t="title"></h1><p class="lead" data-t="lead"></p>
+<div id="rows"></div>
+<pre id="log"></pre>
+<div class="foot"><button class="primary" id="all" onclick="installNeeded()"></button><button id="go" onclick="post({action:'continue'})"></button><span class="note" id="note"></span></div>
+</div>
+<script>
+const LANG='{{LANG}}'==='cs'?'cs':'en';
+const S={
+ en:{eyebrow:'First launch',title:'Set up Agent Office',lead:'Agent Office runs on tools that live on your Mac. Install what is missing with one click – no Homebrew or admin password needed. Signing in to each service comes next, under Connections.',
+   all:'Install what is needed',go:'Open Agent Office',goLater:'Continue without it',installed:'Installed',missing:'Not installed',busy:'Installing…',install:'Install',req:'required',rec:'recommended',opt:'optional',manual:'Install it yourself',copy:'Copy',copied:'Copied',site:'Official page',
+   need:'Node.js and Claude Code or Codex are needed to start.',ready:'Everything needed is installed. Sign in to the services under Connections.',pyNeed:'Needs Python 3.11 or newer:',
+   node:['Node.js','Runs the office itself. Installed from nodejs.org (official LTS build, checksum verified) into the app\'s own folder.'],
+   claude:['Claude Code','The boss and most agents run on your Claude subscription (Pro or Max).'],
+   codex:['Codex','Uses your ChatGPT subscription (Plus or Pro); mostly for programming.'],
+   gemini:['Gemini CLI','Google\'s Gemini for study and research, with Google search. Free with a Google account.'],
+   antigravity:['Antigravity','Google\'s coding agent, used for code when connected.'],
+   plugins:['Claude Code plugins','autoharness learns new skills from finished work; the official marketplace lets the boss add plugins.'],
+   skills:['Skills','Ready-made know-how for the agents: marketing, SEO, ads, UI/UX design, animation, model council and more, from their authors on GitHub. Skills you already have are never overwritten.'],skillsMissing:'packs missing'},
+ cs:{eyebrow:'První spuštění',title:'Příprava Agent Office',lead:'Agent Office běží nad nástroji, které máš na Macu. Co chybí, nainstaluješ jedním kliknutím – bez Homebrew a bez hesla správce. Přihlášení ke službám pak uděláš v okně Připojení.',
+   all:'Nainstalovat, co je potřeba',go:'Otevřít Agent Office',goLater:'Pokračovat bez toho',installed:'Nainstalováno',missing:'Chybí',busy:'Instaluji…',install:'Nainstalovat',req:'nutné',rec:'doporučené',opt:'volitelné',manual:'Nainstalovat ručně',copy:'Kopírovat',copied:'Zkopírováno',site:'Oficiální stránka',
+   need:'Ke spuštění je potřeba Node.js a Claude Code nebo Codex.',ready:'Vše potřebné je nainstalované. Ke službám se přihlásíš v okně Připojení.',pyNeed:'Potřebuje Python 3.11 nebo novější:',
+   node:['Node.js','Pohání samotnou kancelář. Stáhne se z nodejs.org (oficiální LTS verze s kontrolou součtu) do vlastní složky aplikace.'],
+   claude:['Claude Code','Šéf a většina agentů běží na tvém předplatném Claude (Pro nebo Max).'],
+   codex:['Codex','Používá tvé předplatné ChatGPT (Plus nebo Pro), hlavně na programování.'],
+   gemini:['Gemini CLI','Gemini od Googlu na studium a rešerše s vyhledáváním Google. Zdarma s účtem Google.'],
+   antigravity:['Antigravity','Programovací agent od Googlu, šéf ho po připojení používá na kód.'],
+   plugins:['Pluginy Claude Code','autoharness se učí nové skills z hotové práce, oficiální tržiště umožní šéfovi přidávat pluginy.'],
+   skills:['Skills','Hotové know-how pro agenty: marketing, SEO, reklama, UI/UX design, animace, rada modelů a další, od jejich autorů z GitHubu. Skills, které už máš, se nikdy nepřepíšou.'],skillsMissing:'balíčků chybí'}}[LANG];
+const SCRIPT='"/Applications/Agent Office.app/Contents/Resources/server/scripts/install.sh"';
+const ITEMS=[
+ {id:'node',level:'req',url:'https://nodejs.org/en/download',cmd:'bash '+SCRIPT+' node'},
+ {id:'claude',level:'rec',url:'https://claude.com/claude-code',cmd:'curl -fsSL https://claude.ai/install.sh | bash'},
+ {id:'codex',level:'opt',url:'https://github.com/openai/codex',cmd:'npm install -g --prefix ~/.local @openai/codex'},
+ {id:'gemini',level:'opt',url:'https://github.com/google-gemini/gemini-cli',cmd:'npm install -g --prefix ~/.local @google/gemini-cli'},
+ {id:'antigravity',level:'opt',url:'https://antigravity.google',cmd:'curl -fsSL https://antigravity.google/cli/install.sh | bash'},
+ {id:'plugins',level:'opt',url:'https://github.com/tigerless-labs/autoharness',cmd:'claude plugin marketplace add tigerless-labs/autoharness && claude plugin install autoharness@autoharness --scope user'},
+ {id:'skills',level:'rec',url:'https://github.com/maxuss007/agent-office/blob/main/scripts/skill-packs.txt',cmd:'bash '+SCRIPT+' skills'},
+];
+let ST={{STATUS}}, busy=null;
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const post=m=>window.webkit?.messageHandlers?.setup?.postMessage(m);
+const ok=id=>!!ST[id]?.ok;
+const ready=()=>ok('node')&&(ok('claude')||ok('codex'));
+function render(){
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=S[e.dataset.t]);
+  document.getElementById('rows').innerHTML=ITEMS.map(it=>{const [name,desc]=S[it.id];const st=busy===it.id?'busy':ok(it.id)?'ok':'bad';
+    const blocked=(['codex','gemini'].includes(it.id)&&!ok('node'))||(it.id==='plugins'&&!ok('claude'));   // npm needs Node.js, plugins need Claude Code
+    const py=it.id==='plugins'&&!ok('python')?`<p class="desc">${esc(S.pyNeed)} <a onclick="post({action:'open',url:'https://www.python.org/downloads/macos/'})">python.org</a></p>`:'';
+    return `<div class="row"><div class="top"><span class="name">${esc(name)}</span><span class="tag ${it.level==='req'?'req':''}">${esc(S[it.level])}</span>
+      <span class="st ${st}">${st==='busy'?S.busy:st==='ok'?'✓ '+S.installed+(ST[it.id]?.version?' · '+esc(ST[it.id].version):''):(it.id==='skills'&&ST.skills?.missing?ST.skills.missing+' '+S.skillsMissing:S.missing)}</span>
+      ${ok(it.id)?'':`<button ${busy||blocked?'disabled':''} onclick="install(['${it.id}'])">${esc(S.install)}</button>`}</div>
+      <p class="desc">${esc(desc)}</p>${py}
+      <details><summary>${esc(S.manual)}</summary><div class="cmd"><code>${esc(it.cmd)}</code><button onclick="copy(this,${esc(JSON.stringify(it.cmd))})">${esc(S.copy)}</button></div>
+      <p class="desc"><a onclick="post({action:'open',url:'${it.url}'})">${esc(S.site)} ↗</a></p></details></div>`}).join('');
+  const needed=['node','claude','skills'].filter(id=>!ok(id)).concat(ok('claude')&&!ST.plugins?.ok&&ok('python')?['plugins']:[]);
+  const all=document.getElementById('all');all.textContent=S.all;all.hidden=!needed.length;all.disabled=!!busy;
+  const go=document.getElementById('go');go.textContent=ready()?S.go:S.goLater;go.disabled=!!busy;go.className=ready()?'primary':'';
+  document.getElementById('note').textContent=ready()?S.ready:S.need;
+}
+function copy(b,t){post({action:'copy',text:t});b.textContent=S.copied;setTimeout(()=>b.textContent=S.copy,1500)}
+function install(list){if(busy||!list.length)return;busy=list[0];render();post({action:'install',items:list})}
+function installNeeded(){install(['node','claude'].filter(id=>!ok(id)).concat(ST.plugins?.ok?[]:['plugins'],ST.skills?.ok?[]:['skills']))}
+// called by the app
+window.ao={render(s){ST=s;render()},busy(id){busy=id;render()},done(){busy=null;render()},log(l){const e=document.getElementById('log');e.textContent+=l+'\n';e.scrollTop=e.scrollHeight}};
+render();
+</script></body></html>

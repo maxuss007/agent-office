@@ -69,7 +69,8 @@ final class ServerManager {
     static func findNode() -> String? {
         let fm = FileManager.default
         let home = NSHomeDirectory()
-        var c = ["/opt/homebrew/bin/node", "/usr/local/bin/node", "\(home)/.local/bin/node", "\(home)/.volta/bin/node", "\(home)/.bun/bin/node", "/usr/bin/node"]
+        let own = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("Agent Office/runtime/node/bin/node").path
+        var c = [own, "/opt/homebrew/bin/node", "/usr/local/bin/node", "\(home)/.local/bin/node", "\(home)/.volta/bin/node", "\(home)/.bun/bin/node", "/usr/bin/node"]
         let nvm = "\(home)/.nvm/versions/node"
         if let vs = try? fm.contentsOfDirectory(atPath: nvm) { c += vs.sorted().reversed().map { "\(nvm)/\($0)/bin/node" } }
         if let hit = c.first(where: { fm.isExecutableFile(atPath: $0) }) { return hit }
@@ -82,7 +83,7 @@ final class ServerManager {
     }
 
     // Version of this Mac shell. Bump it (and "shell" in version.json) only when this file changes in a way the server relies on.
-    static let shellVersion = 2
+    static let shellVersion = 3
     var runningUpdate = false
     var onCrash: (() -> Void)?   // the server exited without being asked to
     var bundledDir: URL? { Bundle.main.resourceURL?.appendingPathComponent("server") }
@@ -120,7 +121,7 @@ final class ServerManager {
     }
 
     func start() -> String? { // returns an error message, or nil
-        guard let node = ServerManager.findNode() else { return L("Node.js was not found. Install it (brew install node) and open the app again.", "Nenašel jsem Node.js. Nainstaluj ho (brew install node) a spusť aplikaci znovu.") }
+        guard let node = ServerManager.findNode() else { return L("Node.js was not found. Install it from View → Set Up Tools… and open the app again.", "Nenašel jsem Node.js. Nainstaluj ho přes Zobrazení → Instalace nástrojů… a spusť aplikaci znovu.") }
         guard let res = serverDir(), FileManager.default.fileExists(atPath: res.appendingPathComponent("server.mjs").path) else { return L("The app is missing its server/ folder.", "V aplikaci chybí složka server/.") }
         runningUpdate = res != bundledDir
         guard let free = (4747...4770).first(where: ServerManager.portFree) else { return L("No free port between 4747 and 4770.", "Žádný volný port 4747–4770.") }
@@ -134,7 +135,7 @@ final class ServerManager {
         env["AGENT_OFFICE_HOME"] = support.path; env["AGENT_OFFICE_TOKEN"] = token
         env["AGENT_OFFICE_SHELL"] = String(ServerManager.shellVersion)
         env["AGENT_OFFICE_APP"] = "1"; env["AGENT_OFFICE_PROJECTS"] = NSHomeDirectory() + "/Agent Office"; env["AGENT_OFFICE_CWD"] = NSHomeDirectory()
-        env["PATH"] = ["\(NSHomeDirectory())/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")
+        env["PATH"] = ["\(support.path)/runtime/node/bin", "\(NSHomeDirectory())/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")   // npm tools (codex, gemini) need node on PATH
         p.environment = env
         let log = support.appendingPathComponent("server.log")
         if !FileManager.default.fileExists(atPath: log.path) { FileManager.default.createFile(atPath: log.path, contents: nil) }
@@ -214,31 +215,73 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         firstRunSetup { self.startServer() }
     }
 
-    // First launch on a Mac: run the bundled scripts/setup.sh (checks the tools, installs the Claude Code plugins).
-    // It lives inside the app, so macOS asks for approval only once, for the app itself.
+    // First launch (and whenever Node.js or both Claude and Codex are missing): a setup screen that shows what is
+    // installed and installs the rest on a click, via the bundled scripts/install.sh. No Homebrew, no admin password.
+    var setupNext: (() -> Void)?
+    var installScript: URL? { Bundle.main.resourceURL?.appendingPathComponent("server/scripts/install.sh") }
     func firstRunSetup(_ next: @escaping () -> Void) {
         let mark = server.support.appendingPathComponent(".setup-done")
-        guard let script = Bundle.main.resourceURL?.appendingPathComponent("server/scripts/setup.sh"),
-              FileManager.default.fileExists(atPath: script.path), !FileManager.default.fileExists(atPath: mark.path) else { next(); return }
-        showHTML(L("<h2>First launch</h2><p>Checking tools and installing Claude Code plugins. This takes a moment…</p>", "<h2>První spuštění</h2><p>Kontroluji nástroje a instaluji pluginy pro Claude Code. Chvíli to potrvá…</p>"))
+        guard installScript.map({ FileManager.default.fileExists(atPath: $0.path) }) == true else { next(); return }
+        toolStatus { json in
+            let st = (try? JSONSerialization.jsonObject(with: Data(json.utf8))) as? [String: [String: Any]] ?? [:]
+            let has = { (k: String) in st[k]?["ok"] as? Bool == true }
+            let ready = has("node") && (has("claude") || has("codex"))
+            if ready && FileManager.default.fileExists(atPath: mark.path) { next(); return }
+            self.setupNext = { try? Data().write(to: mark); next() }
+            self.showSetup(json)
+        }
+    }
+    @objc func openSetup() { // menu: Set Up Tools…
+        showWindow()
+        setupNext = { [weak self] in self?.reloadPage() }
+        toolStatus { self.showSetup($0) }
+    }
+    func toolEnv() -> [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        env["PATH"] = ["\(server.support.path)/runtime/node/bin", "\(NSHomeDirectory())/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")
+        env["AGENT_OFFICE_HOME"] = server.support.path
+        return env
+    }
+    func toolStatus(_ done: @escaping (String) -> Void) {
+        guard let script = installScript else { done("{}"); return }
         DispatchQueue.global(qos: .userInitiated).async {
-            let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [script.path]
-            var env = ProcessInfo.processInfo.environment
-            env["PATH"] = ["\(NSHomeDirectory())/.local/bin", "/opt/homebrew/bin", "/usr/local/bin", env["PATH"] ?? "/usr/bin:/bin"].joined(separator: ":")
-            env["AO_FROM_APP"] = "1"; p.environment = env
-            let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
-            var out = ""
-            do { try p.run(); out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""; p.waitUntilExit() } catch { out = error.localizedDescription }
-            let ok = p.terminationReason == .exit && p.terminationStatus == 0
+            let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [script.path, "--status"]; p.environment = self.toolEnv()
+            let pipe = Pipe(); p.standardOutput = pipe; p.standardError = FileHandle.nullDevice
+            var out = "{}"
+            if (try? p.run()) != nil { out = String(data: pipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "{}"; p.waitUntilExit() }
+            if (try? JSONSerialization.jsonObject(with: Data(out.utf8))) == nil { out = "{}" }
+            DispatchQueue.main.async { done(out) }
+        }
+    }
+    func showSetup(_ status: String) {
+        guard let f = Bundle.main.url(forResource: "setup", withExtension: "html"), let html = try? String(contentsOf: f, encoding: .utf8) else { setupNext?(); return }
+        web.loadHTMLString(html.replacingOccurrences(of: "{{LANG}}", with: L("en", "cs")).replacingOccurrences(of: "{{STATUS}}", with: status), baseURL: nil)
+    }
+    func js(_ code: String) { web.evaluateJavaScript(code, completionHandler: nil) }
+    func jsString(_ s: String) -> String { (try? String(data: JSONSerialization.data(withJSONObject: [s]), encoding: .utf8)).flatMap { $0.map { String($0.dropFirst().dropLast()) } } ?? "\"\"" }
+    /** Installs the items one after another, streaming the installer's output to the setup screen. */
+    func install(_ items: [String]) {
+        guard let script = installScript, let item = items.first else { toolStatus { self.js("ao.render(\($0));ao.done()") }; return }
+        js("ao.busy(\(jsString(item)))")
+        let p = Process(); p.executableURL = URL(fileURLWithPath: "/bin/bash"); p.arguments = [script.path, item]; p.environment = toolEnv()
+        let pipe = Pipe(); p.standardOutput = pipe; p.standardError = pipe
+        var buffer = ""
+        pipe.fileHandleForReading.readabilityHandler = { h in
+            let chunk = String(data: h.availableData, encoding: .utf8) ?? ""; if chunk.isEmpty { return }
             DispatchQueue.main.async {
-                if ok { next(); return }
-                let a = NSAlert(); a.alertStyle = .warning
-                a.messageText = L("Something is missing", "Něco chybí")
-                a.informativeText = L("Install what is marked ✗ and open Agent Office again. The check then runs by itself.", "Doinstaluj, co je označené ✗, a otevři Agent Office znovu. Kontrola se pak spustí sama.") + "\n\n" + out.split(separator: "\n").filter { !$0.hasPrefix("Hotovo") && !$0.hasPrefix("Done") }.joined(separator: "\n")
-                a.addButton(withTitle: L("Continue", "Pokračovat")); a.addButton(withTitle: L("Quit", "Ukončit"))
-                if a.runModal() == .alertSecondButtonReturn { NSApp.terminate(nil) } else { next() }
+                buffer += chunk.replacingOccurrences(of: "\r", with: "\n")
+                while let r = buffer.range(of: "\n") { let line = String(buffer[..<r.lowerBound]); buffer.removeSubrange(..<r.upperBound); if !line.isEmpty { self.js("ao.log(\(self.jsString(line)))") } }
             }
         }
+        p.terminationHandler = { proc in
+            pipe.fileHandleForReading.readabilityHandler = nil
+            DispatchQueue.main.async {
+                let ok = proc.terminationStatus == 0
+                self.js("ao.log(\(self.jsString((ok ? "✓ " : "✗ ") + item)))")
+                self.toolStatus { st in self.js("ao.render(\(st))"); self.install(Array(items.dropFirst())) }
+            }
+        }
+        do { try p.run() } catch { js("ao.log(\(jsString(error.localizedDescription)));ao.done()") }
     }
 
     func startServer() {
@@ -273,6 +316,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         let cfg = WKWebViewConfiguration()
         cfg.userContentController.add(self, name: "pickFolder")
         cfg.userContentController.add(self, name: "restartServer")
+        cfg.userContentController.add(self, name: "setup")
         web = WKWebView(frame: .zero, configuration: cfg)
         web.uiDelegate = self
         web.setValue(false, forKey: "drawsBackground")
@@ -282,6 +326,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         window.delegate = self
         window.isReleasedWhenClosed = false
         window.setFrameAutosaveName("AgentOfficeWindow")
+        window.minSize = NSSize(width: 760, height: 560)   // a saved frame can be tiny (display changes); never restore an unusable window
+        if window.frame.width < 760 || window.frame.height < 560 { window.setContentSize(NSSize(width: max(window.frame.width, 1180), height: 860)); window.center() }
         window.center()
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
@@ -290,7 +336,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
         let css = "body{font:16px -apple-system;background:#f6ead2;color:#3a2a1a;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;text-align:center}@media(prefers-color-scheme:dark){body{background:#241a12;color:#f6e8cf}}div{max-width:460px;padding:24px}"
         web.loadHTMLString("<meta charset=utf-8><style>\(css)</style><div>\(body)</div>", baseURL: nil)
     }
-    func showError(_ msg: String) { showHTML("<h2>Agent Office nejde spustit</h2><p>\(msg)</p>") }
+    func showError(_ msg: String) { showHTML(L("<h2>Agent Office cannot start</h2>", "<h2>Agent Office nejde spustit</h2>") + "<p>\(msg)</p>") }
     func showWindow() { window.makeKeyAndOrderFront(nil); NSApp.activate(ignoringOtherApps: true) }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool { sender.orderOut(nil); return false } // projects keep running
@@ -314,6 +360,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
     // native folder picker for "add repo"
     func userContentController(_ c: WKUserContentController, didReceive m: WKScriptMessage) {
         if m.name == "restartServer" { restartServer(); return }
+        if m.name == "setup", let b = m.body as? [String: Any], let action = b["action"] as? String {
+            switch action {
+            case "install": install((b["items"] as? [String] ?? []).filter { ["node", "claude", "codex", "gemini", "antigravity", "plugins", "skills"].contains($0) })
+            case "continue": let n = setupNext; setupNext = nil; n?()
+            case "copy": NSPasteboard.general.clearContents(); NSPasteboard.general.setString(b["text"] as? String ?? "", forType: .string)
+            case "open": if let s = b["url"] as? String, let u = URL(string: s), u.scheme == "https" { NSWorkspace.shared.open(u) }
+            default: break
+            }
+            return
+        }
         guard m.name == "pickFolder" else { return }
         let panel = NSOpenPanel()
         panel.canChooseDirectories = true; panel.canChooseFiles = false; panel.allowsMultipleSelection = false
@@ -355,7 +411,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
             NSMenuItem(title: L("Paste", "Vložit"), action: #selector(NSText.paste(_:)), keyEquivalent: "v"),
             NSMenuItem(title: L("Select All", "Vybrat vše"), action: #selector(NSText.selectAll(_:)), keyEquivalent: "a")])
         let reload = NSMenuItem(title: L("Reload", "Načíst znovu"), action: #selector(reloadPage), keyEquivalent: "r"); reload.target = self
-        sub(L("View", "Zobrazení"), [reload])
+        let tools = NSMenuItem(title: L("Set Up Tools…", "Instalace nástrojů…"), action: #selector(openSetup), keyEquivalent: ""); tools.target = self
+        sub(L("View", "Zobrazení"), [reload, tools])
         sub(L("Window", "Okno"), [NSMenuItem(title: L("Close Window", "Zavřít okno"), action: #selector(NSWindow.performClose(_:)), keyEquivalent: "w"),
                      NSMenuItem(title: L("Minimize", "Minimalizovat"), action: #selector(NSWindow.performMiniaturize(_:)), keyEquivalent: "m")])
         NSApp.mainMenu = main
