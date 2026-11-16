@@ -2,12 +2,38 @@
 
 *[English version](README.md)*
 
-Kancelář AI agentů na tvém Macu. Zadáš šéfovi cíl a on si sestaví tým (výzkum, návrh, text, kontrola…), rozdělí práci, nechá ji ověřit a vrátí hotový výsledek jako přehledné HTML stránky. Běží nad tvými **předplatnými** Claude a ChatGPT (Codex), volitelně i Google Antigravity a Gemini. Nepotřebuje žádné API klíče.
+**Kancelář AI agentů na tvém Macu.** Napiš šéfovi pár vět, co potřebuješ. On prostuduje zadání, najme tým, rozdělí práci, nechá každý výsledek nezávisle zkontrolovat a předá ti hotovou, ověřenou práci. Kód, weby, rešerše, dokumenty, pitch decky, marketing: jakýkoli projekt.
 
-- Šéf (Harvey) jede na nejsilnějším dostupném modelu Claude, ostatním agentům vybírá model podle úkolu a podle toho, které předplatné má víc volného limitu.
-- Kancelář je vidět jako animovaná scéna, kde agenti sedí u stolů, chodí za šéfem s otázkami a podobně. Vedle ní je rozhovor se šéfem, úkoly a výstupy.
-- Když dojde limit, práce se uloží a po obnovení limitu sama pokračuje.
-- Rozhraní je anglicky nebo česky: přepínač **EN | CS** vpravo nahoře. Ve stejném jazyce s tebou mluví i šéf.
+Běží nad předplatnými, která už máš (Claude, ChatGPT/Codex, volitelně Google Antigravity a Gemini). Žádné API klíče.
+
+## Co umí
+
+**Šéf, který projekt řídí za tebe**
+- Přečte zadání i složku projektu, udělá rešerši a zeptá se jen na nejnutnější (nanejvýš tři otázky s tlačítky).
+- Před prací sepíše tvůj vkus a kritéria MUST / SHOULD / NICE, takže „hotovo“ má jasnou definici.
+- Rozplánuje úkoly se vstupy, výstupy a vlastníky bez překryvů a najme chybějící role (výzkum, design, texty, testování, právo, finance… nebo role, které přidáš sám).
+
+**Tým, který si práci sám kontroluje**
+- Agenti pracují souběžně a předávají si výsledky s důkazy na společné tabuli úkolů s logem rozhodnutí.
+- Kritické úkoly přezkoumá nezávislý agent, tester spouští kód, otevírá stránky v prohlížeči a dělá snímky pro počítač i mobil.
+- Šéf každé kolo hodnotí podle kritérií a vrací práci, dokud každé MUST nemá doložený PASS (tři nebo pět kol podle zvolené důkladnosti).
+- Výpočty, testy a další mechanické kroky běží jako příkazy, bez utrácení tokenů.
+
+**Chytré využití předplatných**
+- Ke každému úkolu vybere model: nejsilnější Claude pro šéfa, Codex nebo Antigravity na kód, Gemini na rešerše, levnější modely na rutinu, a podle toho, kde zbývá nejvíc limitu.
+- Když dojde limit, práce se uloží a přejde na jiný model, nebo sama pokračuje po obnovení limitu. Po restartu či pádu naváže na poslední ověřený stav.
+- Hlídá spotřebu tokenů po projektech, fázích, rolích a modelech.
+
+**Kancelář, kterou vidíš a se kterou mluvíš**
+- Animovaná kancelář: kdo pracuje, sedí u stolu; kdo čeká nebo má hotovo, stojí; kdo je zaseknutý, jde za šéfem na lavičku.
+- Klikem na agenta uvidíš lidsky, co dělá a jaký model používá, a můžeš s ním psát nebo ho přesměrovat. Směr celého projektu změníš jednou zprávou šéfovi.
+- Hotové soubory najdeš ve Výstupech, včetně souhrnu zakázky jako přehledné HTML stránky.
+
+**Pořádná Mac aplikace**
+- Stav v liště, upozornění, když se šéf ptá (odpovíš přímo z upozornění) nebo když je hotovo, a projekty běží i na pozadí.
+- Každý projekt má vlastní git větev a worktree, nic se nepushuje. Práci otevřeš jedním klikem v Codexu nebo Claude Code.
+- Učí se: poznatky o tvém vkusu si pamatuje u projektu a plugin autoharness z hotové práce dělá znovupoužitelné skills.
+- Sama se aktualizuje z GitHubu, umí anglicky i česky (EN | CS v hlavičce) a běží na macOS 13 a novějším, Apple silicon i Intel.
 
 > Všechno běží lokálně. Server poslouchá jen na `127.0.0.1` a nic se neposílá jinam než do služeb, které připojíš (Claude, OpenAI, Google).
 

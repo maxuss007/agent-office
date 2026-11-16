@@ -2,12 +2,38 @@
 
 *[Česká verze](README.cs.md)*
 
-An office of AI agents on your Mac. Give the boss a goal and it builds a team (research, design, copy, review…), splits up the work, has it verified and hands back a finished result as clear HTML pages. It runs on your **subscriptions** to Claude and ChatGPT (Codex), optionally also Google Antigravity and Gemini. No API keys needed.
+**An office of AI agents on your Mac.** Tell the boss what you need, in a few sentences. It studies the brief, hires a team, splits up the work, has every result checked independently and hands you a finished, verified deliverable. Code, websites, research, documents, pitch decks, marketing: any kind of project.
 
-- The boss (Harvey) runs on the strongest Claude model available and picks a model for every other agent by task and by which subscription has the most room left.
-- The office is an animated scene: agents sit at their desks, walk over to the boss with questions and so on. Next to it are the chat with the boss, tasks and outputs.
-- When a limit runs out, work is saved and continues by itself once the limit resets.
-- The interface is in English or Czech: the **EN | CS** switch in the top right. The boss talks to you in the same language.
+It runs on the subscriptions you already pay for (Claude, ChatGPT/Codex, optionally Google Antigravity and Gemini). No API keys, nothing in the cloud except the models themselves.
+
+## What it does
+
+**A boss that runs the project for you**
+- Reads the brief and the project folder, researches the topic, and asks you only what it really needs (at most three questions, with answer buttons).
+- Writes down your taste and a scorecard of MUST / SHOULD / NICE criteria before any work starts, so "done" has a definition.
+- Plans the work as tasks with clear inputs, outputs and owners, so no two agents do the same thing, and hires the roles it is missing (researcher, designer, copywriter, tester, lawyer, finance… or roles you add yourself).
+
+**A team that checks its own work**
+- Agents work in parallel and hand over results with evidence, on a shared task board with a decision log.
+- Critical tasks are re-checked by an independent agent; a tester runs the code, opens pages in a browser and takes desktop and mobile screenshots.
+- The boss grades every round against the scorecard and sends the work back until each MUST criterion has a documented pass, for up to three or five rounds depending on how thorough you want it.
+- Calculations, tests and other mechanical steps run as plain commands instead of burning model tokens.
+
+**Smart use of your subscriptions**
+- Picks a model for every task: the strongest Claude model for the boss, Codex or Antigravity for code, Gemini for research, cheaper models for routine work, and whichever subscription has the most room left.
+- When a limit runs out, work is saved; it switches to another model or continues by itself once the limit resets. A restart or a crash picks up from the last verified state.
+- Tracks token usage per project, phase, role and model.
+
+**An office you can watch and talk to**
+- An animated office: agents sit at their desks while they work, stand up when they are waiting or done, and walk over to the boss's benches when they are stuck.
+- Click any agent to see what it is doing in plain language, which model it uses, and to chat with it or redirect it. Change the direction of the whole project with one message to the boss.
+- Finished files appear under Outputs, with a project summary written as a clear HTML page.
+
+**A proper Mac app**
+- Menu bar status, notifications when the boss asks something (answer right from the notification) or finishes, and projects keep running in the background.
+- Each project gets its own git branch and worktree; nothing is ever pushed. Open the work in Codex or Claude Code with one click.
+- Learns as it goes: lessons about your taste are kept per project, and the autoharness plugin turns finished work into reusable skills.
+- Updates itself from GitHub, in English or Czech (EN | CS in the header), and runs on macOS 13 or newer, Apple silicon and Intel.
 
 > Everything runs locally. The server listens only on `127.0.0.1` and nothing is sent anywhere except to the services you connect (Claude, OpenAI, Google).
 

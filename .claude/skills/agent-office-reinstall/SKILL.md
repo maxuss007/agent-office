@@ -14,8 +14,8 @@ Procedure:
 1. Check active projects through `/api/state` on port 4747, using the token from `defaults read com.agentoffice.app token`. An empty ACTIVE list is not proof of safety: a reinstall still interrupted a running project, and auto-resume restarted it later.
 2. Free the dev port before tests: `lsof -ti tcp:4796 | xargs kill`.
 3. Run `node --test tests/*.test.mjs` from the repo root and expect `fail 0`.
-4. Build and install with `cd mac && ./build.sh`, then wait about 6 s before probing.
-5. Probe `localhost:4747/pro.css` and `localhost:4747/avatars.js`; both must return 200.
+4. Build and install from the repo root with `bash mac/build.sh`, not `cd mac && ./build.sh`. A good run ends with `Installed: /Applications/Agent Office.app`.
+5. Find the port from the listening socket (`lsof -nP -iTCP -sTCP:LISTEN`, node on 127.0.0.1:47xx), then poll until the server answers instead of sleeping a fixed time. Probe `/`, `/i18n.js`, `/office-suits.js`, `/assets/suits/office.png` and `/api/state?t=<token>`. All must return 200, and `/api/state` reports `lang` (en by default).
 6. Open a project in the installed app and confirm members render, the office view is visible, and the project workspace is not blank after entering (a stuck entrance animation once left it empty). Verify the installed build, not only the dev server.
 
 Before the reinstall, read each `state.json` under `~/Library/Application Support/Agent Office/projects/*/` and stop if any status is `running`, `waiting_user` or `limit`. Build from the repo root with `bash mac/build.sh`; a successful run ends with `Installed: /Applications/Agent Office.app`. The build targets macOS 13.0 as a universal binary, not just the host OS, so after install confirm `lipo -archs` lists x86_64 and arm64, `vtool -show-build` on the binary shows `minos 13.0`, and `PlistBuddy -c "Print :LSMinimumSystemVersion"` prints 13.0. Stop a dev server only by matching its PORT in the process environment, not by killing every `node server.mjs`.

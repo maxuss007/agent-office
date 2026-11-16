@@ -11,4 +11,5 @@ A usage limit parks work; it never fails it or spends budget on it.
 - A refused call does not count toward `stats.runs`. The project moves to status `limit` with `limit.until` read from the provider message, resumes by itself at that time, and also after an app restart.
 - Relative resets ("in 2 hours 13 minutes", "in 45 minutes") are parsed with a leading `\bin\s+` anchor, so a bare "in" elsewhere in the text cannot match. Absolute resets ("resets 2:10am") go through the usage-screen parser.
 - Claude's `/usage` screen shows stale cached numbers before fresh ones. Wait until the numbers settle before trusting a percentage.
-- Cover each reset format and a no-match string in a test. The fake-CLI fixture pattern is in `references/limit-test-fixture.md`.
+- Reset text from a provider can be malformed, for example a truncated timezone such as `Europm (Europe/Prague`. The parser must treat a broken timezone as no match. An exception there once took down the whole server, so the office images stopped loading. If the server still dies, the app restarts it and the crash stays in the log.
+- Cover each reset format, a malformed timezone and a no-match string in a test. The fake-CLI fixture pattern is in `references/limit-test-fixture.md`.

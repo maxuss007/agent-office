@@ -1,7 +1,7 @@
 {
-  "version": "1.2.0",
+  "version": "1.2.1",
   "shell": 2,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "English interface with a Czech option (EN | CS in the header); the boss answers in the chosen language. Gemini and Antigravity are picked automatically when connected. Updates button in the header. The server no longer crashes on garbled usage output and restarts itself if it ever stops. Development leftovers removed."
+  "notes": "More of the interface in English: usage table, grading, model choice reasons and boss messages. Full English feature overview in the README."
 }

@@ -147,6 +147,7 @@
     'Šéf mu sám dává programování, u agenta ho můžeš vybrat i ručně.': 'The boss gives it programming by itself; you can also pick it for an agent.',
     'Šéf mu sám dává studium a rešerše, u agenta ho můžeš vybrat i ručně.': 'The boss gives it study and research by itself; you can also pick it for an agent.',
     'Žádný model není dostupný. Přihlas Claude nebo Codex v okně Připojení.': 'No model is available. Sign in to Claude or Codex in Connections.', 'Vybraný model není dostupný nebo vyčerpal limit.': 'The chosen model is not available or has used up its limit.',
+    'Žádný model není dostupný. Přihlas Claude nebo Codex, případně spusť Ollamu.': 'No model is available. Sign in to Claude or Codex, or start Ollama.',
     'Není dostupný žádný model. Přihlas Claude nebo Codex, případně spusť Ollamu.': 'No model is available. Sign in to Claude or Codex, or start Ollama.',
     'Token se nepodařilo uložit do Klíčenky. Odemkni ji a zkus to znovu.': 'Could not save the token to the Keychain. Unlock it and try again.', 'Vlož OAuth token vypsaný příkazem claude setup-token.': 'Paste the OAuth token printed by claude setup-token.',
     'Model nevrátil požadovaný JSON výsledek.': 'The model did not return the required JSON result.', 'Usage Claude nyní není dostupné.': 'Claude usage is not available right now.', 'Ollama vypnutá': 'Ollama is off',
@@ -158,6 +159,16 @@
     'Landing page': 'Landing page', 'Pitch deck pro investory': 'Investor pitch deck', 'Q1 marketing': 'Q1 marketing', 'Nové endpointy': 'New endpoints', 'Onboarding': 'Onboarding', 'Manuál značky': 'Brand manual', 'Nový ceník': 'New price list',
     'Výzkum trhu': 'Market research', 'Vyjednávání': 'Negotiation', 'Oprava přihlášení v API': 'Fix sign-in in the API', 'Projdu místa, kde se token obnovuje.': 'I will go through where the token gets refreshed.',
     'Soudkyně Moore': 'Judge Moore',
+    // usage dialog, task list, grading, route reasons (found by going through the app)
+    'Vstup': 'Input', 'Celkem': 'Total', 'Z cache': 'From cache', 'tokenů.': 'tokens.', 'Tvé zásahy': 'Your input', 'Kritické – dvojí ověření': 'Critical – double-checked',
+    'Převzít': 'Accept', 'Převzít zakázku': 'Accept the job', 'Převzato': 'Accepted', '✓ Převzato': '✓ Accepted', '⟳ Pokračovat': '⟳ Continue', 'Automaticky (Boss rozhodne)': 'Automatic (the boss decides)',
+    'Plánování a úsudek': 'Planning and judgement', 'Obsah a analýza': 'Content and analysis', 'Krátký rutinní úkol': 'Short routine task', 'Kód a ověřování': 'Code and verification',
+    'automatický výběr': 'automatic choice', 'ruční volba': 'manual choice', 'limit služby není známý': 'service limit unknown', 'místní model bez předplatného': 'local model, no subscription',
+    'Limit služby – předávám úkol jinému dostupnému modelu.': 'Service limit – handing the task to another available model.',
+    'Model překročil časový limit. Jeden opakovaný pokus naváže na uložené soubory.': 'The model ran out of time. One retry continues from the saved files.',
+    'došel počet kol a povinná kritéria nejsou všechna ověřená': 'out of rounds and not all must-have criteria are verified', 'vyčerpal se rozpočet běhů': 'the run budget ran out', 'kontrola neproběhla': 'the review did not run',
+    'všechna povinná kritéria ověřena': 'all must-have criteria verified', 'Procházím projekt a zadání.': 'Going through the project and the brief.', 'Chybí:': 'Missing:', 'ano': 'yes', 'ne': 'no', 'splněno': 'met',
+    'Výsledek': 'Result', 'Rozpracovaný výsledek': 'Work in progress',
   };
   // dynamic strings: [pattern, replacement or function]
   const PATTERNS = [
@@ -168,7 +179,6 @@
     [/^(.+) · šéf$/, '$1 · boss'], [/^(.+) · asistentka$/, '$1 · assistant'],
     [/^Aktuální krok · (.+)$/, 'Current step · $1'],
     [/^Napiš: (.+)$/, 'Message $1'],
-    [/^(.+?) – ([^–]+)$/, (m, a, b) => { const t = tr(b); return t === b ? m : a + ' – ' + t; }],
     [/^Spravovat projekt (.+)$/, 'Manage project $1'],
     [/^Otevřít projekt (.+)$/, 'Open project $1'],
     [/^Týdenní limit · (.+)$/, 'Weekly limit · $1'],
@@ -190,11 +200,35 @@
     [/^Čeká na (.+)$/, (m, a) => 'Waiting for ' + tr(a)],
     [/^Najímám: (.+)$/, 'Hiring: $1'],
     [/^Nový cíl: (.+)$/, 'New goal: $1'],
-    [/^Používám (.+)$/, 'Using $1'],
     [/^Úkol se nepodařil: (.+)$/, 'Task failed: $1'],
     [/^čte (.+)$/, 'reading $1'], [/^otevírá (.+)$/, 'opening $1'], [/^spouští: (.+)$/, 'running: $1'], [/^prohledává kód: (.+)$/, 'searching code: $1'], [/^hledá na webu „(.+)“$/, 'searching the web for "$1"'],
     [/^otevírá v prohlížeči: (.+)$/, 'opening in the browser: $1'], [/^Pokračuji v projektech: (.+)$/, 'Continuing projects: $1'],
     [/^(\d+) úkolů je hotových z minula – nedělám je znovu\.$/, '$1 tasks were finished earlier – not redoing them.'],
+    [/^Používám (\d+) hotové rešerše z minula\.$/, 'Reusing $1 finished research results from before.'],
+    [/^Git repozitář · (\d+)\/(\d+) úkolů$/, 'Git repository · $1/$2 tasks'],
+    [/^(\d+)\/(\d+) hotovo · kritéria (\d+)\/(\d+)$/, '$1/$2 done · criteria $3/$4'],
+    [/^Nezávislé ověření: (.+)$/, 'Independent check: $1'],
+    [/^Výsledek · (.+)$/, 'Result · $1'],
+    [/^Poslední model · (.+)$/, 'Last model · $1'],
+    [/^Nový pokyn od uživatele: (.+)$/, 'New instruction from the user: $1'],
+    [/^Mám (\d+) otázk[ayu]\.$/, 'I have $1 question(s).'],
+    [/^Limit předplatného, čekám (\d+) min a zkusím znovu\.$/, 'Subscription limit, waiting $1 min and trying again.'],
+    [/^Skóre (\d+)\/100, MUST ověřeno: (ano|ne)$/, (m, a, b) => `Score ${a}/100, MUST verified: ${b === 'ano' ? 'yes' : 'no'}`],
+    [/^Skóre (\d+)\/100 – chybí (\d+) věcí$/, 'Score $1/100 – $2 things missing'],
+    [/^Skóre (\d+)\/100 – (.+)$/, (m, a, b) => `Score ${a}/100 – ${tr(b)}`],
+    [/^(M\d+|S\d+|N\d+): neověřeno – (.*)$/s, '$1: not verified – $2'], [/^(M\d+|S\d+|N\d+): nesplněno – (.*)$/s, '$1: not met – $2'], [/^(M\d+|S\d+|N\d+): splněno – (.*)$/s, '$1: met – $2'],
+    [/^Rozpracováno – chybí: (.*)$/s, 'In progress – missing: $1'],
+    [/^Rozpracováno: (.+)$/, (m, a) => 'In progress: ' + tr(a)],
+    [/^Blokováno: (.+)$/s, 'Blocked: $1'], [/^Zablokováno: (.+)$/s, (m, a) => 'Blocked: ' + tr(a)], [/^Chyba: (.+)$/s, (m, a) => 'Error: ' + tr(a)], [/^⚠ (.+)$/, (m, a) => '⚠ ' + tr(a)],
+    [/^Chybí: (.+)$/s, 'Missing: $1'],
+    [/^Rozumím: (.+) – upraveno\.$/, 'Got it: $1 – updated.'],
+    [/^zbývá (\d+) % limitu$/, '$1% of the limit left'],
+    [/^Neúspěšné pokusy spotřebovaly ([\d,\s]+) tokenů\.(.*)$/s, (m, a, rest) => `Failed attempts used ${a} tokens.` + rest.replace(/U (\d+) pokusů služba tokeny nehlásí\./, 'For $1 attempts the service did not report tokens.').replace('Spotřeba na převzatou zakázku (včetně oprav a neúspěchů):', 'Usage per accepted job (including fixes and failures):')],
+    [/^(\w+): ([\d,\s]+) tokenů \(vstup \+ výstup\)$/, '$1: $2 tokens (input + output)'],
+    // generic: "• text", "a – b" and "a · b · c" get their known parts translated
+    [/^• (.+)$/, (m, a) => '• ' + tr(a)],
+    [/^(.+?) – ([^–]+)$/, (m, a, b) => { const t = tr(b); return t === b ? m : a + ' – ' + t; }],
+    [/^[^·]+(?: · [^·]+)+$/, (m) => m.split(' · ').map((x) => tr(x)).join(' · ')],
   ];
   const cache = new Map();
   function tr(s) {
@@ -203,15 +237,15 @@
     let out = cache.get(core);
     if (out === undefined) {
       out = Object.prototype.hasOwnProperty.call(EN, core) ? EN[core] : null;
-      if (out === null) for (const [re, rep] of PATTERNS) if (re.test(core)) { out = core.replace(re, rep); break; }
+      if (out === null) for (const [re, rep] of PATTERNS) if (re.test(core)) { const t = core.replace(re, rep); if (t !== core) { out = t; break; } }
       if (cache.size > 5000) cache.clear(); cache.set(core, out);
     }
     return out === null ? s : s.replace(core, out);
   }
   const trLines = (s) => (typeof s === 'string' ? s.split('\n').map(tr).join('\n') : s);
   let lang = 'en';
-  try { lang = localStorage.getItem('ao-lang') || 'en'; } catch {}
-  const api = { EN, PATTERNS, tr, trLines, get lang() { return lang; }, setLang(l) { lang = l === 'cs' ? 'cs' : 'en'; try { localStorage.setItem('ao-lang', lang); } catch {} cache.clear(); } };
+  if (typeof document !== 'undefined') try { lang = localStorage.getItem('ao-lang') || 'en'; } catch {}
+  const api = { EN, PATTERNS, tr, trLines, get lang() { return lang; }, setLang(l) { lang = l === 'cs' ? 'cs' : 'en'; if (typeof document !== 'undefined') try { localStorage.setItem('ao-lang', lang); } catch {} cache.clear(); } };
   globalThis.AO_I18N = api;
   if (typeof document === 'undefined') return;
 
