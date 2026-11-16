@@ -33,7 +33,7 @@ for sz in 16 32 128 256 512; do cp "build/AppIcon.iconset/icon_$((sz*2))x$((sz*2
 rm -f build/AppIcon.iconset/icon_64x64.png build/AppIcon.iconset/icon_1024x1024.png
 iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 # bundled server (no dependencies)
-for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-auth.mjs project-outputs.mjs claude-usage.mjs local-runner.mjs report.mjs updater.mjs boss.md version.json; do cp "$ROOT/$f" "$APP/Contents/Resources/server/"; done
+for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-auth.mjs project-outputs.mjs claude-usage.mjs local-runner.mjs report.mjs updater.mjs i18n-server.mjs boss.md version.json; do cp "$ROOT/$f" "$APP/Contents/Resources/server/"; done
 mkdir -p "$APP/Contents/Resources/server/scripts"
 cp "$ROOT/scripts/claude-usage-pty.py" "$APP/Contents/Resources/server/scripts/"
 cp "$ROOT/scripts/setup.sh" "$APP/Contents/Resources/server/scripts/"

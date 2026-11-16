@@ -11,6 +11,7 @@ import { claudeSnapshot } from './claude-bridge.mjs';
 import { providerEnv } from './provider-auth.mjs';
 import { providerCatalog, normalizeModelId, chooseRoute, runCodex, recordLimit, markUnavailable, clearBlocked, routingPreference, recordFeature, ultrareviewPref } from './providers.mjs';
 import { fileURLToPath } from 'node:url';
+import { T, Tdoc, locale } from './i18n-server.mjs';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA = process.env.AGENT_OFFICE_HOME || ROOT; // config.json, profile.md, projects/ (the .app keeps them in Application Support)
@@ -168,6 +169,7 @@ function agent(p, name, patch) {
   save(p);
 }
 function notify(p, title, body) {
+  title = T(title); body = T(String(body ?? ''));
   const cfg = loadConfig();
   const esc = (s) => String(s).replace(/["\\]/g, ' ').slice(0, 200);
   if (!process.env.AGENT_OFFICE_APP) execFile('osascript', ['-e', `display notification "${esc(body)}" with title "${esc(title)}"`], () => {});
@@ -456,7 +458,7 @@ export function acceptProject(id, { accepted = true, note = '' } = {}) {
 function bumpHuman(st, kind) { st.human ||= { answers: 0, messages: 0, directives: 0, roles: 0 }; st.human[kind] = (st.human[kind] || 0) + 1; }
 
 // ---------- usage limits: wait without losing anything, continue by itself when the limit resets ----------
-const fmtTime = (ms) => new Date(ms).toLocaleString('cs-CZ', { weekday: 'short', hour: '2-digit', minute: '2-digit' });
+const fmtTime = (ms) => new Date(ms).toLocaleString(locale(), { weekday: 'short', hour: '2-digit', minute: '2-digit' });
 function limitUntil(provider, message, catalog) {
   const fromText = resetTimeFromText(message);
   if (fromText && fromText > Date.now()) return fromText;
@@ -707,7 +709,7 @@ function handoffIndex(p, tasks) {
   return tasks.filter((t) => t.status === 'done' || t.status === 'failed').map((t) => `- ${t.id} [${t.role}${t.critical ? ', CRITICAL' : ''}] ${t.status}: ${String(t.conclusion || t.summary || '').replace(/\s+/g, ' ').slice(0, 220)}${t.uncertain ? ' ⚠ uncertain' : ''} → ${p.ctx.office}/handoffs/${t.id}.md`).join('\n');
 }
 function decide(p, title, lines) { // short running decision log: keeps continuity across new processes and model switches
-  try { fs.appendFileSync(path.join(p.ctx.office, 'DECISIONS.md'), `\n## ${now().slice(0, 16).replace('T', ' ')} · ${title}\n${[].concat(lines).filter(Boolean).map((l) => '- ' + String(l).replace(/\s+/g, ' ').slice(0, 300)).join('\n')}\n`); } catch {}
+  try { fs.appendFileSync(path.join(p.ctx.office, 'DECISIONS.md'), Tdoc(`\n## ${now().slice(0, 16).replace('T', ' ')} · ${title}\n${[].concat(lines).filter(Boolean).map((l) => '- ' + String(l).replace(/\s+/g, ' ').slice(0, 300)).join('\n')}\n`)); } catch {}
 }
 
 async function worker(p, t, ctx) {
@@ -764,7 +766,7 @@ function writeBoard(p) {
   try {
     fs.mkdirSync(boardDir(p), { recursive: true });
     fs.writeFileSync(path.join(boardDir(p), 'tasks.json'), JSON.stringify(st.tasks.map(({ id, title, role, status, depends_on, output, critical, claimedBy }) => ({ id, title, role, status, depends_on, output, critical, claimedBy })), null, 2));
-    fs.writeFileSync(path.join(p.ctx.office, 'BOARD.md'), `# Tabule úkolů\n\n| | Úkol | Kdo | Čeká na | Výstup |\n|---|---|---|---|---|\n${st.tasks.map((t) => `| ${icon[t.status] || '?'} | ${t.id} ${t.title}${t.critical ? ' ⚑' : ''} | ${t.claimedBy || t.role} | ${(t.depends_on || []).join(', ') || '–'} | ${t.output || '–'} |`).join('\n')}\n\n○ čeká · ◐ rozpracováno · ● hotovo · ✕ nepovedlo se · ⚑ kritické (dvojí ověření)\n`);
+    fs.writeFileSync(path.join(p.ctx.office, 'BOARD.md'), Tdoc(`# Tabule úkolů\n\n| | Úkol | Kdo | Čeká na | Výstup |\n|---|---|---|---|---|\n${st.tasks.map((t) => `| ${icon[t.status] || '?'} | ${t.id} ${t.title}${t.critical ? ' ⚑' : ''} | ${t.claimedBy || t.role} | ${(t.depends_on || []).join(', ') || '–'} | ${t.output || '–'} |`).join('\n')}\n\n○ čeká · ◐ rozpracováno · ● hotovo · ✕ nepovedlo se · ⚑ kritické (dvojí ověření)\n`));
   } catch {}
 }
 const isReader = (st, t) => { const r = roleOf(st, t.role); return !!r && (r.base ? READONLY.has(t.role) : !(r.tools || []).includes('write')); };
@@ -832,7 +834,7 @@ function writePartialFinal(p, reason) {
   const st = p.state; const gaps = openGaps(st, st.checkpoint?.judged);
   const done = (st.tasks || []).filter((t) => t.status === 'done').map((t) => `- ${t.title}${t.conclusion ? ': ' + String(t.conclusion).replace(/\s+/g, ' ').slice(0, 200) : ''}`);
   const md = `# Rozpracovaný výsledek\n\n**Proč není hotovo:** ${reason}\n\n## Co je hotové\n${done.join('\n') || '- zatím nic ověřeného'}\n\n## Co chybí (konkrétně)\n${gaps.map((g) => '- ' + g).join('\n') || '- poslední kontrola neproběhla, kritéria nejsou ověřená'}\n\n## Kde to najdeš\n- Výstupy: ${p.ctx?.work || st.cwd}/deliverables\n- Předávky a důkazy: ${p.ctx?.office}/handoffs\n- Rozhodnutí: ${p.ctx?.office}/DECISIONS.md\n\nPokračovat lze tlačítkem „Pokračovat“ – navážu na poslední ověřený stav.\n`;
-  try { fs.writeFileSync(path.join(p.ctx.office, 'FINAL.md'), md); } catch {}
+  try { fs.writeFileSync(path.join(p.ctx.office, 'FINAL.md'), Tdoc(md)); } catch {}
   st.final = { summary: `Rozpracováno: ${reason}`, remaining: gaps, partial: true };
 }
 
@@ -851,16 +853,16 @@ async function runUltrareview(p, ctx) {
   let md = `# Claude ultrareview\n\n`;
   try { const j = JSON.parse(r.out); const bugs = j.bugs || j.findings || j; md += (Array.isArray(bugs) ? bugs : []).map((b, i) => `## ${i + 1}. ${b.title || b.summary || 'Nález'}\n- Soubor: ${b.file || b.path || '-'}${b.line ? ':' + b.line : ''}\n- Závažnost: ${b.severity || '-'}\n\n${b.description || b.body || ''}\n`).join('\n') || 'Žádné nálezy.'; }
   catch { md += r.err ? `Kontrola selhala: ${String(r.errOut || r.err.message).slice(-600)}` : r.out.slice(0, 20000); }
-  try { fs.writeFileSync(path.join(ctx.office, 'reports', 'ultrareview.md'), md); } catch {}
+  try { fs.writeFileSync(path.join(ctx.office, 'reports', 'ultrareview.md'), Tdoc(md)); } catch {}
   agent(p, 'tester', { status: 'idle', activity: '' }); decide(p, 'Ultrareview', [r.err ? 'Selhalo.' : 'Hotovo – nálezy v reports/ultrareview.md.']);
 }
 function writeBrief(p) {
   const st = p.state, cp = st.checkpoint || {}, it = cp.intake || {};
-  try { fs.writeFileSync(path.join(p.ctx.office, 'BRIEF.md'), `# Zadání\n\n${st.goal}\n\n${st.notes ? `## Poznámky a podklady od zadavatele\n${st.notes}\n\n` : ''}## Co má na konci existovat\n${it.deliverable || '-'}\n\n## Jak tomu šéf rozumí\n${it.summary || '-'}\n\n## Předpoklady (zadavatel je může vetovat)\n${(it.assumptions || []).map((a) => '- ' + a).join('\n') || '- žádné'}\n\n## Odpovědi zadavatele\n${Object.entries({ ...(cp.a1 || {}), ...(cp.a2 || {}) }).map(([q, a]) => `- ${q} → ${a}`).join('\n') || '- zatím žádné'}\n`); } catch {}
+  try { fs.writeFileSync(path.join(p.ctx.office, 'BRIEF.md'), Tdoc(`# Zadání\n\n${st.goal}\n\n${st.notes ? `## Poznámky a podklady od zadavatele\n${st.notes}\n\n` : ''}## Co má na konci existovat\n${it.deliverable || '-'}\n\n## Jak tomu šéf rozumí\n${it.summary || '-'}\n\n## Předpoklady (zadavatel je může vetovat)\n${(it.assumptions || []).map((a) => '- ' + a).join('\n') || '- žádné'}\n\n## Odpovědi zadavatele\n${Object.entries({ ...(cp.a1 || {}), ...(cp.a2 || {}) }).map(([q, a]) => `- ${q} → ${a}`).join('\n') || '- zatím žádné'}\n`)); } catch {}
 }
 function writePlan(p) {
   const cp = p.state.checkpoint || {};
-  try { fs.writeFileSync(path.join(p.ctx.office, 'PLAN.md'), `# Plán\n\n| Úkol | Role | Otázka | Výstup | Kdo to použije | Čeká na |\n|---|---|---|---|---|---|\n${(cp.tasks || []).map((t) => `| ${t.id} ${t.title}${t.critical ? ' ⚑' : ''}${t.command ? ' (kód)' : ''} | ${t.role} | ${t.question || '–'} | ${t.output || '–'} | ${t.consumer || '–'} | ${(t.depends_on || []).join(', ') || '–'} |`).join('\n')}\n\n## Kontrola\n${cp.verify?.instructions || '-'}\n`); } catch {}
+  try { fs.writeFileSync(path.join(p.ctx.office, 'PLAN.md'), Tdoc(`# Plán\n\n| Úkol | Role | Otázka | Výstup | Kdo to použije | Čeká na |\n|---|---|---|---|---|---|\n${(cp.tasks || []).map((t) => `| ${t.id} ${t.title}${t.critical ? ' ⚑' : ''}${t.command ? ' (kód)' : ''} | ${t.role} | ${t.question || '–'} | ${t.output || '–'} | ${t.consumer || '–'} | ${(t.depends_on || []).join(', ') || '–'} |`).join('\n')}\n\n## Kontrola\n${cp.verify?.instructions || '-'}\n`)); } catch {}
 }
 function finalMarkdown(p, judged) {
   const st = p.state; const c = judged.criteria || []; const ic = { PASS: '✅', FAIL: '❌', UNVERIFIED: '❔' };
@@ -970,7 +972,7 @@ async function pipeline(p, { resume = false } = {}) {
   // No model call for the final report: everything it needs is already verified and on disk.
   const leftovers = (judged.criteria || []).filter((c) => c.level !== 'MUST' && c.status !== 'PASS').map((c) => `${c.id} (${c.level}): ${c.evidence || 'nesplněno'}`);
   st.final = { summary: judged.summary, remaining: leftovers };
-  try { fs.writeFileSync(path.join(office, 'FINAL.md'), finalMarkdown(p, judged)); } catch {}
+  try { fs.writeFileSync(path.join(office, 'FINAL.md'), Tdoc(finalMarkdown(p, judged))); } catch {}
   learn(p);
   st.status = 'done'; agent(p, 'boss', { status: 'done', activity: 'hotovo' }); publishHtml(p); save(p);
   log(p, 'boss', `Hotovo. ${judged.summary}`); notify(p, 'Projekt hotov', judged.summary);
@@ -1030,7 +1032,7 @@ export function createOffice(name) {
   fs.mkdirSync(folder);
   try {
     execFileSync('git', ['-C', folder, 'init', '--initial-branch=main'], { stdio: 'ignore' });
-    fs.writeFileSync(path.join(folder, 'README.md'), `# ${title}\n\nProjekt spravovaný vlastní kanceláří Agent Office.\n`);
+    fs.writeFileSync(path.join(folder, 'README.md'), Tdoc(`# ${title}\n\nProjekt spravovaný vlastní kanceláří Agent Office.\n`));
     for (const dir of ['deliverables', 'references', '.agent-office']) fs.mkdirSync(path.join(folder, dir));
     fs.writeFileSync(path.join(folder, 'deliverables', '.gitkeep'), ''); fs.writeFileSync(path.join(folder, 'references', '.gitkeep'), '');
     fs.writeFileSync(path.join(folder, '.agent-office', 'project.json'), JSON.stringify({ version: 1, id: rid(real(folder)), name: title, created: now(), outputs: 'deliverables', sources: 'references' }, null, 2));

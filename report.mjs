@@ -1,4 +1,5 @@
 // Turns the office's Markdown outputs into polished, self-contained HTML pages. Plain code: no model call, no network.
+import { T, locale, lang } from './i18n-server.mjs';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -13,7 +14,7 @@ function inline(t) {
     .replace(/~~([^~]+)~~/g, '<del>$1</del>');
   return t.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${code[i]}</code>`);
 }
-const pill = (cell) => { const m = cell.trim().match(/^(✅|❌|❔|PASS|FAIL|UNVERIFIED|ANO|NE)$/i); if (!m) return inline(cell.trim()); const k = /✅|PASS|ANO/i.test(m[1]) ? 'ok' : /❌|FAIL|NE/i.test(m[1]) ? 'bad' : 'unk'; return `<span class="pill ${k}">${{ ok: 'Splněno', bad: 'Nesplněno', unk: 'Neověřeno' }[k]}</span>`; };
+const pill = (cell) => { const m = cell.trim().match(/^(✅|❌|❔|PASS|FAIL|UNVERIFIED|ANO|NE)$/i); if (!m) return inline(cell.trim()); const k = /✅|PASS|ANO/i.test(m[1]) ? 'ok' : /❌|FAIL|NE/i.test(m[1]) ? 'bad' : 'unk'; return `<span class="pill ${k}">${T({ ok: 'Splněno', bad: 'Nesplněno', unk: 'Neověřeno' }[k])}</span>`; };
 
 /** Small, dependable Markdown subset: headings, lists (nested), tables, code fences, quotes, rules, paragraphs. */
 export function mdToHtml(md) {
@@ -78,9 +79,9 @@ footer{margin-top:48px;padding-top:16px;border-top:1px solid var(--line);color:v
 @media print{body{background:#fff}.wrap{max-width:none;padding:0}nav.toc{display:none}.tablewrap,.stat{break-inside:avoid}}`;
 
 export function page({ title, eyebrow = '', status = null, metaLine = '', lead = '', stats = [], body, toc = [], extra = '', footer = '' }) {
-  const ST = { done: 'Hotovo – kritéria ověřena', partial: 'Rozpracováno', error: 'Chyba' };
+  const ST = { done: T('Hotovo – kritéria ověřena'), partial: T('Rozpracováno'), error: T('Chyba') };
   return `<!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<html lang="${lang()}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${esc(title)}</title><style>${CSS}</style></head>
 <body><div class="wrap">
 <header class="top">${eyebrow ? `<p class="eyebrow">${esc(eyebrow)}</p>` : ''}<h1>${esc(title)}</h1>
@@ -89,7 +90,7 @@ ${lead ? `<p class="lead">${inline(lead)}</p>` : ''}</header>
 ${stats.length ? `<section class="stats">${stats.map((s) => `<div class="stat"><b>${esc(s.value)}</b><span>${esc(s.label)}</span></div>`).join('')}</section>` : ''}
 ${toc.length > 2 ? `<nav class="toc">${toc.map((t) => `<a href="#${t.id}">${esc(t.text)}</a>`).join('')}</nav>` : ''}
 <main>${body}</main>${extra}
-<footer>${esc(footer || 'Vytvořila kancelář Agent Office')}</footer>
+<footer>${esc(T(footer || 'Vytvořila kancelář Agent Office'))}</footer>
 </div></body></html>`;
 }
 
@@ -97,7 +98,7 @@ const k = (n) => (n >= 1e6 ? (n / 1e6).toFixed(1).replace('.', ',') + ' M' : n >
 const title1 = (md, fallback) => (String(md).match(/^#\s+(.+)$/m) || [])[1] || fallback;
 
 /** Render one Markdown file to a sibling .html (same name). Returns the html path. */
-export function renderFile(mdPath, { eyebrow = 'Výstup', footer = '' } = {}) {
+export function renderFile(mdPath, { eyebrow = T('Výstup'), footer = '' } = {}) {
   const md = fs.readFileSync(mdPath, 'utf8'); const name = path.basename(mdPath, path.extname(mdPath));
   const t = title1(md, name); const { html, toc } = mdToHtml(md.replace(/^#\s+.+\n?/, ''));
   const out = mdPath.replace(/\.md$/i, '.html');
@@ -111,18 +112,18 @@ export function publishReports(p, { usage } = {}) {
   const walk = (dir, depth = 0) => { let ents = []; try { ents = fs.readdirSync(dir, { withFileTypes: true }); } catch {} for (const e of ents) { const f = path.join(dir, e.name); if (e.name.startsWith('.') || e.isSymbolicLink()) continue; if (e.isDirectory() && depth < 3) walk(f, depth + 1); else if (/\.md$/i.test(e.name)) { try { made.push(renderFile(f, { eyebrow: st.repoName || 'Výstup', footer: `${st.repoName || ''} · Agent Office` })); } catch {} } } };
   walk(outDir);
   const finalMd = fs.existsSync(path.join(office, 'FINAL.md')) ? fs.readFileSync(path.join(office, 'FINAL.md'), 'utf8') : '';
-  const { html, toc } = mdToHtml(finalMd.replace(/^#\s+.+\n?/, '').replace(/^\*\*Zadání:\*\*.*\n?/m, ''));
+  const { html, toc } = mdToHtml(finalMd.replace(/^#\s+.+\n?/, '').replace(/^\*\*(?:Zadání|Brief):\*\*.*\n?/m, ''));
   const crit = st.checkpoint?.judged?.criteria || []; const must = crit.filter((c) => c.level === 'MUST');
   const t = usage?.current?.total; const human = st.human ? Object.values(st.human).reduce((a, b) => a + (b || 0), 0) : 0;
   const stats = [
-    ...(must.length ? [{ value: `${must.filter((c) => c.status === 'PASS').length}/${must.length}`, label: 'povinných kritérií ověřeno' }] : []),
-    { value: String((st.tasks || []).filter((x) => x.status === 'done').length), label: 'hotových úkolů' },
-    ...(t ? [{ value: k(t.input + t.output), label: `tokenů (${k(t.cacheRead)} z cache)` }, { value: `${Math.max(1, Math.round(t.ms / 60000))} min`, label: `práce agentů · ${t.attempts} běhů${t.failed ? `, ${t.failed} neúspěšných` : ''}` }] : []),
-    { value: String(human), label: 'tvých zásahů' },
+    ...(must.length ? [{ value: `${must.filter((c) => c.status === 'PASS').length}/${must.length}`, label: T('povinných kritérií ověřeno') }] : []),
+    { value: String((st.tasks || []).filter((x) => x.status === 'done').length), label: T('hotových úkolů') },
+    ...(t ? [{ value: k(t.input + t.output), label: T(`tokenů (${k(t.cacheRead)} z cache)`) }, { value: `${Math.max(1, Math.round(t.ms / 60000))} min`, label: T(`práce agentů · ${t.attempts} běhů${t.failed ? `, ${t.failed} neúspěšných` : ''}`) }] : []),
+    { value: String(human), label: T('tvých zásahů') },
   ];
   const files = fs.existsSync(outDir) ? fs.readdirSync(outDir).filter((f) => !f.startsWith('.') && f !== 'Souhrn.html' && !/\.md$/i.test(f) || (/\.md$/i.test(f) && !fs.existsSync(path.join(outDir, f.replace(/\.md$/i, '.html'))))) : [];
-  const extra = files.length ? `<main><h2>Výstupy</h2><div class="files">${files.map((f) => `<a href="${encodeURI(f)}"><b>${esc(f.replace(/\.html$/i, ''))}</b><span>${esc(path.extname(f).slice(1).toUpperCase())}</span></a>`).join('')}</div></main>` : '';
-  const summary = page({ title: st.repoName || 'Projekt', eyebrow: 'Souhrn zakázky', status: st.status === 'done' || st.status === 'running' ? (st.final?.partial ? 'partial' : 'done') : st.status === 'error' ? 'error' : 'partial', metaLine: new Date().toLocaleDateString('cs-CZ', { day: 'numeric', month: 'long', year: 'numeric' }), lead: st.goal, stats, body: html, toc, extra, footer: 'Souhrn sestavila kancelář Agent Office z ověřených výsledků (bez dalšího volání modelu).' });
+  const extra = files.length ? `<main><h2>${T('Výstupy')}</h2><div class="files">${files.map((f) => `<a href="${encodeURI(f)}"><b>${esc(f.replace(/\.html$/i, ''))}</b><span>${esc(path.extname(f).slice(1).toUpperCase())}</span></a>`).join('')}</div></main>` : '';
+  const summary = page({ title: st.repoName || T('Projekt'), eyebrow: T('Souhrn zakázky'), status: st.status === 'done' || st.status === 'running' ? (st.final?.partial ? 'partial' : 'done') : st.status === 'error' ? 'error' : 'partial', metaLine: new Date().toLocaleDateString(locale(), { day: 'numeric', month: 'long', year: 'numeric' }), lead: st.goal, stats, body: html, toc, extra, footer: T('Souhrn sestavila kancelář Agent Office z ověřených výsledků (bez dalšího volání modelu).') });
   fs.writeFileSync(path.join(outDir, 'Souhrn.html'), summary); fs.writeFileSync(path.join(office, 'FINAL.html'), summary);
   return { summary: path.join(outDir, 'Souhrn.html'), pages: made };
 }

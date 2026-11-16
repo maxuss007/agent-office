@@ -38,7 +38,7 @@ echo "$CUR → $VERSION (shell $SHELLV)"
 say "2/5 Kopíruji soubory do veřejné kopie"
 RS=(rsync -a --delete --exclude .DS_Store --exclude 'evidence-*' --exclude '.ledger.jsonl*' --exclude .sidecar.json)
 for f in README.md README.cs.md .gitignore boss.md server.mjs orchestrator.mjs providers.mjs provider-auth.mjs claude-bridge.mjs claude-usage.mjs \
-         local-runner.mjs project-outputs.mjs report.mjs updater.mjs; do cp "$ROOT/$f" "$SHARE/$f"; done
+         local-runner.mjs project-outputs.mjs report.mjs updater.mjs i18n-server.mjs; do cp "$ROOT/$f" "$SHARE/$f"; done
 for d in roles presets scripts public/assets/suits; do mkdir -p "$SHARE/$d"; "${RS[@]}" "$ROOT/$d/" "$SHARE/$d/"; done
 "${RS[@]}" --exclude office-motion.test.mjs "$ROOT/tests/" "$SHARE/tests/"
 for f in index.html i18n.js pro.css game.css art.js avatars.js office-suits.js; do cp "$ROOT/public/$f" "$SHARE/public/$f"; done

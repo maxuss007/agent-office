@@ -8,7 +8,7 @@ import { mdToHtml } from '../report.mjs';
 test('markdown renderer handles headings, nested lists, tables with status pills, code and links', () => {
   const { html, toc } = mdToHtml('## Ceny\n\n| | Kritérium |\n|---|---|\n| ✅ | M1 |\n| ❌ | M2 |\n\n- a\n  - b\n- [x] hotovo\n\n```\n<x>\n```\nViz [zdroj](https://example.com) a `kód`.');
   assert.equal(toc[0].text, 'Ceny');
-  assert.match(html, /<span class="pill ok">Splněno<\/span>/); assert.match(html, /<span class="pill bad">Nesplněno<\/span>/);
+  assert.match(html, /<span class="pill ok">Met<\/span>/); assert.match(html, /<span class="pill bad">Not met<\/span>/);
   assert.match(html, /<ul><li>a<ul><li>b<\/li><\/ul><\/li><li class="task done">hotovo<\/li><\/ul>/);
   assert.match(html, /&lt;x&gt;/); assert.match(html, /<a href="https:\/\/example.com">zdroj<\/a>/); assert.match(html, /<code>kód<\/code>/);
 });
@@ -55,7 +55,7 @@ console.log(JSON.stringify({type:'result',structured_output:data,result:JSON.str
     assert.match(fs.readFileSync(path.join(officeDir, 'BOARD.md'), 'utf8'), /● \| T1 Table/);
     assert.deepEqual(fs.readdirSync(path.join(officeDir, 'board', 'claims')), [], 'claims are released');
     const html = fs.readFileSync(path.join(st.workDir, 'deliverables', 'Souhrn.html'), 'utf8');
-    assert.match(html, /Hotovo – kritéria ověřena/); assert.match(html, /1\/1<\/b><span>povinných kritérií ověřeno/); assert.match(html, /Nejlevnější je A\./);
+    assert.match(html, /Done – criteria verified/); assert.match(html, /1\/1<\/b><span>must-have criteria verified/); assert.match(html, /Nejlevnější je A\./);
     assert.match(fs.readFileSync(path.join(st.workDir, 'deliverables', 'table.html'), 'utf8'), /<td>9 990 Kč<\/td>/, 'markdown deliverable got an HTML twin');
     assert.match(fs.readFileSync(path.join(dir, 'profile.md'), 'utf8'), /Vždy počítej dopravu/);
     assert.deepEqual(st.final.remaining, ['S1 (SHOULD): no chart']);

@@ -38,7 +38,7 @@ console.log(JSON.stringify({type:'result',structured_output:data,result:JSON.str
     assert.equal(first.status, 'partial', JSON.stringify(first.log.slice(-5)));
     assert.ok(first.final.remaining.some((g) => g.startsWith('M1')), 'concrete gap list names the failing MUST');
     const projDir = path.join(dir, 'projects', started.id);
-    assert.match(fs.readFileSync(path.join(projDir, 'office', 'FINAL.md'), 'utf8'), /Co chybí/);
+    assert.match(fs.readFileSync(path.join(projDir, 'office', 'FINAL.md'), 'utf8'), /What is missing/); // English is the default language
     assert.ok(fs.existsSync(path.join(projDir, 'office', 'DECISIONS.md')));
     assert.ok(fs.existsSync(path.join(projDir, 'office', 'handoffs', 'T1.md')));
     const rows = fs.readFileSync(path.join(projDir, 'attempts.jsonl'), 'utf8').trim().split('\n').map(JSON.parse);

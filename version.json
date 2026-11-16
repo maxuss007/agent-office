@@ -1,7 +1,7 @@
 {
-  "version": "1.2.1",
+  "version": "1.2.2",
   "shell": 2,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "More of the interface in English: usage table, grading, model choice reasons and boss messages. Full English feature overview in the README."
+  "notes": "The whole interface is now in English: task states (Failed), the progress panel (Status, Round, Attempts), the new-goal types, limit messages, server errors and agent activity. Generated files (task board, plan, brief, final report, HTML summary) follow the chosen language too."
 }
