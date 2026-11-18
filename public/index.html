@@ -165,12 +165,13 @@ table.usage{width:100%;border-collapse:collapse;font-size:12.5px;margin:4px 0 8p
 <style>
 /* three-column project workspace: team | boss | outputs */
 header,main{max-width:1480px!important}
-#update-btn{margin-left:auto}.lang-seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;gap:2px}.lang-seg button{border:0;background:transparent;padding:5px 9px;border-radius:999px;font-size:12px;font-weight:700;color:var(--mute);cursor:pointer}.lang-seg button.on{background:var(--fg);color:var(--bg)}#update-btn.update-btn{display:inline-flex;align-items:center;gap:8px;background:var(--claude,#d97757);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;animation:upglow 2.2s ease-in-out infinite}
+#update-btn{margin-left:auto}#update-btn.update-btn{display:inline-flex;align-items:center;gap:8px;background:var(--claude,#d97757);color:#fff;border:0;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px;cursor:pointer;animation:upglow 2.2s ease-in-out infinite}
 .update-btn::before{content:'';width:8px;height:8px;border-radius:50%;background:#fff;box-shadow:0 0 0 3px rgba(255,255,255,.35)}
 .update-btn:disabled{opacity:.7;animation:none;cursor:wait}
 @keyframes upglow{0%,100%{box-shadow:0 0 0 0 rgba(217,119,87,.55)}50%{box-shadow:0 0 0 8px rgba(217,119,87,0)}}
 @media (prefers-reduced-motion:reduce){.update-btn{animation:none}}
-.ws-stage{margin-bottom:16px}#ws-scene{position:relative}
+.ws-stage{margin-bottom:16px}
+.ws-title{flex-wrap:wrap}#ws-eta{flex-basis:100%}.eta{display:flex;align-items:center;gap:10px;margin-top:8px;font-size:12.5px;color:var(--mute)}.eta-bar{flex:1;max-width:340px;height:6px;border-radius:99px;background:var(--line);overflow:hidden}.eta-bar i{display:block;height:100%;background:var(--acc);border-radius:99px;transition:width .6s ease}.eta.held .eta-bar i{background:var(--mute)}.project-card .eta{margin:0 16px 10px}.project-card .eta-bar{max-width:none}#ws-scene{position:relative}
 .ws-grid.ws3{grid-template-columns:minmax(0,1fr) minmax(260px,330px)!important}
 .stage-seg{padding:2px}.stage-seg button{padding:5px 12px;font-size:12.5px;min-height:0}.stage-seg .count{font-weight:500;color:var(--mute);margin-left:2px}
 .stage-add{margin-left:auto}
@@ -221,7 +222,6 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
   <button id="back" class="ghost" onclick="goHall()" hidden style="padding:6px 12px">← Projekty</button>
   <h1><span>OFFICE / 01</span><b id="crumb">Agent Office</b></h1>
   <button class="ghost" id="update-btn" onclick="doUpdate()">Aktualizace</button>
-  <span class="seg lang-seg" role="group" aria-label="Language" data-noi18n><button type="button" data-l="en" onclick="setLanguage('en')">EN</button><button type="button" data-l="cs" onclick="setLanguage('cs')">CS</button></span>
   <button class="ghost" id="home-models" onclick="openProviders()">Připojení</button>
   <button id="newgoal" class="ghost" onclick="openNew()" hidden>Zadání projektu</button>
 </header>
@@ -236,7 +236,7 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
   </section>
   <section id="officeview" hidden>
     <div class="ws-head">
-      <div class="ws-title"><span class="pill" id="ws-status">Připraveno</span><p id="ws-goal"></p></div>
+      <div class="ws-title"><span class="pill" id="ws-status">Připraveno</span><p id="ws-goal"></p><div id="ws-eta"></div></div>
       <div class="ws-actions" id="ws-actions"></div>
     </div>
     <ol class="ws-steps" id="ws-steps" aria-label="Postup projektu"></ol>
@@ -290,7 +290,7 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
     <button type="button" data-k="web">🌐 Web</button><button type="button" data-k="doc">📄 Dokument</button><button type="button" data-k="deck">📊 Prezentace</button><button type="button" data-k="research">🔎 Průzkum</button><button type="button" data-k="code">⌨️ Kód</button><button type="button" data-k="marketing">📣 Marketing</button><button type="button" data-k="other">✳️ Jiné</button>
   </div>
   <label>Délka výsledné zprávy <select id="reportLength"><option value="brief">Stručná</option><option value="standard" selected>Přehledná</option><option value="full">Podrobná</option></select></label><textarea id="goal" rows="5" placeholder="Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám."></textarea>
-  <div class="depth"><span>Jak důkladně</span><div class="seg" id="depth"><button type="button" data-d="fast">Rychle</button><button type="button" data-d="std" class="on">Pečlivě</button><button type="button" data-d="max">Do posledního detailu</button></div></div>
+  <div class="depth"><span>Jak důkladně</span><div class="seg" id="depth"><button type="button" data-d="ultra">⚡ Ultra rychle</button><button type="button" data-d="fast">Rychle</button><button type="button" data-d="std" class="on">Pečlivě</button><button type="button" data-d="max">Do posledního detailu</button></div></div>
   <p class="depth-hint" id="depth-hint"></p>
   <details class="brief-more"><summary>Přidat odkazy, podklady nebo poznámky</summary><textarea id="notes" rows="3" placeholder="Odkazy na weby, cesty k souborům, co se ti líbí nebo nelíbí, termín…"></textarea></details>
   <select id="preset" hidden></select><input id="maxRounds" type="hidden"><input id="maxRuns" type="hidden"><input id="targetScore" type="hidden">
@@ -361,7 +361,7 @@ function renderHall(){
   const matches=S.repos.filter(r=>!!r.archived===archived&&`${r.name} ${r.goal||''} ${r.description||''}`.toLocaleLowerCase('cs-CZ').includes(query));
   const projects=matches.filter(r=>r.managed||r.projectId||r.source!=='claude'),external=matches.filter(r=>!projects.includes(r));
   const status=r=>r.archived?'Archivováno':r.light==='working'?'Pracuje':r.waiting?`${r.waiting} otázek`:r.status==='done'?'Hotovo':'Připraveno';
-  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state state-${r.light}">${esc(status(r))}</span><button class="quiet" onclick="manageOffice('${r.id}')" aria-label="Spravovat projekt ${esc(r.name)}">•••</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button><div class="project-card-footer"><span>${r.git?'Git repozitář':'Pracovní složka'}${r.totalTasks?` · ${r.completedTasks}/${r.totalTasks} úkolů`:''}</span><span>${r.sessions?`${r.sessions} sessions`:''}</span></div></article>`;
+  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state state-${r.light}">${esc(status(r))}</span><button class="quiet" onclick="manageOffice('${r.id}')" aria-label="Spravovat projekt ${esc(r.name)}">•••</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button>${progressLine((S.projects||[]).find(x=>x.id===r.projectId))}<div class="project-card-footer"><span>${r.git?'Git repozitář':'Pracovní složka'}${r.totalTasks?` · ${r.completedTasks}/${r.totalTasks} úkolů`:''}</span><span>${r.sessions?`${r.sessions} sessions`:''}</span></div></article>`;
   $('hall-list').innerHTML=projects.length?projects.map(card).join(''):`<div class="library-empty"><b>${archived?'Archiv je prázdný':'Vytvoř projekt a otevři jeho kancelář'}</b><p>${query?'Žádný projekt neodpovídá hledání.':'Projekt si sám založí vlastní repozitář. Existující práce z Claude Code je oddělená níže.'}</p>${!archived&&!query?'<button onclick="openRepoDlg()">+ Vytvořit projekt</button>':''}</div>`;
   $('external-list').innerHTML=external.map(card).join('');$('connected-projects').hidden=!external.length;
   $('connection').textContent=`${projects.length} projektů · ${external.length} propojených složek`;
@@ -384,10 +384,43 @@ const STAT={running:'Pracuje',waiting_user:'Čeká na tebe',done:'Hotovo',partia
 const STEPS=[['intake','Zadání'],['research','Rešerše'],['synthesis','Kritéria'],['plan','Plán'],['execute','Práce'],['verify','Kontrola'],['judge','Hodnocení'],['finish','Výsledek']];
 function avatarHtml(ch,name){const art=window.OfficeAvatars?.info(ch);if(art?.portrait)return `<span class="avatar portrait" style="background-image:url(${art.image})"></span>`;if(!art)return `<span class="avatar">${esc((name||'?').slice(0,1))}</span>`;const rows=2,col=art.index%art.columns,row=Math.floor(art.index/art.columns);return `<span class="avatar" style="background-image:url(${art.image});background-size:${art.columns*100}% ${rows*100}%;background-position:${art.columns>1?col/(art.columns-1)*100:0}% ${row/(rows-1)*100}%"></span>`}
 async function pauseProj(){const r=await api(`/api/projects/${cur}/pause`,{method:'POST',body:'{}'});if(r.error)alert(r.error)}
+/* Live progress and time estimate for a running goal.
+   Progress: where the pipeline is (phase ranges below) and how many of that phase's tasks are finished; it never goes back.
+   Estimate: early on, the typical length of your earlier goals of the same depth; later, elapsed ÷ progress; smoothed. */
+const PH_RANGE={intake:[0,.08],research:[.08,.28],synthesis:[.28,.34],plan:[.34,.4],execute:[.4,.78],verify:[.78,.9],judge:[.9,.96],finish:[.96,1]};
+const PROG={},ETA={};
+function progressOf(p){
+  if(!p)return 0;if(['done','partial'].includes(p.status))return 1;if(p.settings?.mode==='ultra')return p.phase==='execute'?.5:.1;
+  const ts=p.tasks||[],frac=f=>{const x=ts.filter(f);return x.length?x.filter(t=>t.status==='done'||t.status==='failed').length/x.length:.25};
+  let v;
+  if((p.round||0)>=2){const inner={execute:frac(t=>!/^[RV]-/.test(t.id))*.5,verify:.6,judge:.85}[p.phase]??.3;v=.8+.17*inner}
+  else{const [a,b]=PH_RANGE[p.phase]||[0,.04];const inner=p.phase==='research'?frac(t=>/^R-/.test(t.id)):p.phase==='execute'?frac(t=>!/^[RV]-/.test(t.id)):p.phase==='verify'?frac(t=>/^V-/.test(t.id)):.35;v=a+(b-a)*inner}
+  v=Math.min(.99,Math.max(PROG[p.id]||0,v));PROG[p.id]=v;return v}
+function typicalMinutes(p){
+  if(p.settings?.mode==='ultra')return .3;
+  const mr=p.settings?.maxRounds||3,past=[];
+  for(const q of S.projects||[])for(const h of [...(q.history||[]),q.finished&&q.status==='done'?{started:q.started,finished:q.finished,maxRounds:q.settings?.maxRounds,status:'done'}:null].filter(Boolean))
+    if(h.started&&h.finished&&h.status==='done'&&(h.maxRounds||3)===mr){const m=(Date.parse(h.finished)-Date.parse(h.started))/60000;if(m>0.5&&m<600)past.push(m)}
+  if(past.length){past.sort((a,b)=>a-b);return past[past.length>>1]}
+  return {1:8,3:25,5:50}[mr]||25}
+function etaOf(p){
+  if(!p||p.status!=='running')return null;
+  const start=Date.parse(p.started||p.created||'')||Date.now(),el=Math.max(0,(Date.now()-start)/60000),prog=progressOf(p),typ=typicalMinutes(p);
+  const w=Math.max(0,1-prog*2.5),total=w*Math.max(typ,el)+(1-w)*(prog>.03?el/prog:typ);let rem=Math.max(.2,total-el);
+  const prev=ETA[p.id];if(prev){const dt=(Date.now()-prev.t)/1000,aged=Math.max(.2,prev.rem-dt/60),k=1-Math.exp(-dt/90);rem=aged+k*(rem-aged)}   // eases toward the new estimate over ~1.5 min, so it does not jump
+  ETA[p.id]={rem,t:Date.now()};return rem}
+function etaText(rem){if(rem==null)return '';if(rem<1)return 'zbývá méně než minuta';if(rem<10)return `zbývá cca ${Math.round(rem)} min`;if(rem<60)return `zbývá cca ${Math.round(rem/5)*5} min`;return `zbývá cca ${(rem/60).toFixed(1).replace('.0','')} h`}
+function progressLine(p){
+  if(!p||!['running','waiting_user','limit','paused'].includes(p.status))return '';
+  const pct=Math.round(progressOf(p)*100),note=p.status==='waiting_user'?'čeká na tvou odpověď':p.status==='limit'?'čeká na obnovení limitu':p.status==='paused'?'pozastaveno':etaText(etaOf(p));
+  return `<div class="eta${p.status==='running'?'':' held'}"><div class="eta-bar"><i style="width:${pct}%"></i></div><span>${pct} %${note?' · '+note:''}</span></div>`}
+function renderEta(){const p=proj();const el=$('ws-eta');if(el){const h=progressLine(p);if(el.innerHTML!==h)el.innerHTML=h}}
+setInterval(()=>{if(view==='office')renderEta()},5000);
 function renderWorkspace(p){
   const st=p?.status||'idle',active=st==='running'||st==='waiting_user'||st==='limit';
   $('ws-status').textContent=p?(STAT[st]||st):'Připraveno';$('ws-status').className='pill s-'+(p?st:'idle');
   $('ws-goal').textContent=p?.goal||'Zadej šéfovi první cíl.';
+  renderEta();
   const canResume=p&&['error','partial','stopped','paused','interrupted','budget'].includes(st),canAccept=p&&['done','partial'].includes(st)&&!p.accepted;
   $('ws-actions').innerHTML=`${active?`<button class="btn" onclick="pauseProj()">${IC.pause}Pozastavit</button><button class="btn danger" onclick="stop()">${IC.stop}Zastavit</button>`:''}${canResume?`<button class="btn primary" onclick="resumeProj()">${IC.play}Pokračovat</button>`:''}${canAccept?`<button class="btn" onclick="acceptProj()">${IC.check}Převzít</button>`:''}${p?.accepted?`<span class="pill s-done">Převzato</span>`:''}${!active?`<button class="btn ${p?'':'primary'}" onclick="openNew()">Nový cíl</button>`:''}<button class="btn" onclick="toggleProjectDetails()">Průběh a spotřeba</button><details class="more"><summary class="btn" aria-label="Další akce">⋯</summary><div class="menu"><button onclick="openProviders()">Připojení a limity</button><button onclick="manageOffice(curRepo)">Nastavení projektu</button><button onclick="openIn('codex')">Otevřít v Codexu</button><button onclick="openIn('claude')">Otevřít v Claude Code</button><button onclick="openSessions()">Hosté ve složce</button></div></details>`;
   const cur_=STEPS.findIndex(s=>s[0]===p?.phase),doneAll=st==='done';
@@ -463,7 +496,7 @@ $('rchar').onchange=()=>{$('rname').hidden=$('rchar').value!=='custom'};
 async function addRole(){const c=$('rchar').value;const body={title:$('rtitle').value.trim(),responsibility:$('rresp').value.trim(),model:$('rmodel').value,effort:$('reffort').value,character:c&&c!=='custom'?c:undefined,name:c==='custom'?$('rname').value.trim()||undefined:undefined};
   const r=await api(`/api/repos/${curRepo}/roles`,{method:'POST',body:JSON.stringify(body)});if(r.error)return alert(r.error);roledlg.close();await refreshRepos();sceneSig='';render()}
 const KIND={web:{preset:'web-redesign',ph:'Např. Přepracuj web firmy X pro pitch investorům. Důležitý je první dojem a mobil. Web je ve složce projektu.'},doc:{preset:'general',ph:'Např. Napiš obchodní podmínky pro e-shop s ručně šitými taškami, srozumitelně a podle českého práva.'},deck:{preset:'general',ph:'Např. Pitch deck pro investory na 12 slajdů: problém, řešení, trh, byznys model, tým, finance.'},research:{preset:'general',ph:'Např. Zjisti, jaké jsou nejlepší nástroje na e-mailový marketing pro malé české firmy, a doporuč jeden.'},code:{preset:'general',ph:'Např. Přidej do aplikace přihlášení přes Google a napiš k tomu testy.'},marketing:{preset:'general',ph:'Např. Marketingový plán na 3 měsíce pro spuštění nového produktu, s rozpočtem do 50 000 Kč.'},other:{preset:'general',ph:'Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám.'}};
-const DEPTH={fast:{maxRounds:1,maxRuns:15,targetScore:75,hint:'Jedno kolo práce a kontroly. Vhodné na rychlé věci.'},std:{maxRounds:3,maxRuns:40,targetScore:88,hint:'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.'},max:{maxRounds:5,maxRuns:80,targetScore:93,hint:'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.'}};
+const DEPTH={ultra:{maxRounds:1,maxRuns:3,targetScore:0,mode:'ultra',hint:'Jedna rychlá odpověď jako v okně Claude: rychlý model, bez rešerše, plánu a kontroly. Výsledek není ověřený.'},fast:{maxRounds:1,maxRuns:15,targetScore:75,hint:'Jedno kolo práce a kontroly. Vhodné na rychlé věci.'},std:{maxRounds:3,maxRuns:40,targetScore:88,hint:'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.'},max:{maxRounds:5,maxRuns:80,targetScore:93,hint:'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.'}};
 let briefKind='other',briefDepth='std';
 function setKind(k){briefKind=k;document.querySelectorAll('#kinds button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));$('goal').placeholder=KIND[k].ph}
 function setDepth(d){briefDepth=d;document.querySelectorAll('#depth button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));$('depth-hint').textContent=DEPTH[d].hint}
@@ -474,7 +507,7 @@ function openNew(){const r=repoOf(curRepo);if(!r)return;if(proj()&&['running','w
   $('repoline').textContent=proj()?'Šéf naváže na to, co se v tomhle projektu už naučil.':'Šéf si sám udělá průzkum, plán i kontrolu kvality. Zeptá se jen na to nejnutnější.';
   setKind(briefKind);setDepth(briefDepth);dlg.showModal();$('goal').focus()}
 function presetChange(){}
-async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').focus();return}const D=DEPTH[briefDepth];const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore}})});if(r.error)return alert(r.error);cur=r.id;dlg.close();$('goal').value='';await refreshRepos();render()}
+async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').focus();return}const D=DEPTH[briefDepth];const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore,mode:D.mode||'full'}})});if(r.error)return alert(r.error);cur=r.id;dlg.close();$('goal').value='';await refreshRepos();render()}
 async function refreshRepos(){const s=await api('/api/state');S.repos=s.repos;S.projects=s.projects;S.cast=s.cast}
 async function openRepoDlg(){rdlg.showModal();$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
   $('sugg').innerHTML=(r.suggestions||[]).map(s=>`<button class="ghost sg" onclick="addRepoPath(this.dataset.p)" data-p="${esc(s.path)}"><b>${esc(s.name)}</b> ${s.git?'<span class="chip">git</span>':''}<div class="act">${esc(s.path)}</div></button>`).join('')||'<div style="color:var(--mute);font-size:12px">Nic k nabídnutí.</div>'}
@@ -708,10 +741,7 @@ async function doUpdate(){const b=$('update-btn');
   if(window.webkit?.messageHandlers?.restartServer)window.webkit.messageHandlers.restartServer.postMessage(1);
   else alert(`Staženo (${r.version}). Restartuj aplikaci.`)}
 const LOC=()=>AO_I18N.lang==='cs'?'cs-CZ':'en-GB';
-// UI language: stored by the server (agents and the Mac menu use it too) and cached in the browser
-async function setLanguage(l){try{await api('/api/settings',{method:'POST',body:JSON.stringify({lang:l})})}catch{}AO_I18N.setLang(l);location.reload()}
-function showLanguage(){document.querySelectorAll('.lang-seg button').forEach(b=>b.classList.toggle('on',b.dataset.l===AO_I18N.lang))}
-showLanguage();
+// UI language: chosen on the Mac app's setup screen, stored by the server in config.json, cached in the browser
 checkUpdate();setInterval(()=>checkUpdate(),6*3600e3);
 checkHealth();setInterval(checkHealth,20000);
 load();

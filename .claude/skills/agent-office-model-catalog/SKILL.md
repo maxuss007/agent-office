@@ -12,6 +12,7 @@ Discover models and features from the installed CLIs at runtime. Do not hardcode
 - Codex: models and efforts come from its app-server.
 - Tiers are a map: fable is frontier, opus deep, sonnet balanced, haiku fast. An unknown alias defaults to deep. Frontier is kept for the boss and for judgement, not routine work.
 - Efforts: Codex accepts `ultra`; Claude maps `ultra` to `max`. The effort list is shared in `orchestrator.mjs`.
+- The boss is forced to `high` effort: `desiredEffort` in `providers.mjs` ignores the requested effort for `role === 'boss'` unless `effortOverride` is set. A quick path that must stay low (ultra fast answers) passes `keepEffort: true` to `ask()`, which `orchestrator.mjs` turns into `effortOverride`. Check the result with `state.json` (`agents.boss.model` and `effort`), not with the UI.
 - Feature state (fast mode) is read from the run result (`fast_mode_state`) and stored with `recordFeature`. The user preference is `auto`, `off` or `always`.
 - When a value becomes valid, update the test that asserted it was invalid. Do not change the code back. Example: the `ultra` effort test.
 - Optional Google providers join automatic routing once signed in (no `manual` flag): Gemini gets a bonus for research/study tasks, Antigravity for coding; elsewhere they rank slightly below Claude and Codex. A pinned `gemini/...` or `antigravity/...` model still forces them. Neither is ever the boss.

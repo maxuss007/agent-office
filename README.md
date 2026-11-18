@@ -33,7 +33,7 @@ It runs on the subscriptions you already pay for (Claude, ChatGPT/Codex, optiona
 - Menu bar status, notifications when the boss asks something (answer right from the notification) or finishes, and projects keep running in the background.
 - Each project gets its own git branch and worktree; nothing is ever pushed. Open the work in Codex or Claude Code with one click.
 - Learns as it goes: lessons about your taste are kept per project, and the autoharness plugin turns finished work into reusable skills.
-- Updates itself from GitHub, in English or Czech (EN | CS in the header), and runs on macOS 13 or newer, Apple silicon and Intel.
+- Updates itself from GitHub, in English or Czech (chosen on the setup screen), and runs on macOS 13 or newer, Apple silicon and Intel.
 
 > Everything runs locally. The server listens only on `127.0.0.1` and nothing is sent anywhere except to the services you connect (Claude, OpenAI, Google).
 
@@ -146,7 +146,7 @@ Agent Office never stores passwords. Each service uses its own sign-in on your M
 ## 4. How to use it
 
 1. On the **Projects** page click **New project** (creates a folder and a git repository) or connect an existing folder.
-2. In the project, write the boss a goal. **New goal** offers the type of work, how thorough to be and room for materials.
+2. In the project, write the boss a goal. **New goal** offers the type of work, how thorough to be and room for materials. **⚡ Ultra fast** skips research, planning and review: one quick answer from a fast model in seconds, like typing into Claude, but not verified.
 3. The boss researches, writes criteria and a plan, splits up the tasks and has them verified. It only asks what it really needs, at most 3 questions with buttons.
 4. Follow along in the office (the **Office | Team** switch), in the tasks and in the chat with the boss. Click a character to open the agent's details: what it does, which model it uses, a plain-language summary and a chat.
 5. Results are on the right under **Outputs**; the main one is the `Project summary`. A project can be paused, stopped, accepted or opened in Codex or Claude Code.

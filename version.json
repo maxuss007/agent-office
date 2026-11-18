@@ -1,7 +1,7 @@
 {
-  "version": "1.3.2",
-  "shell": 3,
+  "version": "1.4.0",
+  "shell": 4,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "The Office / Team switch (and EN | CS) now clearly shows the selected option in the accent colour, in light and dark mode."
+  "notes": "Live progress bar with an estimate of the time left, in the project and on the project cards. New ⚡ Ultra fast mode: one quick answer from a fast model in seconds, like typing into Claude (not verified). The language (English / Czech) is chosen on the setup screen. Needs the new app (DMG)."
 }

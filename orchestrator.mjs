@@ -525,7 +525,7 @@ async function ask(p, name, o0) {
           entry.waitingLimit = true; try { await waitForCapacity(p, name, entry, blocked[0]?.id || 'claude', until, 'Žádný model teď nemá volnou kapacitu.'); } finally { entry.waitingLimit = false; }
           continue;
         }
-        const selected = smoke ? { provider: 'claude', model: o.model, effort: o.effort, reason: 'Pevně nastavený smoke test' } : chooseRoute(catalog, { role: name, task: o.label, fast: !!o.interactive, model: o.model, provider: o.provider, effort: o.effort, pinned: modelOverride || o.pinned, agentOverride: !!modelOverride, effortOverride: !!effortOverride, excludeModels: modelOverride ? [] : o.excludeModels, ...(modelOverride ? { model: manual.model } : {}), ...(effortOverride ? { effort: manual.effort } : {}) });
+        const selected = smoke ? { provider: 'claude', model: o.model, effort: o.effort, reason: 'Pevně nastavený smoke test' } : chooseRoute(catalog, { role: name, task: o.label, fast: !!o.interactive, model: o.model, provider: o.provider, effort: o.effort, pinned: modelOverride || o.pinned, agentOverride: !!modelOverride, effortOverride: !!effortOverride || !!o.keepEffort, excludeModels: modelOverride ? [] : o.excludeModels, ...(modelOverride ? { model: manual.model } : {}), ...(effortOverride ? { effort: manual.effort } : {}) });
         if(st.stats.runs>=st.settings.maxRuns) throw Object.assign(new Error('budget'),{budget:true});
         st.stats.runs++;
         entry.provider = selected.provider; entry.model = selected.id;
@@ -876,6 +876,31 @@ function learn(p) {
 }
 function publishHtml(p) { try { publishReports(p, { usage: usageReport(p.state.id) }); } catch (e) { log(p, 'boss', `HTML souhrn se nepodařilo vytvořit: ${e.message}`); } }
 
+/** Ultra fast mode: one pass on a fast model, like typing into a chat window. No research, plan, reviewers,
+ *  questions or scorecard, so the result is not verified; the whole point is speed. */
+const QUICK_SCHEMA = { type: 'object', required: ['summary', 'files'], properties: { summary: { type: 'string' }, files: { type: 'array', items: { type: 'string' } } } };
+function quickModel(catalog) {
+  const ok = (id) => catalog.models.find((m) => m.id === id && m.available);
+  const codexFast = catalog.models.find((m) => m.provider === 'codex' && m.available && m.tier !== 'deep' && m.tier !== 'frontier') || catalog.models.find((m) => m.provider === 'codex' && m.available);
+  return ok('claude/sonnet') || codexFast || ok('gemini/auto') || ok('claude/haiku') || ok('antigravity/auto') || catalog.models.find((m) => m.available);
+}
+async function quickRun(p, ctx) {
+  const st = p.state;
+  phase(p, 'execute'); log(p, 'boss', T('Ultra rychlý režim: jedna rychlá odpověď bez rešerše, plánu a kontroly.'));
+  const catalog = await providerCatalog(); const m = quickModel(catalog);
+  if (!m) throw new Error('Žádný model není dostupný. Přihlas Claude nebo Codex v okně Připojení.');
+  agent(p, 'boss', { status: 'working', activity: T('rychlá odpověď') });
+  const out = await ask(p, 'boss', { model: m.id, effort: m.efforts?.includes('low') ? 'low' : (m.efforts?.[0] || 'medium'), pinned: true, keepEffort: true, interactive: true, label: T('Rychlá odpověď'),
+    system: `You are a fast, capable assistant inside Agent Office, working in ultra fast mode. Do the task directly in one pass, the way a good chat assistant would: no research phase, no plan, no reviewers, no questions back. Use tools only when the task needs files or a quick lookup. Answer in ${langName()}.`,
+    prompt: `GOAL:\n${st.goal}\n\nNOTES:\n${st.notes || '-'}\n\nWork directory: ${ctx.work}. If the goal asks for something to be created (a page, a document, code), write it there (deliverables/ for new files) and list the paths in \`files\`. Put the answer or a short summary of what you did in \`summary\`, written for the user.`,
+    cwd: ctx.work, addDirs: [ctx.office], tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'WebSearch', 'WebFetch', 'Skill'], schema: QUICK_SCHEMA });
+  const summary = String(out.data?.summary || out.text || '').trim();
+  const files = out.data?.files || [];
+  st.final = { summary, remaining: [], quick: true };
+  try { fs.writeFileSync(path.join(ctx.office, 'FINAL.md'), Tdoc(`# ${st.repoName || 'Projekt'} – výsledek\n\n**Zadání:** ${st.goal}\n\n## Shrnutí\n${summary}\n\n${files.length ? `## Kde to najdeš\n${files.map((f) => '- ' + f).join('\n')}\n\n` : ''}_${T('Ultra rychlý režim: výsledek není ověřený.')}_\n`)); } catch {}
+  st.status = 'done'; st.finished = now(); agent(p, 'boss', { status: 'done', activity: 'hotovo' }); publishHtml(p); save(p);
+  log(p, 'boss', `Hotovo. ${summary.slice(0, 300)}`); notify(p, 'Projekt hotov', summary.slice(0, 200));
+}
 async function pipeline(p, { resume = false } = {}) {
   const st = p.state; const cfg = loadConfig();
   const office = path.join(p.dir, 'office'); for (const d of ['research', 'reports', 'handoffs']) fs.mkdirSync(path.join(office, d), { recursive: true });
@@ -889,6 +914,7 @@ async function pipeline(p, { resume = false } = {}) {
   const cont = (st.history && st.history.length) ? `\n\nCONTINUING THIS REPO'S OFFICE (not a fresh start). Earlier goals: ${st.history.map((h) => `"${String(h.goal).slice(0, 120)}" (${h.status}, score ${h.score ?? '-'})`).join('; ')}. TASTE.md and SCORECARD.md already exist in ${office}: read and UPDATE them for the new goal instead of redoing all research; research only the gaps.` : '';
   const head = `PRESET FOCUS:\n${preset.focus}\n\nGOAL:\n${st.goal}\n\nUSER NOTES:\n${st.notes || '-'}\n\nTarget project dir: ${work}\nOffice dir (write TASTE.md, SCORECARD.md, FINAL.md here): ${office}\nDecision log (read first, it carries continuity between phases): ${office}/DECISIONS.md\nLessons from earlier jobs in this office (apply them): ${office}/LESSONS.md (may not exist)\nUser profile (learned taste): ${profilePath} (may not exist yet)\nTarget score: ${st.settings.targetScore}. Round limit: ${st.settings.maxRounds}. Run budget: ${st.settings.maxRuns} model runs total.${cont}`;
 
+  if (st.settings.mode === 'ultra') return quickRun(p, ctx);
   // 1) intake
   if (!cp.intake) {
     phase(p, 'intake'); log(p, 'boss', 'Zkoumám zadání a projekt…');
@@ -974,7 +1000,7 @@ async function pipeline(p, { resume = false } = {}) {
   st.final = { summary: judged.summary, remaining: leftovers };
   try { fs.writeFileSync(path.join(office, 'FINAL.md'), Tdoc(finalMarkdown(p, judged))); } catch {}
   learn(p);
-  st.status = 'done'; agent(p, 'boss', { status: 'done', activity: 'hotovo' }); publishHtml(p); save(p);
+  st.status = 'done'; st.finished = now(); agent(p, 'boss', { status: 'done', activity: 'hotovo' }); publishHtml(p); save(p);
   log(p, 'boss', `Hotovo. ${judged.summary}`); notify(p, 'Projekt hotov', judged.summary);
 }
 
@@ -1173,9 +1199,9 @@ export function startProject({ repoId, preset = 'general', goal, cwd, notes = ''
   if (old && live.has(old.id) && ['running', 'waiting_user'].includes(old.status)) throw new Error('Tahle kancelář právě pracuje na cíli – počkej, nebo ji zastav.');
   if (old) { // same repo, new goal: continue the SAME office (taste, profile, boss memory, worktree, feed history)
     const dir = path.join(PROJECTS_DIR, old.id); const st = old;
-    (st.history ||= []).push({ goal: st.goal, finished: now(), status: st.status, score: st.score, summary: st.final?.summary || '' });
+    (st.history ||= []).push({ goal: st.goal, started: st.started || null, finished: now(), status: st.status, score: st.score, summary: st.final?.summary || '', maxRounds: st.settings?.maxRounds, mode: st.settings?.mode || 'full' });
     (st.history[st.history.length - 1]).human = st.human || null; (st.history[st.history.length - 1]).accepted = !!st.accepted;
-    Object.assign(st, { goal, notes, preset, status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
+    Object.assign(st, { goal, notes, preset, started: now(), status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
     for (const k of Object.keys(st.agents)) st.agents[k] = { ...st.agents[k], status: 'idle', activity: '' };
     st.agents.boss = { ...st.agents.boss, status: 'working', activity: 'start' };
     const p = { state: st, dir, feeds: (() => { try { return JSON.parse(read(path.join(dir, 'feeds.json'), '{}')); } catch { return {}; } })() };
@@ -1186,7 +1212,7 @@ export function startProject({ repoId, preset = 'general', goal, cwd, notes = ''
   }
   const id = `${new Date().toISOString().slice(5, 16).replace(/[-:T]/g, '')}-${crypto.randomBytes(2).toString('hex')}`;
   const dir = path.join(PROJECTS_DIR, id); fs.mkdirSync(dir, { recursive: true });
-  const state = { id, repoId: repo.id, repoName: repo.name, created: now(), preset, goal, notes, cwd: repo.path, status: 'running', round: 0, score: null, settings: { ...pr.defaults, ...settings }, agentOverrides: repo.agentOverrides || {}, agents: { boss: { status: 'working', activity: 'start' } }, directives: [], agentSession: {}, ownSessions: [], history: [], roles: [], tasks: [], inbox: [], log: [], assumptions: [], stats: { runs: 0, cost: 0 } };
+  const state = { id, repoId: repo.id, repoName: repo.name, created: now(), started: now(), preset, goal, notes, cwd: repo.path, status: 'running', round: 0, score: null, settings: { ...pr.defaults, ...settings }, agentOverrides: repo.agentOverrides || {}, agents: { boss: { status: 'working', activity: 'start' } }, directives: [], agentSession: {}, ownSessions: [], history: [], roles: [], tasks: [], inbox: [], log: [], assumptions: [], stats: { runs: 0, cost: 0 } };
   repo.projectId = id; repo.lastActive = now(); try { fs.writeFileSync(REPOS_FILE, JSON.stringify(repos, null, 2)); } catch {}
   const np = { state, dir };
   for (const mr of repo.roles || []) { const rid2 = hireRole(np, mr, { manual: true }); if (mr.name) state.roles.find((r) => r.id === rid2).name = mr.name; }

@@ -83,7 +83,7 @@ final class ServerManager {
     }
 
     // Version of this Mac shell. Bump it (and "shell" in version.json) only when this file changes in a way the server relies on.
-    static let shellVersion = 3
+    static let shellVersion = 4
     var runningUpdate = false
     var onCrash: (() -> Void)?   // the server exited without being asked to
     var bundledDir: URL? { Bundle.main.resourceURL?.appendingPathComponent("server") }
@@ -253,7 +253,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
             DispatchQueue.main.async { done(out) }
         }
     }
+    // The language is chosen on the setup screen (stored in config.json, read by the server, the page and L()).
+    var configURL: URL { server.support.appendingPathComponent("config.json") }
+    func setLanguage(_ l: String) {
+        var c = ((try? JSONSerialization.jsonObject(with: Data(contentsOf: configURL))) as? [String: Any]) ?? [:]
+        c["lang"] = l
+        if let d = try? JSONSerialization.data(withJSONObject: c, options: [.prettyPrinted]) { try? d.write(to: configURL) }
+        buildMenus()
+    }
     func showSetup(_ status: String) {
+        // first launch: start in the Mac's own language (Czech if it is the first preferred language)
+        let c = ((try? JSONSerialization.jsonObject(with: Data(contentsOf: configURL))) as? [String: Any]) ?? [:]
+        if c["lang"] == nil { setLanguage(Locale.preferredLanguages.first?.hasPrefix("cs") == true ? "cs" : "en") }
         guard let f = Bundle.main.url(forResource: "setup", withExtension: "html"), let html = try? String(contentsOf: f, encoding: .utf8) else { setupNext?(); return }
         web.loadHTMLString(html.replacingOccurrences(of: "{{LANG}}", with: L("en", "cs")).replacingOccurrences(of: "{{STATUS}}", with: status), baseURL: nil)
     }
@@ -364,6 +375,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
             switch action {
             case "install": install((b["items"] as? [String] ?? []).filter { ["node", "claude", "codex", "gemini", "antigravity", "plugins", "skills"].contains($0) })
             case "continue": let n = setupNext; setupNext = nil; n?()
+            case "lang": if let l = b["lang"] as? String, ["en", "cs"].contains(l) { setLanguage(l); toolStatus { self.showSetup($0) } }
             case "copy": NSPasteboard.general.clearContents(); NSPasteboard.general.setString(b["text"] as? String ?? "", forType: .string)
             case "open": if let s = b["url"] as? String, let u = URL(string: s), u.scheme == "https" { NSWorkspace.shared.open(u) }
             default: break

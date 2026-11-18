@@ -36,7 +36,8 @@
     'Např. Marketingový plán na 3 měsíce pro spuštění nového produktu, s rozpočtem do 50 000 Kč.': 'E.g. A 3-month marketing plan for a product launch with a budget of up to $2,000.',
     'Např. Napiš obchodní podmínky pro e-shop s ručně šitými taškami, srozumitelně a podle českého práva.': 'E.g. Write clear terms and conditions for an online shop selling handmade bags.',
     'Např. Pitch deck pro investory na 12 slajdů: problém, řešení, trh, byznys model, tým, finance.': 'E.g. A 12-slide investor pitch deck: problem, solution, market, business model, team, financials.',
-    'Jak důkladně': 'How thorough', 'Intenzita práce': 'Effort', 'Rychle': 'Quick', 'Pečlivě': 'Careful', 'Do posledního detailu': 'Down to the last detail',
+    'Jak důkladně': 'How thorough', '⚡ Ultra rychle': '⚡ Ultra fast', 'Jedna rychlá odpověď jako v okně Claude: rychlý model, bez rešerše, plánu a kontroly. Výsledek není ověřený.': 'One quick answer, like typing into Claude: a fast model, no research, plan or review. The result is not verified.',
+    'Ultra rychlý režim: jedna rychlá odpověď bez rešerše, plánu a kontroly.': 'Ultra fast mode: one quick answer without research, plan or review.', 'rychlá odpověď': 'quick answer', 'Rychlá odpověď': 'Quick answer', 'Ultra rychlý režim: výsledek není ověřený.': 'Ultra fast mode: the result is not verified.', 'Intenzita práce': 'Effort', 'Rychle': 'Quick', 'Pečlivě': 'Careful', 'Do posledního detailu': 'Down to the last detail',
     'Jedno kolo práce a kontroly. Vhodné na rychlé věci.': 'One round of work and review. Good for quick things.',
     'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.': 'Up to three rounds of work, review and fixes. The boss releases the result only when it is really good.',
     'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.': 'Up to five rounds and strict grading. Uses more of your limits.',
@@ -297,6 +298,7 @@
     [/^(\w+): ([\d,\s]+) tokenů \(vstup \+ výstup\)$/, '$1: $2 tokens (input + output)'],
     // generic: "• text", "a – b" and "a · b · c" get their known parts translated
     [/^Kolo (\d+)\/(\d+)$/, 'Round $1/$2'],
+    [/^(\d+) %( · (.+))?$/, (m, a, b, c) => `${a}%` + (c ? ' · ' + ({ 'čeká na tvou odpověď': 'waiting for your answer', 'čeká na obnovení limitu': 'waiting for the limit to reset', 'pozastaveno': 'paused', 'zbývá méně než minuta': 'less than a minute left' }[c] || c.replace(/^zbývá cca (.+)$/, 'about $1 left')) : '')],
     [/^↓ Nainstalovat (.+)$/, '↓ Install $1'], [/^Skills: (\d+) doporučených balíčků chybí\.$/, 'Skills: $1 recommended packs are missing.'],
     [/^([•✓✕◐○●⚑⟳★]) (.+)$/, (m, a, b) => a + ' ' + tr(b)],
     [/^(.+?) – ([^–]+)$/, (m, a, b) => { const t = tr(b); return t === b ? m : a + ' – ' + t; }],

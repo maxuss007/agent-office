@@ -21,8 +21,9 @@ details{margin-top:8px}summary{font-size:13px;color:var(--mute);cursor:pointer}
 .foot{display:flex;gap:10px;align-items:center;margin-top:22px;flex-wrap:wrap}.foot .note{color:var(--mute);font-size:13px;flex:1;min-width:220px}
 pre#log{background:var(--code);border:1px solid var(--line);border-radius:12px;padding:12px;font:12px/1.45 ui-monospace,Menlo,monospace;max-height:200px;overflow:auto;white-space:pre-wrap;margin-top:16px}
 pre#log:empty{display:none}
+.headrow{display:flex;align-items:center;justify-content:space-between;gap:12px}.lang{display:inline-flex;border:1px solid var(--line);border-radius:10px;padding:3px;gap:3px}.lang button{border:0;padding:5px 12px;font-size:12.5px}.lang button.on{background:var(--acc);color:#fff}
 </style></head><body><div class="wrap">
-<div class="eyebrow" data-t="eyebrow"></div><h1 data-t="title"></h1><p class="lead" data-t="lead"></p>
+<div class="headrow"><div class="eyebrow" data-t="eyebrow"></div><span class="lang" role="group" aria-label="Language"><button data-l="en" onclick="post({action:'lang',lang:'en'})">English</button><button data-l="cs" onclick="post({action:'lang',lang:'cs'})">Čeština</button></span></div><h1 data-t="title"></h1><p class="lead" data-t="lead"></p>
 <div id="rows"></div>
 <pre id="log"></pre>
 <div class="foot"><button class="primary" id="all" onclick="installNeeded()"></button><button id="go" onclick="post({action:'continue'})"></button><span class="note" id="note"></span></div>
@@ -30,7 +31,7 @@ pre#log:empty{display:none}
 <script>
 const LANG='{{LANG}}'==='cs'?'cs':'en';
 const S={
- en:{eyebrow:'First launch',title:'Set up Agent Office',lead:'Agent Office runs on tools that live on your Mac. Install what is missing with one click – no Homebrew or admin password needed. Signing in to each service comes next, under Connections.',
+ en:{eyebrow:'First launch',title:'Set up Agent Office',lead:'Choose your language. Agent Office runs on tools that live on your Mac. Install what is missing with one click – no Homebrew or admin password needed. Signing in to each service comes next, under Connections.',
    all:'Install what is needed',go:'Open Agent Office',goLater:'Continue without it',installed:'Installed',missing:'Not installed',busy:'Installing…',install:'Install',req:'required',rec:'recommended',opt:'optional',manual:'Install it yourself',copy:'Copy',copied:'Copied',site:'Official page',
    need:'Node.js and Claude Code or Codex are needed to start.',ready:'Everything needed is installed. Sign in to the services under Connections.',pyNeed:'Needs Python 3.11 or newer:',
    node:['Node.js','Runs the office itself. Installed from nodejs.org (official LTS build, checksum verified) into the app\'s own folder.'],
@@ -40,7 +41,7 @@ const S={
    antigravity:['Antigravity','Google\'s coding agent, used for code when connected.'],
    plugins:['Claude Code plugins','autoharness learns new skills from finished work; the official marketplace lets the boss add plugins.'],
    skills:['Skills','Ready-made know-how for the agents: marketing, SEO, ads, UI/UX design, animation, model council and more, from their authors on GitHub. Skills you already have are never overwritten.'],skillsMissing:'packs missing'},
- cs:{eyebrow:'První spuštění',title:'Příprava Agent Office',lead:'Agent Office běží nad nástroji, které máš na Macu. Co chybí, nainstaluješ jedním kliknutím – bez Homebrew a bez hesla správce. Přihlášení ke službám pak uděláš v okně Připojení.',
+ cs:{eyebrow:'První spuštění',title:'Příprava Agent Office',lead:'Vyber jazyk. Agent Office běží nad nástroji, které máš na Macu. Co chybí, nainstaluješ jedním kliknutím – bez Homebrew a bez hesla správce. Přihlášení ke službám pak uděláš v okně Připojení.',
    all:'Nainstalovat, co je potřeba',go:'Otevřít Agent Office',goLater:'Pokračovat bez toho',installed:'Nainstalováno',missing:'Chybí',busy:'Instaluji…',install:'Nainstalovat',req:'nutné',rec:'doporučené',opt:'volitelné',manual:'Nainstalovat ručně',copy:'Kopírovat',copied:'Zkopírováno',site:'Oficiální stránka',
    need:'Ke spuštění je potřeba Node.js a Claude Code nebo Codex.',ready:'Vše potřebné je nainstalované. Ke službám se přihlásíš v okně Připojení.',pyNeed:'Potřebuje Python 3.11 nebo novější:',
    node:['Node.js','Pohání samotnou kancelář. Stáhne se z nodejs.org (oficiální LTS verze s kontrolou součtu) do vlastní složky aplikace.'],
@@ -67,6 +68,7 @@ const ok=id=>!!ST[id]?.ok;
 const ready=()=>ok('node')&&(ok('claude')||ok('codex'));
 function render(){
   document.querySelectorAll('[data-t]').forEach(e=>e.textContent=S[e.dataset.t]);
+  document.querySelectorAll('.lang button').forEach(b=>b.classList.toggle('on',b.dataset.l===LANG));
   document.getElementById('rows').innerHTML=ITEMS.map(it=>{const [name,desc]=S[it.id];const st=busy===it.id?'busy':ok(it.id)?'ok':'bad';
     const blocked=(['codex','gemini'].includes(it.id)&&!ok('node'))||(it.id==='plugins'&&!ok('claude'));   // npm needs Node.js, plugins need Claude Code
     const py=it.id==='plugins'&&!ok('python')?`<p class="desc">${esc(S.pyNeed)} <a onclick="post({action:'open',url:'https://www.python.org/downloads/macos/'})">python.org</a></p>`:'';

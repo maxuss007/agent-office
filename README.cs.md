@@ -33,7 +33,7 @@ Běží nad předplatnými, která už máš (Claude, ChatGPT/Codex, volitelně 
 - Stav v liště, upozornění, když se šéf ptá (odpovíš přímo z upozornění) nebo když je hotovo, a projekty běží i na pozadí.
 - Každý projekt má vlastní git větev a worktree, nic se nepushuje. Práci otevřeš jedním klikem v Codexu nebo Claude Code.
 - Učí se: poznatky o tvém vkusu si pamatuje u projektu a plugin autoharness z hotové práce dělá znovupoužitelné skills.
-- Sama se aktualizuje z GitHubu, umí anglicky i česky (EN | CS v hlavičce) a běží na macOS 13 a novějším, Apple silicon i Intel.
+- Sama se aktualizuje z GitHubu, umí anglicky i česky (jazyk se volí na instalační obrazovce) a běží na macOS 13 a novějším, Apple silicon i Intel.
 
 > Všechno běží lokálně. Server poslouchá jen na `127.0.0.1` a nic se neposílá jinam než do služeb, které připojíš (Claude, OpenAI, Google).
 
@@ -143,7 +143,7 @@ Agent Office si nikdy neukládá hesla. Každá služba používá vlastní při
 ## 4. Jak se to používá
 
 1. Na stránce **Projekty** klikni na **Nový projekt** (vznikne složka a git repozitář) nebo připoj existující složku.
-2. V projektu napiš šéfovi cíl. **Nový cíl** nabízí typ práce, důkladnost a podklady.
+2. V projektu napiš šéfovi cíl. **Nový cíl** nabízí typ práce, důkladnost a podklady. **⚡ Ultra rychle** vynechá rešerši, plán i kontrolu: jedna rychlá odpověď od rychlého modelu za pár sekund, jako když píšeš do Claude, jen neověřená.
 3. Šéf si udělá rešerši, kritéria a plán, rozdělí úkoly a nechá je ověřit. Ptá se jen na nejnutnější věci, nanejvýš na 3 otázky s tlačítky.
 4. Průběh sleduješ v kanceláři (přepínač **Kancelář | Tým**), v úkolech a v rozhovoru se šéfem. Klikem na postavu otevřeš detail agenta: co dělá, jaký model používá, lidské shrnutí a chat.
 5. Výsledky najdeš vpravo ve **Výstupech**, hlavní je `Souhrn zakázky`. Projekt jde pozastavit, zastavit, převzít nebo otevřít v Codexu či Claude Code.
