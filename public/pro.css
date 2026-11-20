@@ -48,7 +48,7 @@ select:focus,input:focus,textarea:focus{border-color:var(--acc);outline:none;box
 .project-card{padding:16px;transition:border-color .15s,box-shadow .15s}.project-card:hover{border-color:var(--line2)!important;box-shadow:var(--shadow)!important}
 .q{border-color:color-mix(in srgb,var(--warn) 55%,var(--line))!important;padding:12px;animation:none}
 dialog{background:var(--card)!important;color:var(--fg);border:1px solid var(--line2)!important;border-radius:14px!important;box-shadow:var(--shadow);padding:20px}
-dialog::backdrop{background:#0b0d1099;backdrop-filter:blur(3px)}
+dialog::backdrop{background:#0b0d10a6}
 .dialog-description,.hint,.umeta,.empty{color:var(--mute);font-size:13px}
 .eyebrow{font-size:11px;letter-spacing:.1em;color:var(--mute)!important;font-weight:600}
 .library-heading h2{font-size:26px;letter-spacing:-.01em;text-transform:none;color:var(--fg);font-weight:650;margin:2px 0 4px}
@@ -151,3 +151,272 @@ body[data-view=office] #newgoal{display:none!important}
 .seg button:hover:not(.on){color:var(--fg);background:color-mix(in srgb,var(--fg) 7%,transparent)}
 .seg button.on{background:var(--acc)!important;color:var(--acc-fg)!important;box-shadow:0 1px 3px #0003!important}
 .seg button.on .count{color:inherit!important;opacity:.85}
+
+/* brief: time range under each depth, optional project name, connect link */
+.depth-seg button{display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2;padding:6px 10px}
+.depth-seg button b{font-weight:600;font-size:12.5px}.depth-seg button small{font-size:11px;color:var(--mute);font-weight:500;font-variant-numeric:tabular-nums}
+.depth-seg button.on small{color:var(--acc)}
+.brief-name{margin-top:12px}.brief-name label{font-size:12.5px;font-weight:600;display:block;margin-bottom:4px}.brief-name label span{color:var(--mute);font-weight:400}.brief-name input{width:100%}
+.brief-alt{margin:8px 0 0;text-align:right}.brief-alt button{font-size:12.5px}
+#brief-error:empty{display:none}#brief-error{color:var(--bad);font-size:13px;margin-top:8px}
+.eta span{color:var(--fg)}
+@media(max-width:640px){.depth-seg{flex-wrap:wrap}.depth-seg button{flex:1 1 45%}}
+
+/* brief dialog v2: roomier, cards for thoroughness, readable selected state */
+dialog.brief{max-width:min(760px,calc(100vw - 32px))!important;width:100%;padding:26px 28px!important}
+.brief .brief-head h3{font-size:22px;margin:4px 0 6px}
+.brief-sec{margin-top:18px}
+.brief-label{display:block;font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mute);margin:0 0 8px}
+.brief-label span{text-transform:none;letter-spacing:0;font-weight:400}
+.brief .kinds{margin:0;gap:8px}.brief .kinds button{padding:7px 13px;border-radius:99px;font-size:13px}
+.brief textarea#goal{width:100%;min-height:170px;font-size:15px;line-height:1.55;padding:12px 14px;border-radius:12px}
+.depth-seg{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;background:none!important;padding:0!important;border-radius:0}
+.depth-seg button{display:flex!important;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;padding:12px 14px!important;min-height:72px;border-radius:12px!important;background:var(--card)!important;color:var(--fg)!important;border:1.5px solid var(--line2)!important;box-shadow:none!important}
+.depth-seg button:hover{border-color:var(--mute)!important}
+.depth-seg button b{font-size:13.5px;font-weight:600;line-height:1.25}
+.depth-seg button small{font-size:13px;font-weight:600;color:var(--mute);font-variant-numeric:tabular-nums}
+.depth-seg button.on{border-color:var(--acc)!important;background:var(--acc-soft)!important;color:var(--fg)!important;box-shadow:0 0 0 1px var(--acc) inset!important}
+.depth-seg button.on small{color:var(--acc)!important}
+.depth-hint{font-size:13px!important;color:var(--mute);margin:10px 2px 0!important;line-height:1.5}
+.brief-row{display:grid;grid-template-columns:1fr 220px;gap:14px;margin-top:18px;align-items:end}
+.brief-row .brief-name[hidden]+.brief-len{grid-column:1/-1;max-width:260px}
+.brief-name{margin:0!important}.brief-name input,.brief-len select{width:100%;min-height:40px}
+.brief-more{margin-top:16px}
+.brief-foot{margin-top:22px!important;padding-top:16px;border-top:1px solid var(--line)}
+@media(max-width:640px){dialog.brief{padding:18px 16px!important}.depth-seg{grid-template-columns:1fr 1fr}.brief-row{grid-template-columns:1fr}.brief textarea#goal{min-height:140px}}
+/* ---------- permission question + Mac access ---------- */
+dialog.perm{width:min(520px,calc(100vw - 32px));padding:22px 22px 18px}
+.perm-head{display:flex;justify-content:space-between;align-items:center}.perm-head span{color:var(--mute);font-size:12px}
+dialog.perm h3{margin:6px 0 4px;font-size:19px;line-height:1.3}
+.perm-who{margin:0 0 10px;color:var(--acc);font-weight:600;font-size:13px}
+.perm-why{margin:0 0 10px;color:var(--mute);font-size:14px;line-height:1.45}
+.perm-detail{margin:0 0 12px;padding:10px 12px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;font-size:12px;white-space:pre-wrap;word-break:break-word;max-height:160px;overflow:auto}
+.perm-note{margin:0 0 12px;font-size:12.5px;color:var(--mute)}
+.perm-actions{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+dialog.macdlg{width:min(720px,calc(100vw - 32px));max-height:calc(100vh - 48px);overflow:auto}
+.mac-sec{margin:18px 0 8px;font-size:13px;letter-spacing:.02em}.mac-sec small{font-weight:400;color:var(--mute);margin-left:6px}
+.mac-row{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line2)}
+.mac-row.cat{grid-template-columns:1fr auto}
+.mac-row b{font-size:14px}.mac-row p{margin:2px 0 0;font-size:12.5px;color:var(--mute);line-height:1.4}
+.mac-ic{font-size:20px;text-align:center}
+.mac-act{display:flex;gap:8px;align-items:center}
+.pill{font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:color-mix(in srgb,#22c55e 18%,transparent);color:#16a34a}.pill.no{background:color-mix(in srgb,#f59e0b 18%,transparent);color:#b45309}
+.mac-seg{display:flex}.mac-seg button{min-height:28px;padding:0 10px;font-size:12.5px;white-space:nowrap}
+.mac-hint{font-size:12px;color:var(--mute);margin:8px 0 0}
+.mac-rule{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line2);font-size:13px}
+.mac-never{margin:16px 0 0;padding:10px 12px;border-radius:8px;background:var(--bg2);font-size:12.5px;color:var(--mute);line-height:1.45}
+.mac-foot{display:flex;justify-content:flex-end;margin-top:14px}
+@media (max-width:560px){.mac-row{grid-template-columns:24px 1fr}.mac-act{grid-column:2}.mac-row.cat{grid-template-columns:1fr}.perm-actions button{flex:1}}
+/* ---------- line icons (public/icons.js) ---------- */
+svg.i{width:1.15em;height:1.15em;flex:none;vertical-align:-.2em;display:inline-block;overflow:visible}
+button svg.i{margin-right:.15em}
+button.quiet>svg.i:only-child,button>svg.i:only-child{margin:0;width:1.05em;height:1.05em}
+header button svg.i{opacity:.8}
+.kinds button svg.i,[data-k] svg.i{width:1.2em;height:1.2em;color:var(--acc)}
+[data-k].on svg.i{color:inherit}
+.depth-seg b svg.i{color:#f59e0b}
+.mac-ic svg.i{width:24px;height:24px;color:var(--acc)}
+.mac-never svg.i{margin-right:4px}
+.f-tool svg.i,.f-err svg.i{width:14px;height:14px;margin-right:4px;vertical-align:-2px;opacity:.75}
+.f-err svg.i{opacity:1}
+.output-row svg.i{width:18px;height:18px;color:var(--acc)}
+/* ---------- brief dialog v3: no stray frame, scannable work types, one font everywhere ---------- */
+.depth-seg{border:0!important;box-shadow:none!important}
+.depth-seg button{border:1px solid var(--line2)!important;box-shadow:none!important}
+.brief .kinds{display:grid!important;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.brief .kinds button{display:flex!important;flex-direction:column;align-items:flex-start;gap:8px;padding:12px 10px 11px!important;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-radius:12px!important;font-size:13.5px!important;font-weight:600!important;text-align:left;min-height:68px;border:1px solid var(--line2)!important;background:var(--card)!important}
+.brief .kinds button:hover:not(.on){border-color:var(--mute)!important}
+.brief .kinds button svg.i{width:22px!important;height:22px!important;margin:0!important;color:var(--acc)}
+.brief .kinds button.on{border-color:var(--acc)!important;background:var(--acc-soft)!important;box-shadow:0 0 0 1px var(--acc) inset!important}
+.brief select{-webkit-appearance:none;appearance:none;font:inherit!important;font-size:14px!important;line-height:1.3;padding:9px 34px 9px 12px!important;border:1px solid var(--line2)!important;border-radius:10px!important;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 10l4-4 4 4M8 14l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 10px center/16px!important;cursor:pointer}
+.brief-more summary{list-style:none;display:inline-flex;align-items:center;gap:6px;font:inherit!important;font-size:13.5px!important;font-weight:550!important;color:var(--acc)!important;padding:4px 0}
+.brief-more summary::-webkit-details-marker{display:none}.brief-more summary::marker{content:''}
+.brief-more[open] summary svg.i{transform:rotate(45deg)}.brief-more summary svg.i{transition:transform .15s}
+.brief textarea,.brief input{font:inherit!important;font-size:14px!important}
+@media(max-width:700px){.brief .kinds{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* ---------- pencil next to the project name, waiting-question badge, open-elsewhere row ---------- */
+header h1{display:flex;align-items:center;gap:8px}
+.icon-btn{display:inline-grid;place-items:center;width:30px;height:30px;padding:0!important;border-radius:8px;background:transparent!important;color:var(--mute)!important;border:1px solid transparent!important}
+.icon-btn:hover{color:var(--fg)!important;background:color-mix(in srgb,var(--fg) 8%,transparent)!important}
+.icon-btn[hidden]{display:none}.icon-btn svg.i{width:17px;height:17px;margin:0}
+#mac-btn{position:relative}
+.badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ef4444;color:#fff;font-size:11px;font-weight:700;line-height:18px;text-align:center}
+.office-open{display:flex;gap:8px;flex-wrap:wrap}.office-open button{display:inline-flex;align-items:center;gap:6px}
+/* ---------- project usage per connected service ---------- */
+.svc{padding:10px 0;border-top:1px solid var(--line2)}.svc:first-of-type{border-top:0}
+.svc-head{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}.svc-head span{font-size:12.5px;color:var(--mute);font-variant-numeric:tabular-nums}
+.svc-bar{height:6px;border-radius:3px;background:var(--bg2);margin:7px 0 6px;overflow:hidden}.svc-bar i{display:block;height:100%;background:var(--acc);border-radius:3px}
+.svc-models{display:flex;flex-wrap:wrap;gap:6px}.svc-models span{font-size:12px;padding:2px 8px;border-radius:99px;background:var(--bg2)}.svc-models em{font-style:normal;color:var(--mute);margin-left:3px}
+/* ---------- project overview v2: follows light/dark, readable progress, calm status dots ---------- */
+.library-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.search-box{position:relative;flex:1 1 280px;max-width:460px}
+.search-box svg.i{position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--mute);pointer-events:none}
+.search-box input{width:100%;height:38px;padding:0 12px 0 36px!important;border-radius:10px!important;border:1px solid var(--line2)!important;background:var(--card)!important;font-size:14px!important;-webkit-appearance:none;appearance:none}
+.search-box input:focus{outline:none;border-color:var(--acc)!important;box-shadow:0 0 0 3px var(--acc-soft)}
+.lib-seg{display:inline-flex;height:38px;align-items:stretch}.lib-seg button{padding:0 14px;font-size:13px}
+.library-toolbar .connection{margin-left:auto;color:var(--mute)!important;font-size:12.5px}
+.project-library{gap:14px!important}
+.project-card{display:flex;flex-direction:column;background:var(--card)!important;border:1px solid var(--line)!important;border-radius:14px!important;padding:16px 16px 12px!important;box-shadow:0 1px 2px #0000000d!important;transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .18s,border-color .18s!important;transform:none;will-change:transform}
+.project-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.project-state{display:inline-flex;align-items:center;gap:6px;font-size:12px!important;font-weight:600;color:var(--mute)!important;letter-spacing:0;text-transform:none}
+.project-state i{width:7px;height:7px;border-radius:50%;background:var(--mute);flex:none}
+.tone-run i{background:#22c55e;box-shadow:0 0 0 3px #22c55e2e}.tone-run{color:#16a34a!important}
+.tone-ask i{background:#f59e0b}.tone-ask{color:#b45309!important}
+.tone-hold i{background:#8b8b93}
+.tone-ok i{background:var(--acc)}.tone-ok{color:var(--acc)!important}
+.tone-err i{background:#ef4444}.tone-err{color:#dc2626!important}
+@media(prefers-color-scheme:dark){.tone-run{color:#4ade80!important}.tone-ask{color:#fbbf24!important}.tone-err{color:#f87171!important}}
+.project-card .project-open{display:block;text-align:left;background:transparent!important;border:0!important;padding:0!important;color:var(--fg)!important;flex:1}
+.project-card .project-open b{display:block;font-size:17px;font-weight:650;line-height:1.3;color:var(--fg)!important;margin-bottom:4px}
+.project-card .project-open p{margin:0;font-size:13.5px;line-height:1.45;color:var(--mute)!important;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.project-card .eta{margin:12px 0 0!important;display:flex;align-items:center;gap:10px;font-size:12px;color:var(--mute)!important}
+.project-card .eta span{color:var(--mute)!important;white-space:nowrap;font-variant-numeric:tabular-nums}
+.eta-bar{background:color-mix(in srgb,var(--fg) 10%,transparent)!important;height:6px!important;border-radius:99px}
+.eta-bar i{background:var(--acc)!important}.eta.held .eta-bar i{background:color-mix(in srgb,var(--fg) 38%,transparent)!important}
+.project-card-footer{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px!important;padding-top:10px!important;border-top:1px solid var(--line)!important;font-size:12px!important;color:var(--mute)!important}
+.project-card-footer span{display:inline-flex;align-items:center;gap:5px}.project-card-footer svg.i{width:14px;height:14px;margin:0;opacity:.8}
+#connected-projects>summary{font-size:13px;color:var(--mute);cursor:pointer;margin-top:18px}
+/* ---------- header brand: one mark with the version, project name after it ---------- */
+h1 span.brand,body[data-view=office] h1 span.brand{border:0!important;padding:0!important;background:none!important;font-size:15px!important;font-weight:650!important;letter-spacing:-.005em!important;color:var(--fg)!important;text-transform:none!important;display:inline-flex!important;align-items:baseline;gap:6px}
+h1 span.brand em{font-style:normal;font-size:11.5px;font-weight:500;color:var(--mute);font-variant-numeric:tabular-nums}
+h1 #crumb{font-weight:600;display:inline-flex;align-items:center;gap:8px;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+h1 #crumb::before{content:'/';color:var(--line2);font-weight:400}
+h1 #crumb[hidden]{display:none}
+@media(max-width:640px){h1 span.brand,body[data-view=office] h1 span.brand{display:inline-flex!important}h1 span.brand em{display:none}}
+.project-card .project-open{display:flex!important;flex-direction:column;justify-content:flex-start;align-items:stretch}
+/* project card hover: only a slight lift in size, colours never change */
+.project-card:hover,.project-card:focus-within{transform:scale(1.025)!important;border-color:var(--line2)!important;box-shadow:0 8px 24px #00000017!important;background:var(--card)!important}
+.project-card .project-open:hover,.project-card .project-open:focus-visible{background:transparent!important}
+.project-card .project-open b,.project-card:hover .project-open b{color:var(--fg)!important}
+.project-card .project-open p,.project-card:hover .project-open p{color:var(--mute)!important}
+@media(prefers-reduced-motion:reduce){.project-card:hover,.project-card:focus-within{transform:none!important}}
+/* stage header: "Office | Overview" switch and a green "Add role" of the same height */
+.stage-seg{height:34px;align-items:stretch}.stage-seg button{display:inline-flex;align-items:center}
+.ws-scene>summary .stage-add{margin-left:auto;height:34px;display:inline-flex!important;align-items:center;gap:6px;padding:0 14px!important;border-radius:10px!important;background:var(--acc)!important;color:var(--acc-fg)!important;border:1px solid transparent!important;font-size:13px!important;font-weight:600!important;white-space:nowrap}
+.ws-scene>summary .stage-add:hover{background:var(--acc2)!important}
+.ws-scene>summary .stage-add svg.i{width:15px;height:15px;margin:0}
+#office-status[hidden]{display:none!important}
+/* state icon inside the current step (paused, waiting, error) instead of a separate status label */
+#ws-status[hidden]{display:none!important}
+.ws-steps li span svg{width:10px;height:10px;fill:currentColor}
+.ws-steps li span svg.i{width:12px;height:12px;fill:none}
+.ws-steps li.halt{border-color:var(--warn)!important}
+/* progress row: steps on the left, run controls on the right in the same pill style */
+.ws-progress-row{display:flex;align-items:center;gap:12px;margin:16px 0 18px}
+.ws-progress-row .ws-steps{margin:0!important;flex:1 1 auto;min-width:0}
+.ws-ctrl{display:flex;gap:6px;flex:none}.ws-ctrl:empty{display:none}
+.ctrl{display:inline-flex!important;align-items:center;gap:7px;font-size:12px!important;font-weight:600!important;padding:5px 12px 5px 6px!important;border-radius:99px!important;background:var(--card)!important;border:1px solid var(--line)!important;color:var(--fg)!important;white-space:nowrap;min-height:0!important;cursor:pointer}
+.ctrl span{display:grid;place-items:center;width:18px;height:18px;border-radius:50%}
+.ctrl span svg{width:9px;height:9px;fill:currentColor}
+.c-go{border-color:var(--acc)!important}.c-go span{background:var(--acc);color:var(--acc-fg)}.c-go:hover{background:var(--acc-soft)!important}
+.c-pause{border-color:var(--warn)!important}.c-pause span{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}.c-pause:hover{background:color-mix(in srgb,var(--warn) 9%,var(--card))!important}
+.c-stop{border-color:#ef4444!important}.c-stop span{background:color-mix(in srgb,#ef4444 16%,transparent);color:#ef4444}.c-stop:hover{background:color-mix(in srgb,#ef4444 8%,var(--card))!important}
+/* a paused/stopped step uses the same amber as the Pause control; waiting = amber too; error = red */
+.ws-steps li.halt{border-color:var(--warn)!important}
+@media(max-width:640px){.ws-progress-row{flex-direction:column;align-items:stretch}.ws-ctrl{justify-content:flex-start}}
+.ws-steps li.halt.err{border-color:#ef4444!important}.ws-steps li.halt.err span{background:color-mix(in srgb,#ef4444 16%,transparent)!important;color:#ef4444!important}
+/* agent name tags in the office scene: same look as the app's pills (card, hairline border, text colour by theme) */
+.so .tag-bg{fill:var(--card);stroke:var(--line2);stroke-width:1;filter:drop-shadow(0 1px 2px #0000001f)}
+.so .tag-tx{fill:var(--fg)}
+.so .more-bg{fill:var(--acc);filter:drop-shadow(0 1px 2px #00000026)}
+.so .more-tx{fill:var(--acc-fg)}
+.so .more{cursor:pointer}.so .more:hover .more-bg{fill:var(--acc2)}
+/* project head: goal text removed; "New goal" pill on the left, same family as the step pills but larger */
+.ws-title{align-items:center!important;gap:16px!important}
+#ws-goal[hidden],#usage-btn[hidden]{display:none!important}
+#ws-newgoal:empty{display:none}
+.newgoal-pill{display:inline-flex!important;align-items:center;gap:9px;font-size:14px!important;font-weight:600!important;padding:7px 16px 7px 7px!important;border-radius:99px!important;background:var(--card)!important;border:1px solid var(--acc)!important;color:var(--fg)!important;min-height:0!important;white-space:nowrap;cursor:pointer;transition:background .15s}
+.newgoal-pill span{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--acc-fg)}
+.newgoal-pill span svg.i{width:14px;height:14px;margin:0}
+.newgoal-pill:hover{background:var(--acc-soft)!important}
+.newgoal-pill.first{background:var(--acc)!important;color:var(--acc-fg)!important}.newgoal-pill.first span{background:var(--acc-fg);color:var(--acc)}
+.ws-title #ws-eta{flex:1;min-width:0}.ws-title #ws-eta .eta{margin-top:0}
+/* office name tags: frosted glass, a little larger than before */
+.so-tip{position:absolute;left:0;top:0;transform:translate(-50%,-50%) scale(.96);opacity:0;pointer-events:none;z-index:6;white-space:nowrap;
+  padding:6px 14px;border-radius:99px;font:600 13.5px/1.2 -apple-system,BlinkMacSystemFont,system-ui,sans-serif;letter-spacing:-.005em;color:var(--fg);
+  background:color-mix(in srgb,var(--card) 58%,transparent);-webkit-backdrop-filter:blur(14px) saturate(1.7);backdrop-filter:blur(14px) saturate(1.7);
+  border:1px solid color-mix(in srgb,#fff 55%,transparent);box-shadow:0 4px 16px #0000001f,inset 0 1px 0 #ffffff59;transition:opacity .15s,transform .15s}
+.so-tip.on{opacity:1;transform:translate(-50%,-50%) scale(1)}
+@media(prefers-color-scheme:dark){.so-tip{border-color:color-mix(in srgb,#fff 16%,transparent);box-shadow:0 4px 16px #00000052,inset 0 1px 0 #ffffff14}}
+/* name tag: 15 % smaller, anchored by its bottom edge just above the head */
+.so-tip{padding:5px 12px;font-size:11.5px;transform:translate(-50%,-100%) scale(.96)}
+.so-tip.on{transform:translate(-50%,-100%) scale(1)}
+/* ---------- buttons app-wide: rounded pills like the progress steps (cards that happen to be buttons keep their shape) ---------- */
+button:not(.project-open):not(.member):not(.output-row):not(.session-item):not(.out):not([data-k]):not([data-d]):not(.boss-name):not(.door):not(.task):not(.q-opt),
+summary.btn,.btn{border-radius:99px!important}
+button:not(.project-open):not(.member):not(.output-row):not(.session-item):not(.out):not([data-k]):not([data-d]):not(.boss-name):not(.door):not(.task):not(.icon-btn):not(.ctrl):not(.newgoal-pill):not(:has(> svg.i:only-child)){padding-left:max(14px,1em)!important;padding-right:max(14px,1em)!important}
+.icon-btn,button.quiet:has(> svg.i:only-child){border-radius:50%!important}
+.seg,.stage-seg,.lib-seg,.mac-seg{border-radius:99px!important}
+.seg button{padding-left:12px!important;padding-right:12px!important}
+.search-box input{border-radius:99px!important}
+/* ---------- Mac access v2: Apple-style grouped lists ---------- */
+dialog.macdlg{width:min(680px,calc(100vw - 32px));padding:22px 22px 18px!important}
+.mac-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
+.mac-head h3{margin:4px 0 0;font-size:21px;font-weight:650;letter-spacing:-.01em}
+.mac-sec{margin:20px 4px 8px!important;font-size:12px!important;font-weight:600!important;letter-spacing:.04em;text-transform:uppercase;color:var(--mute)}
+.mac-group{border:1px solid var(--line);border-radius:14px;background:var(--card);overflow:hidden}
+.mac-group .mac-row{padding:12px 14px!important;border-top:1px solid var(--line)!important;gap:12px}
+.mac-group .mac-row:first-child{border-top:0!important}
+.mac-group .mac-row b{font-size:14px;font-weight:600}
+.mac-group .mac-row p{font-size:12.5px;margin-top:2px}
+.mac-ic{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--acc-soft)}
+.mac-ic svg.i{width:17px!important;height:17px!important}
+.mac-act button{min-height:30px;padding:4px 16px!important;font-size:13px!important}
+.mac-group .mac-rule{padding:10px 14px;border-top:1px solid var(--line)}.mac-group .mac-rule:first-child{border-top:0}
+.mac-never{display:flex;gap:10px;align-items:flex-start;margin:18px 0 0!important;padding:12px 14px!important;border-radius:12px!important;font-size:12.5px;line-height:1.5}
+.mac-never svg.i{flex:none;width:16px;height:16px;margin-top:1px;color:var(--mute)}
+.mac-foot{margin-top:16px!important}.mac-foot button{padding:8px 22px!important}
+.mac-hint{display:none}
+dialog.macdlg{width:min(680px,calc(100vw - 32px))!important;max-width:min(680px,calc(100vw - 32px))!important}
+/* ---------- Connections v2: same cards, bars, fields and type as the rest of the app ---------- */
+#providersdlg{width:min(680px,calc(100vw - 32px))!important;max-width:min(680px,calc(100vw - 32px))!important;padding:22px 22px 18px!important}
+#providersdlg h3{font-size:21px;font-weight:650;letter-spacing:-.01em;margin:0 0 4px}
+#providersdlg,#providersdlg *{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,system-ui,sans-serif}
+#providersdlg code{font-family:ui-monospace,Menlo,monospace!important;font-size:12px;background:var(--bg2);padding:1px 6px;border-radius:6px}
+.provider-card{border:1px solid var(--line)!important;border-radius:14px!important;padding:0!important;margin:10px 0!important;background:var(--card)!important;overflow:hidden}
+.provider-card>summary{padding:13px 14px!important;gap:10px!important;font-size:14px}
+.provider-card>summary b{font-size:15px;font-weight:650}
+.provider-card>summary::after,.subcard>summary::after{content:none!important}
+.pchev{display:inline-grid;color:var(--mute);transition:transform .18s}.pchev svg.i{width:16px;height:16px;margin:0}
+.provider-card[open]>summary .pchev{transform:rotate(180deg)}
+.pdot{width:8px!important;height:8px!important;margin-right:2px!important}
+.pst{font-size:12.5px!important;font-weight:600!important}
+.relink{display:inline-grid;place-items:center;color:var(--bad);padding:0 2px}.relink svg.i{width:15px;height:15px;margin:0}
+.pbody{padding:0 14px 14px;margin-top:0!important;gap:12px!important;border-top:1px solid var(--line);padding-top:12px}
+.limit{display:grid;gap:5px}
+.limit>div:first-child{display:flex;justify-content:space-between;font-size:13px}
+.limit>div:first-child span{color:var(--mute)}.limit>div:first-child b{font-weight:600;font-variant-numeric:tabular-nums}
+.limit .eta-bar{max-width:none!important;width:100%;height:6px!important;margin:0}
+.limit.low .eta-bar i{background:var(--warn)!important}.limit.low>div:first-child b{color:var(--warn)}
+.limit small{color:var(--mute);font-size:11.5px}
+.feats{border:1px solid var(--line);border-radius:12px;padding:0!important;gap:0!important}
+.feat{padding:10px 12px;border-top:1px solid var(--line)}.feat:first-child{border-top:0}
+.feat b{font-size:13.5px!important;font-weight:600}
+.subcard{border:1px solid var(--line)!important;border-radius:12px!important;background:var(--bg2)!important;padding:10px 12px!important}
+#providersdlg select{-webkit-appearance:none;appearance:none;font:inherit;font-size:13px!important;padding:6px 30px 6px 12px!important;border:1px solid var(--line2)!important;border-radius:99px!important;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 10l4-4 4 4M8 14l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 9px center/14px!important;cursor:pointer;width:auto!important}
+#providersdlg input{font:inherit;font-size:13.5px!important;height:36px;padding:0 14px!important;border:1px solid var(--line2)!important;border-radius:99px!important;background:var(--card)!important}
+#providersdlg input:focus,#providersdlg select:focus{outline:none;border-color:var(--acc)!important;box-shadow:0 0 0 3px var(--acc-soft)}
+.tokenform{display:grid;gap:8px}.tokenform label{font-size:12.5px!important;color:var(--mute);margin:0!important;font-weight:500}
+#providersdlg .pbody button{display:inline-flex;align-items:center;gap:6px;align-self:flex-start;margin-top:0!important;font-size:13px!important}
+#providersdlg .pbody button svg.i{width:14px;height:14px;margin:0}
+.howto summary{display:inline-flex;align-items:center;gap:6px;font-weight:600}
+.skills-line{font-size:13px}
+/* ---------- message bars (boss, agent chat): one rounded field with the send button inside ---------- */
+.boss-compose,.apchat{display:flex!important;align-items:flex-end!important;gap:6px!important;padding:5px 5px 5px 16px!important;border:1px solid var(--line2)!important;border-radius:22px!important;background:var(--card)!important;transition:border-color .15s,box-shadow .15s;margin-top:12px}
+.boss-compose:focus-within,.apchat:focus-within{border-color:var(--acc)!important;box-shadow:0 0 0 3px var(--acc-soft)}
+.boss-compose textarea,.apchat input{flex:1;min-width:0;border:0!important;outline:none!important;box-shadow:none!important;background:transparent!important;padding:7px 0!important;margin:0!important;font:inherit!important;font-size:14px!important;line-height:1.45!important;color:var(--fg)!important;border-radius:0!important;resize:none;min-height:0!important;height:auto}
+.boss-compose textarea{max-height:140px;overflow-y:auto}
+.boss-compose textarea::placeholder,.apchat input::placeholder{color:var(--mute)}
+#boss-send,.apchat button{flex:none;width:32px!important;height:32px!important;min-height:0!important;padding:0!important;border-radius:50%!important;display:grid!important;place-items:center;background:var(--acc)!important;color:var(--acc-fg)!important;border:0!important}
+#boss-send:hover,.apchat button:hover{background:var(--acc2)!important;filter:none!important}
+#boss-send svg.i,.apchat button svg.i{width:16px!important;height:16px!important;margin:0!important}
+form.boss-compose #boss-send,form.apchat button{background:var(--acc)!important;color:var(--acc-fg)!important}
+form.boss-compose #boss-send:hover,form.apchat button:hover{background:var(--acc2)!important}
+form.boss-compose #boss-send:disabled{opacity:.45}
+/* Claude: "Reconnect" reveals the sign-in options only when clicked */
+.reconnect>summary{list-style:none;display:inline-flex;align-items:center;gap:6px;padding:6px 16px;border:1px solid var(--line2);border-radius:99px;font-size:13px;font-weight:600;cursor:pointer;background:var(--card);width:max-content}
+.reconnect>summary::-webkit-details-marker{display:none}.reconnect>summary::after{content:none!important}
+.reconnect>summary:hover{background:var(--bg2)}.reconnect>summary svg.i{width:14px;height:14px;margin:0}
+.reconnect[open]>summary{border-color:var(--acc);color:var(--acc)}
+.reconnect-body{display:grid;gap:10px;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}

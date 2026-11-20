@@ -17,6 +17,7 @@ const ROOT = path.dirname(fileURLToPath(import.meta.url));
 export const DATA = process.env.AGENT_OFFICE_HOME || ROOT; // config.json, profile.md, projects/ (the .app keeps them in Application Support)
 export const PROJECTS_DIR = path.join(DATA, 'projects');
 fs.mkdirSync(DATA, { recursive: true });
+import { cancelProject as cancelPermissions } from './permissions.mjs';
 export const bus = new EventEmitter();
 
 const DEFAULT_CFG = {
@@ -27,8 +28,14 @@ const DEFAULT_CFG = {
   limitBackoffMin: 10,
   limitMaxRetries: 12,
   ntfyTopic: '', // optional: set to get phone pushes via ntfy.sh (sends question text to that service)
-  bash: ['git *', 'node *', 'npm *', 'npx *', 'python3 *', 'curl *', 'ls *', 'cat *', 'mkdir *', 'open *', 'kill *', 'lsof *', 'sleep *', '*Google Chrome*'],
-  bashDeny: ['git push*', 'rm -rf*', 'sudo*'],
+  // Everyday programs agents run on their own. Anything else is asked about in plain language (permissions.mjs);
+  // the really dangerous things (sudo, passwords, system security, git push, deleting everything) are never allowed.
+  bash: ['git *', 'node *', 'npm *', 'npx *', 'python3 *', 'python *', 'curl *', 'wget *', 'ls *', 'cat *', 'mkdir *', 'open *', 'kill *', 'lsof *', 'sleep *', '*Google Chrome*',
+    'find *', 'grep *', 'rg *', 'head *', 'tail *', 'wc *', 'sort *', 'uniq *', 'jq *', 'zip *', 'unzip *', 'tar *', 'gzip *', 'cp *', 'mv *', 'touch *', 'date*', 'echo *', 'printf *', 'pwd', 'which *', 'diff *', 'file *', 'du *', 'df *', 'ps *', 'cut *', 'tr *', 'awk *', 'sed *', 'basename *', 'dirname *', 'realpath *', 'shasum *', 'md5 *', 'base64 *', 'test *',
+    'mdfind *', 'mdls *', 'sips *', 'textutil *', 'ffmpeg *', 'ffprobe *', 'pdftotext *', 'qlmanage *', 'plutil *', 'iconutil *', 'screencapture *', 'pbcopy*', 'pbpaste*', 'say *', 'afplay *', 'pandoc *', 'magick *', 'convert *',
+    'yarn *', 'pnpm *', 'bun *', 'deno *', 'make *', 'swift *', 'swiftc *', 'xcodebuild *', 'xcrun *', 'pytest *', 'pip3 show*', 'pip3 list*', 'brew list*', 'brew info*', 'brew search*'],
+  bashDeny: ['git push*', 'rm -rf /*', 'rm -rf ~*', 'sudo*', 'security *', 'csrutil*', 'tccutil*', 'launchctl *', 'diskutil erase*'],
+  macTools: true, // agents may use the Mac (screen, mouse, apps) – each kind of action is permitted in Mac access settings
 };
 // UI and conversation language: 'en' (default) or 'cs', set in the app header and stored in config.json
 export const userLang = () => (loadConfig().lang === 'cs' ? 'cs' : 'en');
@@ -164,6 +171,12 @@ function log(p, who, msg) {
   if (p.state.log.length > 400) p.state.log.splice(0, p.state.log.length - 400);
   save(p);
 }
+/** The Mac tools server (mac-mcp.mjs) for one agent; it asks the app before acting. Null when the server address is unknown. */
+export function macMcp(p, agentName, cwd) {
+  if (!process.env.AO_URL || !process.env.AO_TOKEN) return null;
+  const a = p.state.agents?.[agentName] || {};
+  return { command: process.execPath, args: [path.join(ROOT, 'mac-mcp.mjs')], env: { AO_URL: process.env.AO_URL, AO_TOKEN: process.env.AO_TOKEN, AO_PROJECT: p.state.id, AO_PROJECT_NAME: p.state.repoName || '', AO_AGENT: agentName, AO_AGENT_NAME: a.name || agentName, AO_CWD: cwd || p.state.workDir || p.state.cwd, AO_LANG: userLang(), AO_SHOTS: path.join(p.dir, 'office', 'shots'), AO_MAC_TOOLS: loadConfig().macTools === false ? '0' : '1', PATH: process.env.PATH || '' } };
+}
 function agent(p, name, patch) {
   p.state.agents[name] = { status: 'idle', activity: '', ...(p.state.agents[name] || {}), ...patch };
   save(p);
@@ -262,6 +275,8 @@ function runClaude(p, o) {
     // Only this role's built-in tools are loaded; MCP is off; skills arrive as text in the task (see skillText).
     args.push('--tools', [...new Set([...tools, ...(o.bash ? ['Bash'] : [])])].join(',') || 'Read', '--strict-mcp-config', '--disable-slash-commands');
     if (o.bash) tools.push(...cfg.bash.map((b) => `Bash(${b})`));
+    // Mac tools + plain-language permission questions: anything not pre-allowed is asked about in the app, not silently refused
+    if (o.mcp) { args.push('--mcp-config', JSON.stringify({ mcpServers: { mac: o.mcp } }), '--permission-prompt-tool', 'mcp__mac__approve'); tools.push('mcp__mac'); }
     if (tools.length) args.push('--allowedTools', ...tools);
     if (o.bash) args.push('--disallowedTools', ...cfg.bashDeny.map((b) => `Bash(${b})`));
     for (const d of o.addDirs || []) args.push('--add-dir', d);
@@ -441,13 +456,16 @@ export function usageReport(id) {
   const dir = path.join(PROJECTS_DIR, id); const st = readState(id); if (!st) throw new Error('Projekt neexistuje.');
   const rows = read(path.join(dir, 'attempts.jsonl')).split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
   const goal = (st.history || []).length + 1;
-  const sum = (list) => list.reduce((a, r) => { a.attempts++; if (r.outcome !== 'ok') a.failed++; a.ms += r.ms || 0; for (const k of ['input', 'output', 'cacheRead', 'cacheWrite']) a[k] += r.tokens?.[k] || 0; if (r.outcome !== 'ok') a.failedTokens += (r.tokens?.input || 0) + (r.tokens?.output || 0); if (!r.tokens?.known) a.unknown++; return a; }, { attempts: 0, failed: 0, ms: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, failedTokens: 0, unknown: 0 });
+  const sum = (list) => list.reduce((a, r) => { a.attempts++; if (r.outcome !== 'ok') a.failed++; a.ms += r.ms || 0; for (const k of ['input', 'output', 'cacheRead', 'cacheWrite']) a[k] += r.tokens?.[k] || 0; if (r.outcome !== 'ok') a.failedTokens += (r.tokens?.input || 0) + (r.tokens?.output || 0); if (!r.tokens?.known) a.unknown++; a.cost += Number(r.cost) || 0; return a; }, { attempts: 0, failed: 0, ms: 0, input: 0, output: 0, cacheRead: 0, cacheWrite: 0, failedTokens: 0, unknown: 0, cost: 0 });
   const group = (list, key) => Object.entries(list.reduce((m, r) => ((m[r[key] || '?'] ||= []).push(r), m), {})).map(([k, v]) => ({ key: k, ...sum(v) }));
   const cur = rows.filter((r) => r.goal === goal);
   const jobs = [...(st.history || []).map((h, i) => ({ goal: h.goal, status: h.status, accepted: !!h.accepted, human: h.human || null, ...sum(rows.filter((r) => r.goal === i + 1)) })), { goal: st.goal, status: st.status, accepted: !!st.accepted, human: st.human || null, ...sum(cur) }];
   const accepted = jobs.filter((j) => j.accepted);
   const perAccepted = accepted.length ? Math.round(jobs.reduce((a, j) => a + j.input + j.output, 0) / accepted.length) : null; // all spend (incl. failed & rejected jobs) per accepted job
-  return { current: { total: sum(cur), byPhase: group(cur, 'phase'), byRole: group(cur, 'role'), byModel: group(cur, 'model') }, jobs, perAccepted, human: st.human || {}, attempts: cur.slice(-200) };
+  // whole project (every goal so far), per service and model – what this project cost on each subscription
+  const real = rows.filter((r) => r.provider && r.provider !== 'code').map((r) => ({ ...r, model: String(r.model || '?').replace(/^[a-z]+[/:]/, '') }));
+  const byProvider = group(real, 'provider').map((x) => ({ ...x, models: group(real.filter((r) => (r.provider || '?') === x.key), 'model').sort((a, b) => (b.input + b.output) - (a.input + a.output)) }));
+  return { current: { total: sum(cur), byPhase: group(cur, 'phase'), byRole: group(cur, 'role'), byModel: group(cur, 'model') }, project: { total: sum(real), byProvider }, jobs, perAccepted, human: st.human || {}, attempts: cur.slice(-200) };
 }
 export function acceptProject(id, { accepted = true, note = '' } = {}) {
   const L = live.get(id); const st = L ? L.p.state : readState(id); if (!st) throw new Error('Projekt neexistuje.');
@@ -525,13 +543,13 @@ async function ask(p, name, o0) {
           entry.waitingLimit = true; try { await waitForCapacity(p, name, entry, blocked[0]?.id || 'claude', until, 'Žádný model teď nemá volnou kapacitu.'); } finally { entry.waitingLimit = false; }
           continue;
         }
-        const selected = smoke ? { provider: 'claude', model: o.model, effort: o.effort, reason: 'Pevně nastavený smoke test' } : chooseRoute(catalog, { role: name, task: o.label, fast: !!o.interactive, model: o.model, provider: o.provider, effort: o.effort, pinned: modelOverride || o.pinned, agentOverride: !!modelOverride, effortOverride: !!effortOverride || !!o.keepEffort, excludeModels: modelOverride ? [] : o.excludeModels, ...(modelOverride ? { model: manual.model } : {}), ...(effortOverride ? { effort: manual.effort } : {}) });
+        const selected = smoke ? { provider: 'claude', model: o.model, effort: o.effort, reason: 'Pevně nastavený smoke test' } : chooseRoute(catalog, { role: o.routeRole || name, task: o.routeTask || o.label, fast: !!o.interactive, model: o.model, provider: o.provider, effort: o.effort, pinned: modelOverride || o.pinned, agentOverride: !!modelOverride, effortOverride: !!effortOverride || !!o.keepEffort, excludeModels: modelOverride ? [] : o.excludeModels, ...(modelOverride ? { model: manual.model } : {}), ...(effortOverride ? { effort: manual.effort } : {}) });
         if(st.stats.runs>=st.settings.maxRuns) throw Object.assign(new Error('budget'),{budget:true});
         st.stats.runs++;
         entry.provider = selected.provider; entry.model = selected.id;
         agent(p, name, { provider: selected.provider, model: selected.model, effort: selected.effort, routeReason: selected.reason });
         feedPush(p, name, { kind: 'sys', text: `${selected.provider} / ${selected.model}: ${selected.reason}` });
-        const opts = { ...o, ...selected, agent: name, entry };
+        const opts = { ...o, ...selected, agent: name, entry, mcp: smoke ? null : macMcp(p, name, o.cwd) };
         if(name==='boss' && (selected.provider==='codex' || st.lastProvider?.boss==='codex')) opts.prompt += '\nRecover the project goal and decisions before proceeding: '+st.goal+'\nRead '+path.join(p.dir,'office','DECISIONS.md')+' and use existing artifacts.';
         if (selected.provider === 'claude' && st.lastProvider?.[name] && st.lastProvider[name] !== 'claude') { delete opts.resume; opts.sessionId = crypto.randomUUID(); }
         const r = selected.provider === 'claude' ? await runClaude(p, opts) : await runCodex(p, opts, {
@@ -664,13 +682,34 @@ function shareProjectSkills(work) {
     if (want.length) { fs.mkdirSync(path.dirname(ex), { recursive: true }); fs.appendFileSync(ex, (cur.endsWith('\n') || !cur ? '' : '\n') + want.join('\n') + '\n'); }
   } catch {}
 }
+/** Projects created by Agent Office live in a visible folder (~/Agent Office/<name>): work there directly, keep git only as local history. */
+const isManaged = (dir) => { try { return fs.existsSync(path.join(dir, '.agent-office', 'project.json')); } catch { return false; } };
+/** Copy files from an old hidden worktree into the visible folder without overwriting anything there. Returns the number of files copied. */
+function copyMissing(from, to) {
+  let n = 0;
+  const walk = (a, b) => {
+    for (const e of fs.readdirSync(a, { withFileTypes: true })) {
+      if (e.name === '.git' || e.name === 'node_modules' || e.name === '.DS_Store') continue;
+      const src = path.join(a, e.name), dst = path.join(b, e.name);
+      if (e.isDirectory()) { fs.mkdirSync(dst, { recursive: true }); walk(src, dst); }
+      else if (e.isFile() && !fs.existsSync(dst)) { fs.copyFileSync(src, dst); n++; }
+    }
+  };
+  try { walk(from, to); } catch {}
+  return n;
+}
 function setupWork(p) {
   const st = p.state;
   try {
     const top = execFileSync('git', ['-C', st.cwd, 'rev-parse', '--show-toplevel'], { encoding: 'utf8' }).trim();
     const rel = path.relative(top, st.cwd);
     const wt = path.join(p.dir, 'work');
+    if (isManaged(top)) { // own project: no hidden copy, the user sees every file in Finder as it is made
+      if (!st.inPlace && fs.existsSync(wt)) { const n = copyMissing(wt, top); if (n) log(p, 'boss', `Výstupy z dřívější práce (${n} souborů) jsem přesunul do složky projektu.`); }
+      st.inPlace = true; st.git = true; st.branch = null; st.gitDir = top; return st.cwd;
+    }
     const branch = `office/${st.id}`;
+    st.gitDir = wt;
     if (st.git && st.branch && fs.existsSync(wt)) return path.join(wt, rel); // continuing the same office: same worktree/branch
     execFileSync('git', ['-C', top, 'worktree', 'add', '-b', branch, wt], { stdio: 'ignore' });
     st.branch = branch; st.git = true; return path.join(wt, rel);
@@ -679,9 +718,9 @@ function setupWork(p) {
 function commit(p, msg) {
   if (!p.state.git) return;
   try {
-    const wt = path.join(p.dir, 'work');
+    const wt = p.state.gitDir || path.join(p.dir, 'work');
     execFileSync('git', ['-C', wt, 'add', '-A']);
-    execFileSync('git', ['-C', wt, 'commit', '-m', msg, '--allow-empty-message', '-q'], { stdio: 'ignore' });
+    execFileSync('git', ['-C', wt, '-c', 'user.name=Agent Office', '-c', 'user.email=agent-office@localhost', 'commit', '-m', msg, '--allow-empty-message', '-q'], { stdio: 'ignore' });
   } catch {}
 }
 
@@ -876,28 +915,27 @@ function learn(p) {
 }
 function publishHtml(p) { try { publishReports(p, { usage: usageReport(p.state.id) }); } catch (e) { log(p, 'boss', `HTML souhrn se nepodařilo vytvořit: ${e.message}`); } }
 
-/** Ultra fast mode: one pass on a fast model, like typing into a chat window. No research, plan, reviewers,
+/** Direct mode (settings.mode 'ultra'): one agent session like Claude Code / Codex – routed model, all tools, skills. No research, plan, reviewers,
  *  questions or scorecard, so the result is not verified; the whole point is speed. */
 const QUICK_SCHEMA = { type: 'object', required: ['summary', 'files'], properties: { summary: { type: 'string' }, files: { type: 'array', items: { type: 'string' } } } };
-function quickModel(catalog) {
-  const ok = (id) => catalog.models.find((m) => m.id === id && m.available);
-  const codexFast = catalog.models.find((m) => m.provider === 'codex' && m.available && m.tier !== 'deep' && m.tier !== 'frontier') || catalog.models.find((m) => m.provider === 'codex' && m.available);
-  return ok('claude/sonnet') || codexFast || ok('gemini/auto') || ok('claude/haiku') || ok('antigravity/auto') || catalog.models.find((m) => m.available);
-}
-async function quickRun(p, ctx) {
+async function quickRun(p, ctx) { // "Direct": one agent works like a normal Claude Code / Codex session
   const st = p.state;
-  phase(p, 'execute'); log(p, 'boss', T('Ultra rychlý režim: jedna rychlá odpověď bez rešerše, plánu a kontroly.'));
-  const catalog = await providerCatalog(); const m = quickModel(catalog);
-  if (!m) throw new Error('Žádný model není dostupný. Přihlas Claude nebo Codex v okně Připojení.');
-  agent(p, 'boss', { status: 'working', activity: T('rychlá odpověď') });
-  const out = await ask(p, 'boss', { model: m.id, effort: m.efforts?.includes('low') ? 'low' : (m.efforts?.[0] || 'medium'), pinned: true, keepEffort: true, interactive: true, label: T('Rychlá odpověď'),
-    system: `You are a fast, capable assistant inside Agent Office, working in ultra fast mode. Do the task directly in one pass, the way a good chat assistant would: no research phase, no plan, no reviewers, no questions back. Use tools only when the task needs files or a quick lookup. Answer in ${langName()}.`,
-    prompt: `GOAL:\n${st.goal}\n\nNOTES:\n${st.notes || '-'}\n\nWork directory: ${ctx.work}. If the goal asks for something to be created (a page, a document, code), write it there (deliverables/ for new files) and list the paths in \`files\`. Put the answer or a short summary of what you did in \`summary\`, written for the user.`,
-    cwd: ctx.work, addDirs: [ctx.office], tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'WebSearch', 'WebFetch', 'Skill'], schema: QUICK_SCHEMA });
+  phase(p, 'execute'); log(p, 'boss', T('Rovnou: jeden agent pracuje jako v Claude Code nebo Codexu – sám vybere model, použije skills a nástroje. Bez plánu a kontroly.'));
+  const catalog = await providerCatalog();
+  if (!catalog.models.some((m) => m.available)) throw new Error('Žádný model není dostupný. Přihlas Claude nebo Codex v okně Připojení.');
+  writeSkillsIndex(p);
+  const task = { title: st.goal, question: st.notes || '', instructions: st.goal };
+  const skills = autoSkills(task); const skillDirs = [...new Set(skillRoots().map(([d]) => d))];
+  if (skills.length) log(p, 'boss', `Skill: ${skills.join(', ')}`);
+  agent(p, 'boss', { status: 'working', activity: T('pracuje na zadání') });
+  const out = await ask(p, 'boss', { routeRole: 'agent', routeTask: `${st.goal} ${st.notes || ''}`.slice(0, 600), label: T('Práce na zadání'),
+    system: `You are a capable agent inside Agent Office working in direct mode – exactly like a normal Claude Code or Codex session: do the whole task yourself in one session, end to end, with all your tools (files, terminal, web, the Mac tools). No separate research phase, no plan document, no reviewers, no questions back to the user. Use any skill that fits (library: ${ctx.office}/SKILLS.md – open the SKILL.md and follow it). Check your own result before finishing (run it, open it, look at it). Answer in ${langName()}.`,
+    prompt: `GOAL:\n${st.goal}\n\nNOTES:\n${st.notes || '-'}\n\nWork directory: ${ctx.work}. If the goal asks for something to be created (a page, a document, code), write it there (deliverables/ for new documents) and list the paths in \`files\`. Put the answer or a short summary of what you did in \`summary\`, written for the user.${skillText(skills)}`,
+    cwd: ctx.work, addDirs: [ctx.office, ...skillDirs], tools: ['Read', 'Glob', 'Grep', 'Write', 'Edit', 'WebSearch', 'WebFetch'], bash: true, schema: QUICK_SCHEMA });
   const summary = String(out.data?.summary || out.text || '').trim();
   const files = out.data?.files || [];
   st.final = { summary, remaining: [], quick: true };
-  try { fs.writeFileSync(path.join(ctx.office, 'FINAL.md'), Tdoc(`# ${st.repoName || 'Projekt'} – výsledek\n\n**Zadání:** ${st.goal}\n\n## Shrnutí\n${summary}\n\n${files.length ? `## Kde to najdeš\n${files.map((f) => '- ' + f).join('\n')}\n\n` : ''}_${T('Ultra rychlý režim: výsledek není ověřený.')}_\n`)); } catch {}
+  try { fs.writeFileSync(path.join(ctx.office, 'FINAL.md'), Tdoc(`# ${st.repoName || 'Projekt'} – výsledek\n\n**Zadání:** ${st.goal}\n\n## Shrnutí\n${summary}\n\n${files.length ? `## Kde to najdeš\n${files.map((f) => '- ' + f).join('\n')}\n\n` : ''}_${T('Režim Rovnou: výsledek neprošel samostatnou kontrolou.')}_\n`)); } catch {}
   st.status = 'done'; st.finished = now(); agent(p, 'boss', { status: 'done', activity: 'hotovo' }); publishHtml(p); save(p);
   log(p, 'boss', `Hotovo. ${summary.slice(0, 300)}`); notify(p, 'Projekt hotov', summary.slice(0, 200));
 }
@@ -1083,8 +1121,8 @@ export function updateOffice(id, changes) {
 export function projectOverview(id) {
   const repo = loadRepos().find((r) => r.id === id); if (!repo) throw new Error('Projekt neexistuje.');
   const state = repo.projectId && readState(repo.projectId);
-  const workingCopy = state?.git ? path.join(PROJECTS_DIR, state.id, 'work') : repo.path;
-  return { id: repo.id, name: repo.name, description: repo.description || '', archived: !!repo.archived, repository: repo.path, workingCopy, outputs: path.join(workingCopy, 'deliverables'), office: state ? path.join(PROJECTS_DIR, state.id, 'office') : null, branch: state?.branch || 'main', goals: state?.history?.length || 0, tokens: state?.stats?.tokens || {} };
+  const workingCopy = state?.git && !state.inPlace && !isManaged(repo.path) ? path.join(PROJECTS_DIR, state.id, 'work') : repo.path;
+  return { id: repo.id, name: repo.name, description: repo.description || '', archived: !!repo.archived, repository: repo.path, workingCopy, outputs: path.join(workingCopy, 'deliverables'), office: state ? path.join(PROJECTS_DIR, state.id, 'office') : null, branch: state?.inPlace ? 'main' : (state?.branch || 'main'), goals: state?.history?.length || 0, tokens: state?.stats?.tokens || {} };
 }
 export function removeRepo(id) {
   loadRepos(); const r = repos.find((x) => x.id === id); if (!r) return false;
@@ -1237,8 +1275,24 @@ export function resumeProject(id, { extraRuns = 0, extraRounds = 0 } = {}) {
 export function officeWorkDir(repoId) {
   const repo = loadRepos().find((r) => r.id === repoId); if (!repo) throw new Error('Projekt neexistuje.');
   const st = repo.projectId ? readState(repo.projectId) : null;
-  const dir = st?.workDir && fs.existsSync(st.workDir) ? st.workDir : repo.path;
+  const dir = isManaged(repo.path) ? repo.path : st?.workDir && fs.existsSync(st.workDir) ? st.workDir : repo.path;
   return { repo, st, dir };
+}
+/** One-time move for projects created by Agent Office before they worked in place: outputs that only existed in the
+ *  hidden worktree are copied (never overwriting) into the visible folder, which is used from then on. */
+export function migrateManagedProjects() {
+  const moved = [];
+  for (const repo of loadRepos()) {
+    if (!repo.projectId || !isManaged(repo.path)) continue;
+    const st = readState(repo.projectId); if (!st || st.inPlace || ['running', 'waiting_user', 'limit'].includes(st.status)) continue;
+    const wt = path.join(PROJECTS_DIR, st.id, 'work'); let n = 0;
+    if (fs.existsSync(wt)) n = copyMissing(wt, repo.path);
+    st.inPlace = true; st.workDir = repo.path; st.gitDir = repo.path; st.branch = null;
+    fs.writeFileSync(path.join(PROJECTS_DIR, st.id, 'state.json'), JSON.stringify(st, null, 2));
+    if (n) { try { execFileSync('git', ['-C', repo.path, 'add', '-A']); execFileSync('git', ['-C', repo.path, '-c', 'user.name=Agent Office', '-c', 'user.email=agent-office@localhost', 'commit', '-qm', 'Výstupy přesunuty do složky projektu'], { stdio: 'ignore' }); } catch {} }
+    moved.push({ name: repo.name, files: n });
+  }
+  return moved;
 }
 export function openOfficeIn(repoId, app) {
   const { repo, st, dir } = officeWorkDir(repoId);
@@ -1284,6 +1338,7 @@ export function stopAll() { for (const L of live.values()) { L.stopped = true; f
 /** Pause = stop the running agents now, keep everything; "Pokračovat" resumes from the last verified state. */
 export function pauseProject(id) { const L = live.get(id); if (!L) return false; L.paused = true; return stopProject(id); }
 export function stopProject(id) {
+  cancelPermissions(id);
   const L = live.get(id); if (!L) return false;
   L.stopped = true; for (const entry of L.running.values()) entry.wakeRetry?.(); for (const c of L.children) c.kill();
   return true;

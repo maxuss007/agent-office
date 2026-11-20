@@ -5,6 +5,16 @@
 // To add a string: put the Czech text exactly as it appears on screen (trimmed) as a key in EN.
 (function () {
   const EN = {
+    'Spotřeba projektu': 'Project usage', 'Upravit projekt': 'Edit project', 'Otevřít práci jinde': 'Open the work elsewhere',
+    'Aktivní': 'Active', 'Čeká na limit': 'Waiting for the limit', 'Rozpracováno': 'In progress', 'Chyba': 'Error', 'Pozastaveno': 'Paused',
+    // Mac access and permission questions
+    'Přístup k Macu': 'Mac access', 'Povolení v macOS': 'macOS permissions', 'Co smějí agenti': 'What agents may do', 'Trvale povolené': 'Always allowed', 'AGENT SE PTÁ': 'AN AGENT ASKS', 'Zamítnout': 'Deny', 'Povolit jednou': 'Allow once', 'Povolit vždy': 'Always allow', 'NASTAVENÍ': 'SETTINGS',
+    'Na tohle se aplikace zeptá pokaždé – může to něco odeslat, smazat nebo spustit něco neznámého.': 'The app asks about this every time – it may send, delete or run something unknown.',
+    'Agenti umí používat Mac jako člověk: vidět obrazovku, klikat, psát, otevírat aplikace a hledat soubory. Běžné věci dělají sami, na důležité se zeptají.': 'Agents can use the Mac like a person: see the screen, click, type, open apps and find files. Everyday things they do on their own; for important ones they ask.',
+    '1 · Povolení v macOS': '1 · macOS permissions', 'jednorázově, pak už se macOS neptá': 'one time, then macOS stops asking',
+    '2 · Co smějí agenti': '2 · What agents may do', 'Vždy = bez ptaní · Zeptat se = okno s dotazem · Nikdy = zakázáno': 'Always = no questions · Ask = a question window · Never = blocked',
+    '3 · Trvale povolené': '3 · Always allowed',
+    'Nikdy, ani když to povolíš: hesla a klíčenka, práva správce (sudo), mazání celého disku nebo domovské složky, změny zabezpečení macOS a zveřejnění kódu na internet.': 'Never, even if you allow it: passwords and the keychain, administrator rights (sudo), wiping the disk or home folder, changes to macOS security, and publishing code to the internet.',
     // header, project list
     'Projekty': 'Projects', '← Projekty': '← Projects', 'Připojení': 'Connections', 'Aktualizace': 'Updates', 'Hledám…': 'Checking…',
     'Zadání projektu': 'Project brief', 'TVŮJ PRACOVNÍ PROSTOR': 'YOUR WORKSPACE', 'Jeden projekt. Vlastní repozitář. Vlastní kancelář.': 'One project. Its own repository. Its own office.',
@@ -25,7 +35,7 @@
     'Název mění pouze označení kanceláře. Soubory ani repozitář se nepřesouvají.': 'The name only changes the office label. Files and the repository do not move.',
     'Nastavení projektu': 'Project settings', 'Uložit': 'Save', 'Ukládám…': 'Saving…', 'Zrušit': 'Cancel', 'Zavřít': 'Close', 'Přidat': 'Add',
     // brief
-    'ZADÁNÍ PRO ŠÉFA': 'BRIEF FOR THE BOSS', 'Co má tým udělat?': 'What should the team do?',
+    'ZADÁNÍ PRO ŠÉFA': 'BRIEF FOR THE BOSS', 'Typ práce': 'Type of work', 'Zadání': 'Brief', 'NOVÝ PROJEKT': 'NEW PROJECT', 'Název projektu': 'Project name', '(nepovinné)': '(optional)', 'Založit a předat šéfovi →': 'Create and hand to the boss →', 'Mám už složku s projektem – připojit ji': 'I already have a project folder – connect it', 'Projekt dostane vlastní složku a kancelář. Šéf si sám udělá průzkum, plán i kontrolu kvality.': 'The project gets its own folder and office. The boss does the research, plan and quality check.', 'Co má tým udělat?': 'What should the team do?',
     'Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám.': 'Describe what you want in your own words. A few sentences are enough – the boss will find out the rest.',
     'Šéf si sám udělá průzkum, plán i kontrolu kvality. Zeptá se jen na to nejnutnější.': 'The boss does the research, the plan and the quality check. It only asks what it really needs.',
     'Šéf naváže na to, co se v tomhle projektu už naučil.': 'The boss builds on what it already learned in this project.',
@@ -36,20 +46,20 @@
     'Např. Marketingový plán na 3 měsíce pro spuštění nového produktu, s rozpočtem do 50 000 Kč.': 'E.g. A 3-month marketing plan for a product launch with a budget of up to $2,000.',
     'Např. Napiš obchodní podmínky pro e-shop s ručně šitými taškami, srozumitelně a podle českého práva.': 'E.g. Write clear terms and conditions for an online shop selling handmade bags.',
     'Např. Pitch deck pro investory na 12 slajdů: problém, řešení, trh, byznys model, tým, finance.': 'E.g. A 12-slide investor pitch deck: problem, solution, market, business model, team, financials.',
-    'Jak důkladně': 'How thorough', '⚡ Ultra rychle': '⚡ Ultra fast', 'Jedna rychlá odpověď jako v okně Claude: rychlý model, bez rešerše, plánu a kontroly. Výsledek není ověřený.': 'One quick answer, like typing into Claude: a fast model, no research, plan or review. The result is not verified.',
-    'Ultra rychlý režim: jedna rychlá odpověď bez rešerše, plánu a kontroly.': 'Ultra fast mode: one quick answer without research, plan or review.', 'rychlá odpověď': 'quick answer', 'Rychlá odpověď': 'Quick answer', 'Ultra rychlý režim: výsledek není ověřený.': 'Ultra fast mode: the result is not verified.', 'Intenzita práce': 'Effort', 'Rychle': 'Quick', 'Pečlivě': 'Careful', 'Do posledního detailu': 'Down to the last detail',
+    'Jak důkladně': 'How thorough', 'Rovnou': 'Direct', 'Jeden agent pracuje rovnou jako v Claude Code nebo Codexu: sám vybere model, použije skills i nástroje. Bez plánu a samostatné kontroly.': 'One agent works directly, like a Claude Code or Codex session: it picks the model itself and uses skills and tools. No plan and no separate review.',
+    'Rovnou: jeden agent pracuje jako v Claude Code nebo Codexu – sám vybere model, použije skills a nástroje. Bez plánu a kontroly.': 'Direct: one agent works like a Claude Code or Codex session – it picks the model and uses skills and tools. No plan, no review.', 'pracuje na zadání': 'working on the brief', 'Práce na zadání': 'Working on the brief', 'Režim Rovnou: výsledek neprošel samostatnou kontrolou.': 'Direct mode: the result had no separate review.', 'Intenzita práce': 'Effort', 'Rychle': 'Quick', 'Pečlivě': 'Careful', 'Do posledního detailu': 'Down to the last detail',
     'Jedno kolo práce a kontroly. Vhodné na rychlé věci.': 'One round of work and review. Good for quick things.',
     'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.': 'Up to three rounds of work, review and fixes. The boss releases the result only when it is really good.',
     'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.': 'Up to five rounds and strict grading. Uses more of your limits.',
     'Délka výsledné zprávy': 'Length of the final report', 'Stručná': 'Short', 'Přehledná': 'Clear', 'Podrobná': 'Detailed',
-    '🔎 Průzkum': '🔎 Research', '⌨️ Kód': '⌨️ Code', '📄 Dokument': '📄 Document', '📊 Prezentace': '📊 Slides', '✳️ Jiné': '✳️ Other', 'Obchodní podmínky': 'Terms and conditions', 'Analýza konkurence': 'Competitor analysis',
+    'Průzkum': 'Research', 'Kód': 'Code', 'Dokument': 'Document', 'Prezentace': 'Slides', 'Jiné': 'Other', 'Obchodní podmínky': 'Terms and conditions', 'Analýza konkurence': 'Competitor analysis',
     // office view
     'Připraveno': 'Ready', 'Probíhá': 'Running', 'Pracuje': 'Working', 'Hotovo': 'Done', 'Čeká': 'Waiting', 'Čeká na tebe': 'Waiting for you', 'Čeká na odpověď': 'Waiting for an answer',
     'Pozastaveno': 'Paused', 'Zastaveno': 'Stopped', 'Přerušeno': 'Interrupted', 'Zablokováno': 'Blocked', 'Zablokováno:': 'Blocked:', 'Rozpracováno': 'In progress', 'Došel limit': 'Limit reached', 'Došel rozpočet': 'Budget used up',
     'Zadej šéfovi první cíl.': 'Give the boss a first goal.', 'Zadej první úkol šéfovi.': 'Give the boss a first task.', 'Nový cíl': 'New goal', 'Pozastavit': 'Pause', 'Zastavit': 'Stop', 'Pokračovat': 'Continue',
     'Průběh a spotřeba': 'Progress and usage', 'Další akce': 'More actions', 'Zadání': 'Brief', 'Rešerše': 'Research', 'Kritéria': 'Criteria', 'Plán': 'Plan', 'Práce': 'Work',
     'Kontrola': 'Review', 'Hodnocení': 'Grading', 'Výsledek': 'Result', 'Postup projektu': 'Project steps', 'Aktuální krok': 'Current step', 'Fáze': 'Phase',
-    'Kancelář': 'Office', 'Tým': 'Team', 'Zobrazení': 'View', 'Kancelář šéfa': 'Boss\'s office', 'Kancelář agentů': 'Agents\' office', 'Kancelář týmu': 'Team office',
+    'Kancelář': 'Office', 'Tým': 'Team', 'Přehled': 'Overview', 'Přidat roli': 'Add role', 'Zadat první cíl': 'Set the first goal', 'Přihlásit v Terminálu': 'Sign in in Terminal', 'Nebo vlož trvalý token (platí rok) – v Terminálu spusť': 'Or paste a long-lived token (valid for a year) – in Terminal run', 'Nové zadání': 'New brief', 'Řízení projektu': 'Project controls', 'Zobrazení': 'View', 'Kancelář šéfa': 'Boss\'s office', 'Kancelář agentů': 'Agents\' office', 'Kancelář týmu': 'Team office',
     'Tým pracuje': 'Team is working', 'Celý tým pracuje': 'The whole team is working', '+ Přidat roli': '+ Add role', 'Zobrazit celý tým': 'Show the whole team',
     'Harvey Specter': 'Harvey Specter', 'Šéf projektu': 'Project boss', 'Šéf': 'Boss', '· šéf': '· boss', '· asistentka': '· assistant', 'Šéf:': 'Boss:',
     'Jsem tady. Co má tým zařídit?': 'I\'m here. What should the team take care of?', 'Řekni šéfovi, co potřebuješ…': 'Tell the boss what you need…',
@@ -64,7 +74,7 @@
     'Výstupy': 'Outputs', 'Výstup': 'Output', 'Výstupy projektu': 'Project outputs', 'Výsledky': 'Results', 'Hotové soubory se tady objeví samy.': 'Finished files show up here by themselves.',
     'Hotové soubory se tady objeví automaticky.': 'Finished files show up here automatically.', 'Otevřít v Macu ↗': 'Open on the Mac ↗', 'Zavřít výstup': 'Close output', 'Načítám soubor…': 'Loading file…',
     '… Náhled zkrácen. Celý soubor otevři v Macu.': '… Preview shortened. Open the whole file on the Mac.', 'Dokument je připravený. Otevři ho v příslušné aplikaci na Macu.': 'The document is ready. Open it in the right app on your Mac.',
-    'Souhrn zakázky': 'Project summary', '★ Zobrazit souhrn zakázky': '★ Show project summary', 'Závěr': 'Conclusion',
+    'Souhrn zakázky': 'Project summary', 'Zobrazit souhrn zakázky': 'Show project summary', 'Závěr': 'Conclusion',
     'Průběh projektu': 'Project progress', 'Zobrazit průběh': 'Show progress', 'Zavřít průběh': 'Close progress', 'Průběh práce se nezobrazuje, aby tě nerušil.': 'Work progress is hidden so it does not distract you.',
     'Spotřeba tohoto projektu': 'Usage of this project', 'Spotřeba tohoto cíle': 'Usage of this goal', 'Běhy': 'Runs', 'Čas': 'Time', 'tokenů (vstup + výstup)': 'tokens (input + output)',
     'Neúspěšné pokusy spotřebovaly': 'Failed attempts used', 'Zatím nic.': 'Nothing yet.', 'zatím nic': 'nothing yet', 'Nic k nabídnutí.': 'Nothing to offer.',
@@ -210,7 +220,7 @@
     // labels without accents that the first pass missed
     'Archiv': 'Archive', 'Archivovat': 'Archive', 'Obnovit z archivu': 'Restore from archive', 'Aktivita': 'Activity', 'Podrobnosti': 'Details', 'Poslat': 'Send',
     'Nechat na Bossovi': 'Leave it to the boss', 'Effort': 'Effort', 'Chyba': 'Error', 'Volno': 'Free', 'volno': 'free', 'Nepovedlo se': 'Failed', 'Nepovedlo se.': 'Failed.',
-    'Stav': 'Status', 'Kolo': 'Round', 'Pokusy': 'Attempts', 'Podle role a modelu': 'By role and model', 'Role': 'Role', 'Shrnuji…': 'Summarizing…', '✦ Shrnout lidsky': '✦ Summarize in plain words',
+    'Stav': 'Status', 'Kolo': 'Round', 'Pokusy': 'Attempts', 'Podle role a modelu': 'By role and model', 'Role': 'Role', 'Shrnuji…': 'Summarizing…', 'Shrnout lidsky': 'Summarize in plain words',
     'do obnovení': 'until the reset', 'Nic se neztratilo. Pokračuji automaticky, jakmile se limit obnoví.': 'Nothing was lost. I will continue automatically once the limit resets.',
     'Banán': 'Banana', 'Avokádo': 'Avocado', 'Ananas': 'Pineapple', 'Pomeranč': 'Orange', 'Jahoda': 'Strawberry', 'Mango': 'Mango', 'Pitaya': 'Pitaya', 'Citron': 'Lemon',
     'Strategie': 'Strategy', 'Analytik': 'Analyst', 'Dokumenty': 'Documents', 'Obchod': 'Sales', 'Komunikace': 'Communications', 'Hero sekce': 'Hero section', 'Red team': 'Red team',

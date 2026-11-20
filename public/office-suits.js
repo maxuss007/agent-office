@@ -60,7 +60,7 @@ const STYLE = `
 @keyframes so-hop{50%{transform:translateY(-2.5px)}}
 .so .bub.dots circle{animation:so-dot 1.2s ease-in-out infinite}.so .bub.dots .d2{animation-delay:.2s}.so .bub.dots .d3{animation-delay:.4s}
 @keyframes so-dot{0%,100%{opacity:.3}50%{opacity:1}}
-.so .tag{opacity:0;transition:opacity .15s;pointer-events:none}.so .pp:hover .tag,.so .pp:focus-visible .tag,.so .bust:hover .tag{opacity:1}
+.so .tag{opacity:0;pointer-events:none} /* invisible anchor: the visible name tag is the frosted-glass .so-tip above the scene */
 .so .pp:hover image,.so .bust:hover image{filter:brightness(1.07)}
 .so .more{cursor:pointer}
 @media(prefers-reduced-motion:reduce){.so *{animation:none!important;transition:none!important}}
@@ -71,7 +71,7 @@ const bubbles = (y) => `<g transform="translate(0 ${y})">
   <g class="bub ask"><circle r="10.5" fill="#f5b83d" stroke="#0002"/><text y="5.2" text-anchor="middle" font-size="15" font-weight="800" fill="#2b1d05" font-family="system-ui">?</text></g>
   <g class="bub bad"><circle r="10.5" fill="#ef4444" stroke="#0002"/><text y="5.2" text-anchor="middle" font-size="15" font-weight="800" fill="#fff" font-family="system-ui">!</text></g>
   <g class="bub ok"><circle r="10.5" fill="#22c55e" stroke="#0002"/><path d="M-4.8 0 l3.2 3.6 6.4 -7.2" stroke="#fff" stroke-width="2.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g></g>`;
-const tag = (text, y) => { const w = text.length * 7.2 + 18; return `<g class="tag" transform="translate(0 ${y})"><rect x="${-w / 2}" y="-11" width="${w}" height="20" rx="10" fill="#111318" opacity=".88"/><text y="3.8" text-anchor="middle" font-size="11.5" font-weight="600" fill="#fff" font-family="system-ui">${esc(text)}</text></g>`; };
+const tag = (text, y) => { const w = text.length * 7.2 + 18; return `<g class="tag" transform="translate(0 ${y})"><rect class="tag-bg" x="${-w / 2}" y="-11" width="${w}" height="20" rx="10"/><text class="tag-tx" y="3.8" text-anchor="middle" font-size="11.5" font-weight="600" font-family="-apple-system,system-ui,sans-serif">${esc(text)}</text></g>`; };
 
 // Seated from behind, hips at the origin (used on benches) or shifted so the head clears a desk chair backrest.
 const seatImage = (ch, dy) => `<image href="${ART}seat/${ch}.png" x="${-200 * KSEAT}" y="${dy - 30 * KSEAT}" width="${400 * KSEAT}" height="${420 * KSEAT}"/>`;
@@ -110,6 +110,43 @@ class Office {
     this.team = []; this.state = { agents: {}, inbox: [] }; this.nodes = new Map();
     this.root.addEventListener('keydown', (e) => { const p = e.target.closest?.('[data-role]'); if (p && p.dataset.role && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); window.openAgent?.(p.dataset.role); } });
     this.root.addEventListener('click', (e) => { if (e.target.closest('.more')) { e.stopPropagation(); window.setStageView?.('team'); } });
+    // name tag: an HTML pill over the scene (SVG cannot blur what is behind it), placed at the agent's hidden SVG anchor
+    el.style.position = 'relative'; this.tip = document.createElement('div'); this.tip.className = 'so-tip'; this.tip.setAttribute('aria-hidden', 'true'); el.append(this.tip);
+    const show = (g) => {
+      const anchor = g?.querySelector('.tag'); if (!anchor) return this.tip.classList.remove('on');
+      const r = el.getBoundingClientRect(), a = anchor.getBoundingClientRect();
+      let top, cx;
+      if (g.classList.contains('bust')) { top = a.top; cx = a.left + a.width / 2; } // Harvey and Donna: their anchor sits just above the head
+      else { // desk agents: just above the highest visible picture of the person (bubbles and the anchor do not count)
+        const pics = [...g.querySelectorAll('image')].filter((im) => !im.closest('.tag,.bubs') && im.getBoundingClientRect().height > 0).map((im) => im.getBoundingClientRect());
+        top = pics.length ? Math.min(...pics.map((x) => x.top)) : a.top; cx = pics.length ? (Math.min(...pics.map((x) => x.left)) + Math.max(...pics.map((x) => x.right))) / 2 : a.left + a.width / 2;
+      }
+      this.tipG = g; this.tip.textContent = this.doing(g); this.tip.classList.add('on');
+      const h = this.tip.offsetHeight || 24, w = this.tip.offsetWidth || 80;
+      const y = Math.max(top - r.top - 4, h + 4), x = Math.min(Math.max(cx - r.left, w / 2 + 4), r.width - w / 2 - 4); // never cut off by the scene's edges
+      this.tip.style.left = `${x}px`; this.tip.style.top = `${y}px`;
+    };
+    this.root.addEventListener('pointerover', (e) => show(e.target.closest?.('.pp,.bust')));
+    this.root.addEventListener('pointerout', (e) => { const g = e.target.closest?.('.pp,.bust'); if (g && !g.contains(e.relatedTarget)) this.tip.classList.remove('on'); });
+    this.root.addEventListener('focusin', (e) => show(e.target.closest?.('.pp,.bust')));
+    this.root.addEventListener('focusout', () => this.tip.classList.remove('on'));
+  }
+  /** What this person is doing right now, short and readable (shown on hover instead of the name). */
+  doing(g) {
+    const cs = window.AO_I18N?.lang === 'cs', L = (c, e) => (cs ? c : e);
+    const id = g.dataset.id === 'boss' ? 'boss' : g.dataset.id === 'donna' ? this.donnaId : g.dataset.role || g.dataset.id;
+    const st = this.state || {}, a = (id && st.agents?.[id]) || {};
+    if (g.dataset.id === 'boss' && st.inbox?.some((q) => q.answer === null)) return L('Čeká na tvou odpověď', 'Waiting for your answer');
+    if (g.dataset.id === 'donna' && !this.donnaId) return L('Recepce · drží kancelář v chodu', 'Front desk · keeps the office running');
+    const clean = (t) => String(t || '').replace(/~?\/(?:[^\/,\n]+\/)+([^\/,\n]+)/g, '$1').replace(/^(Spouští|spouští|příkaz|Příkaz):\s.*/, L('spouští příkaz', 'running a command')).replace(/^Upravuje:\s*/, L('upravuje ', 'editing ')).replace(/\s+/g, ' ').trim();
+    const t = clean(a.activity);
+    const cap = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+    const clip = (x) => (x.length > 46 ? x.slice(0, 45).trimEnd() + '…' : x);
+    if (a.status === 'working') return clip(cap(t || L('Pracuje', 'Working')));
+    if (a.status === 'waiting') return L('Čeká na kolegy', 'Waiting for teammates');
+    if (a.status === 'blocked') return L('Zablokováno', 'Blocked');
+    if (a.status === 'done') return L('Hotovo', 'Done');
+    return t ? clip(cap(t)) : L('Volno', 'Free');
   }
   setTeam(agents) {
     const sig = agents.map((a) => a.id + a.char + a.name).join(); if (sig === this.sig) return; this.sig = sig; this.team = agents.filter((a) => a.id !== 'boss'); this.build();
@@ -134,7 +171,7 @@ class Office {
     // Seated figures live in their own layer: body first, then the real chair backrest from the plate on top.
     const seated = this.people.map((p) => `<g class="pp sitting" data-seat="${esc(p.id)}" data-role="${esc(p.id)}" style="--d:-${(p.i * 1.3).toFixed(1)}s;display:none;transform:translate(${p.seat.x}px,${p.seat.back}px)">${seatView(p.id, p.ch)}${bubbles(SEAT_TOP - 12)}${tag(p.name, 46)}</g>
         <image class="chairback" data-seat="${esc(p.id)}" href="${ART}office.png" width="${W}" height="${H}" clip-path="url(#ch-${p.id})" style="display:none;pointer-events:none"/>`).join('');
-    const more = hidden > 0 ? `<g class="more" transform="translate(${COLS[7]} ${BACK[2] + 30})" role="button" aria-label="Zobrazit celý tým"><rect x="-26" y="-14" width="52" height="26" rx="13" fill="#111318" opacity=".85"/><text y="5" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="system-ui">+${hidden}</text></g>` : '';
+    const more = hidden > 0 ? `<g class="more" transform="translate(${COLS[7]} ${BACK[2] + 30})" role="button" aria-label="Zobrazit celý tým"><rect class="more-bg" x="-26" y="-14" width="52" height="26" rx="13"/><text class="more-tx" y="5" text-anchor="middle" font-size="13" font-weight="700" font-family="-apple-system,system-ui,sans-serif">+${hidden}</text></g>` : '';
     this.root.innerHTML = `<svg viewBox="${VB.join(' ')}" role="img" aria-label="Kancelář týmu"><defs>${chairs}<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter></defs>
       <image href="${ART}office.png" width="${W}" height="${H}"/>
       ${bust('boss', 'harvey', HARVEY, nm('harvey', 'Harvey Specter') + ' · šéf', 'boss')}
@@ -166,6 +203,7 @@ class Office {
   jump(n, p) { clearTimeout(n.timer); n.token = (n.token || 0) + 1; n.at = p; n.el.style.transitionDuration = '0s'; n.el.style.transform = `translate(${p[0]}px,${p[1]}px)`; }
   update(state, instant) {
     this.state = state || this.state;
+    if (this.tipG && this.tip?.classList.contains('on')) this.tip.textContent = this.doing(this.tipG); // live while hovered
     const st = this.state, ask = !!st.inbox?.some((q) => q.answer === null);
     const bs = st.agents?.boss?.status;
     this.root.querySelector('.bust[data-id="boss"]')?.setAttribute('class', `bust ${ask ? 'ask b-ask' : bs === 'working' ? 'working b-dots' : 'idle'}`);

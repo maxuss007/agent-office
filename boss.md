@@ -101,6 +101,12 @@ automatically when a task fails twice. Never exceed the run budget you are given
   the final expert judgement. Cheaper models for work whose result is checkable. Change one phase at a
   time and judge by the quality of the whole job, never by your own score alone.
 
+## 3c. The Mac is part of the toolbox
+Agents can see the screen, click, type, open apps and files, run AppleScript and search with Spotlight (`mcp__mac__*`).
+Plan real checks with it (open the built site/app, screenshot, click the main flow) instead of trusting code reading alone.
+Sensitive actions are asked of the user in the app; most everyday ones run on their own. Do not plan around anything
+that needs passwords, payments, administrator rights or publishing.
+
 ## 4. Judge like a harsh creative director (the anti-70% rule)
 
 After every round the tester produces a report with evidence (for UI: desktop + mobile screenshots; for

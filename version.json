@@ -1,7 +1,7 @@
 {
-  "version": "1.4.0",
-  "shell": 4,
+  "version": "1.5.0",
+  "shell": 5,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "Live progress bar with an estimate of the time left, in the project and on the project cards. New ⚡ Ultra fast mode: one quick answer from a fast model in seconds, like typing into Claude (not verified). The language (English / Czech) is chosen on the setup screen. Needs the new app (DMG)."
+  "notes": "Agents can use the Mac like a person (see the screen, click, type, open and control apps, Spotlight, clipboard); important actions are asked in plain words with Allow once / Always allow / Deny, and a Mac access guide sets up macOS permissions. New projects work in a visible folder in ~/Agent Office. 'Direct' mode works like a normal Claude Code / Codex session. Per-service usage in Progress and usage, a new line-icon set and a cleaner, rounder UI. Needs the new app (DMG)."
 }

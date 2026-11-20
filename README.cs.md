@@ -31,7 +31,8 @@ Běží nad předplatnými, která už máš (Claude, ChatGPT/Codex, volitelně 
 
 **Pořádná Mac aplikace**
 - Stav v liště, upozornění, když se šéf ptá (odpovíš přímo z upozornění) nebo když je hotovo, a projekty běží i na pozadí.
-- Každý projekt má vlastní git větev a worktree, nic se nepushuje. Práci otevřeš jedním klikem v Codexu nebo Claude Code.
+- Nový projekt žije v obyčejné viditelné složce `~/Agent Office/<název>`, kde ve Finderu vidíš každý soubor hned, jak vznikne; git jen drží místní historii. Připojená existující složka s kódem dostane vlastní větev a worktree, aby tvoje práce zůstala nedotčená. Nic se nepushuje. Práci otevřeš jedním klikem v Codexu nebo Claude Code.
+- Agenti umí používat Mac jako člověk: vidět obrazovku, klikat, psát, otevírat aplikace, soubory a odkazy, ovládat aplikace přes AppleScript, hledat přes Spotlight a používat schránku. Běžné věci dělají sami, na důležité se aplikace zeptá lidskou řečí s volbami **Povolit jednou / Povolit vždy / Zamítnout**.
 - Učí se: poznatky o tvém vkusu si pamatuje u projektu a plugin autoharness z hotové práce dělá znovupoužitelné skills.
 - Sama se aktualizuje z GitHubu, umí anglicky i česky (jazyk se volí na instalační obrazovce) a běží na macOS 13 a novějším, Apple silicon i Intel.
 
@@ -142,11 +143,15 @@ Agent Office si nikdy neukládá hesla. Každá služba používá vlastní při
 
 ## 4. Jak se to používá
 
-1. Na stránce **Projekty** klikni na **Nový projekt** (vznikne složka a git repozitář) nebo připoj existující složku.
-2. V projektu napiš šéfovi cíl. **Nový cíl** nabízí typ práce, důkladnost a podklady. **⚡ Ultra rychle** vynechá rešerši, plán i kontrolu: jedna rychlá odpověď od rychlého modelu za pár sekund, jako když píšeš do Claude, jen neověřená.
+1. Na stránce **Projekty** klikni na **Nový projekt**. Všechno se udělá v jednom okně: popíšeš, co má tým udělat, vybereš typ práce a důkladnost (u každé volby vidíš, jak dlouho obvykle trvá), případně projekt pojmenuješ a klikneš na **Založit a předat šéfovi**. Projekt dostane vlastní složku a git repozitář a práce hned začne; bez názvu ho aplikace pojmenuje podle zadání. Existující složku jde připojit ze stejného okna.
+2. Další cíle pro stejný projekt zadáš v projektu přes **Nové zadání** se stejnými volbami. **Rovnou** funguje jako normální session v Claude Code nebo Codexu: jeden agent si sám vybere model podle úkolu a použije všechny nástroje (soubory, Terminál, web, Mac) i vhodné skills, bez rešerše, plánu a samostatné kontroly. Odhad času se učí z tvých dřívějších běhů v tomto režimu (výchozí 2–15 min).
 3. Šéf si udělá rešerši, kritéria a plán, rozdělí úkoly a nechá je ověřit. Ptá se jen na nejnutnější věci, nanejvýš na 3 otázky s tlačítky.
-4. Průběh sleduješ v kanceláři (přepínač **Kancelář | Tým**), v úkolech a v rozhovoru se šéfem. Klikem na postavu otevřeš detail agenta: co dělá, jaký model používá, lidské shrnutí a chat.
-5. Výsledky najdeš vpravo ve **Výstupech**, hlavní je `Souhrn zakázky`. Projekt jde pozastavit, zastavit, převzít nebo otevřít v Codexu či Claude Code.
+4. Během práce ukazuje hlavička projektu postup a odhad, třeba *hotovo asi za 25 min · kolem 14:35*; učí se z tvých dokončených projektů. Průběh sleduješ v kanceláři (přepínač **Kancelář | Přehled**; vedle něj **+ Přidat roli** přidá člena týmu), v úkolech a v rozhovoru se šéfem. Klikem na postavu otevřeš detail agenta: co dělá, jaký model používá, lidské shrnutí a chat.
+5. Výsledky najdeš vpravo ve **Výstupech**, hlavní je `Souhrn zakázky`. Projekt jde pozastavit, zastavit nebo převzít. Tužka vedle názvu projektu (v hlavičce i na kartě projektu) upraví název a popis a otevře práci v Codexu, Claude Code nebo u hostů ve složce. **Průběh a spotřeba** ukazuje, kolik projekt zatím spotřeboval u každé připojené služby (tokeny, běhy, čas, modely; v cenách API, pokud je služba hlásí); nepřipojené služby se nezobrazují. Každé okno i postranní panel se zavře kliknutím mimo něj; nic se nezavírá samo.
+
+### Přístup k Macu a povolení
+
+Při prvním spuštění se otevře **Přístup k Macu** (později je v hlavičce). **Povolení v macOS** jednou požádá macOS o **Nahrávání obrazovky**, **Zpřístupnění** a **Automatizaci**: klikni na **Povolit** a v Nastavení systému zapni *Agent Office*; **Přístup ke všem souborům** je nepovinný. **Co smějí agenti** určuje, co agenti smějí, podle druhu akce: **Vždy**, **Zeptat se** nebo **Nikdy** (otevírání aplikací a odkazů, hledání přes Spotlight a čtení webových stránek je ve výchozím stavu *Vždy*). Když agent potřebuje něco nastaveného na *Zeptat se*, okno lidsky vysvětlí, kdo se ptá a proč; **Povolit vždy** si to zapamatuje (třeba jeden program nebo jednu aplikaci) a **Trvale povolené** ukazuje, co jsi povolil, abys to mohl zrušit. Na akce, které můžou něco odeslat, smazat nebo spustit něco neznámého, se aplikace ptá pokaždé. Projekty založené před touto verzí dostanou své výstupy jednou zkopírované ze skryté pracovní kopie do viditelné složky (nic se nepřepíše).
 
 ## 5. Jak orchestrace pracuje
 
@@ -155,7 +160,7 @@ Agent Office si nikdy neukládá hesla. Každá služba používá vlastní při
 - **Pokračování:** po chybě, restartu nebo vyčerpaném limitu práce naváže na poslední ověřený stav.
 - **Úspora tokenů:** každý agent dostane jen nástroje a skills svého úkolu. Výpočty a testy jdou příkazem bez modelu a závěrečnou zprávu skládá kód.
 - **Spotřeba:** každé volání se zapisuje do `projects/<id>/attempts.jsonl`. Tabulka je v **Průběh a spotřeba**.
-- **Bezpečnost:** práce běží ve vlastní git větvi `office/<id>` v samostatném worktree, nic se nepushuje a Bash mají agenti jen přes allowlist.
+- **Bezpečnost:** nic se nepushuje. Projekty založené aplikací pracují ve své složce; připojené existující repozitáře mají vlastní větev `office/<id>` v samostatném worktree. Běžné bezpečné programy běží bez ptaní (git, node, python, práce se soubory, ffmpeg, sips…), na ostatní se aplikace zeptá. Hesla a klíčenka, `sudo`, mazání disku, změny zabezpečení macOS a `git push` nejsou dovolené nikdy, ať odpovíš cokoli.
 
 Instrukce šéfa jsou v `boss.md`, role v `roles/*.md`, společná pravidla v `roles/_contract.md` a presety v `presets/`.
 

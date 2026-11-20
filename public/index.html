@@ -190,19 +190,15 @@ header,main{max-width:1480px!important}
 #officeview .ws-scene{overflow-x:auto}#officeview .ws-scene>summary{cursor:default}#officeview .ws-scene>summary::before{display:none!important}
 #officeview .scene{height:auto!important;min-width:760px;background:transparent!important;line-height:0;padding:6px 8px 4px}
 #officeview .team-view{height:auto!important;aspect-ratio:2112/628;min-height:250px}
-.library-heading .eyebrow,.eyebrow,.connection,.project-state{color:var(--claude)!important}
+.library-heading .eyebrow,.eyebrow{color:var(--claude)!important}
 .library-heading p,.dialog-description{color:var(--mute)!important}
-.project-card{background:linear-gradient(160deg,#2b2e35,#202227)!important;border:1px solid #33363e!important;box-shadow:0 1px 2px #0003,0 10px 24px #0000001f!important;transition:transform .18s ease,box-shadow .18s ease!important}
-.project-card:hover{transform:scale(1.015);border-color:#33363e!important;background:linear-gradient(160deg,#2b2e35,#202227)!important;box-shadow:0 2px 4px #0003,0 16px 34px #00000029!important}
-.project-card .project-open b{color:#f4f4f6!important}.project-card .project-open p{color:#b6bbc5!important}
-.project-card-footer{color:#9aa0ab!important;border-color:#3a3d45!important}.project-card .quiet{color:#c9cdd5!important}.project-card .quiet:hover{background:#ffffff14!important}
 .project-open:hover,.project-open:focus-visible{background:transparent!important;color:inherit!important}
 .boss-compose button,#boss-send,.apchat button,#retrybtn{background:var(--send)!important;color:var(--send-fg)!important;border-color:transparent!important}.boss-compose button:hover,#boss-send:hover,.apchat button:hover{filter:brightness(.96)}.boss-compose textarea:focus{border-color:var(--acc)!important}
 .feats{display:grid;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}.feat{display:flex;align-items:center;gap:12px}.feat>div{flex:1}.feat b{font-size:13px}.feat .dialog-description{margin:2px 0 0;font-size:12px}
 .skills-line{display:flex;gap:10px;align-items:center;justify-content:space-between;font-size:13px;color:var(--mute);margin:10px 2px 0}.skills-line:empty{display:none}.subcard{border:1.5px solid var(--line);border-radius:12px;padding:8px 10px;margin-top:4px;background:var(--bg2)}.subcard summary{display:flex;align-items:center;gap:8px;cursor:pointer;list-style:none}.subcard summary::-webkit-details-marker{display:none}.subcard summary small{color:var(--mute);font-size:11.5px}.subcard summary::after{content:'▾';margin-left:6px;color:var(--mute)}.subcard[open] summary::after{content:'▴'}.subcard .pst{font-size:12px}.feat .pst{margin-left:0;white-space:nowrap}
 .howto{margin-top:4px;text-align:left;align-self:stretch}.howto summary{font-size:12.5px;color:var(--acc);cursor:pointer}.howto ol{margin:8px 0 0;padding-left:18px;font-size:12.5px;line-height:1.55;color:var(--mute)}.howto li{margin:3px 0}.howto code{font-size:11.5px;background:var(--bg2);padding:1px 5px;border-radius:5px;color:var(--fg)}
 .avatar.portrait{background-color:var(--bg2);background-repeat:no-repeat;background-size:cover;background-position:center}
-.project-open:hover b{color:#f4f4f6!important}
+
 .apchat input,select,input,textarea{background:var(--card)!important;color:var(--fg)!important;border-color:var(--line2)!important}
 #ap-portrait{width:56px!important;height:56px!important;border-radius:50%!important;overflow:hidden;background:none!important;margin-right:12px}#ap-portrait .avatar{display:block;width:56px;height:56px;border-radius:50%}
 @media(min-width:641px){.ap{left:50%!important;right:auto!important;top:50%!important;bottom:auto!important;transform:translate(-50%,-50%)!important;width:min(560px,calc(100vw - 48px))!important;max-width:none!important;height:min(80vh,760px)!important;box-shadow:0 0 0 100vmax #0b0d1259,0 24px 60px #0006!important}}
@@ -215,33 +211,36 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
 .library-empty{background:var(--card)!important;border-color:var(--line2)!important;color:var(--mute)!important}.library-empty b{color:var(--fg)!important}.library-empty p{color:var(--mute)!important}
 .project-open b{color:var(--fg)!important}.project-open p{color:var(--mute)!important}
 </style>
+<script src="/icons.js"></script>
 <script type="module" src="/office-suits.js"></script>
 </head>
 <body>
 <header>
-  <button id="back" class="ghost" onclick="goHall()" hidden style="padding:6px 12px">← Projekty</button>
-  <h1><span>OFFICE / 01</span><b id="crumb">Agent Office</b></h1>
-  <button class="ghost" id="update-btn" onclick="doUpdate()">Aktualizace</button>
-  <button class="ghost" id="home-models" onclick="openProviders()">Připojení</button>
-  <button id="newgoal" class="ghost" onclick="openNew()" hidden>Zadání projektu</button>
+  <button id="back" class="ghost" onclick="goHall()" hidden style="padding:6px 12px"><svg class="i" aria-hidden="true"><use href="#i-arrowLeft"/></svg> Projekty</button>
+  <h1><span class="brand">Agent Office<em id="app-ver"></em></span><b id="crumb" hidden></b><button type="button" class="icon-btn" id="edit-proj" hidden onclick="manageOffice(curRepo)" aria-label="Upravit projekt" title="Upravit projekt"><svg class="i" aria-hidden="true"><use href="#i-pencil"/></svg></button></h1>
+  <button class="ghost" id="update-btn" onclick="doUpdate()"><svg class="i" aria-hidden="true"><use href="#i-refresh"/></svg> Aktualizace</button>
+  <button class="ghost" id="home-models" onclick="openProviders()"><svg class="i" aria-hidden="true"><use href="#i-link"/></svg> Připojení</button>
+  <button class="ghost" id="mac-btn" onclick="PERM.pending.length?showPerm(true):openMacAccess()"><svg class="i" aria-hidden="true"><use href="#i-laptop"/></svg> Přístup k Macu</button>
+  <button class="ghost" id="usage-btn" hidden onclick="toggleProjectDetails()"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg> Průběh a spotřeba</button>
+  <button id="newgoal" class="ghost" onclick="openNew()" hidden><svg class="i" aria-hidden="true"><use href="#i-compose"/></svg> Zadání projektu</button>
 </header>
 <main>
   <div id="health"></div>
   <section id="hallview">
-    <div class="library-heading"><div><p class="eyebrow">TVŮJ PRACOVNÍ PROSTOR</p><h2>Projekty</h2><p>Jeden projekt. Vlastní repozitář. Vlastní kancelář.</p></div><button onclick="openRepoDlg()">+ Nový projekt</button></div>
-    <div class="library-toolbar"><label class="sr-only" for="project-search">Hledat projekt</label><input id="project-search" placeholder="Hledat podle názvu nebo zadání…" oninput="renderHall()"><select id="project-filter" aria-label="Zobrazení projektů" onchange="renderHall()"><option value="active">Aktivní projekty</option><option value="archived">Archiv</option></select><span class="connection" id="connection"></span></div>
+    <div class="library-heading"><div><p class="eyebrow">TVŮJ PRACOVNÍ PROSTOR</p><h2>Projekty</h2><p>Jeden projekt. Vlastní repozitář. Vlastní kancelář.</p></div><button onclick="openNewProject()"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Nový projekt</button></div>
+    <div class="library-toolbar"><label class="sr-only" for="project-search">Hledat projekt</label><div class="search-box"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg><input id="project-search" type="search" placeholder="Hledat podle názvu nebo zadání…" oninput="renderHall()"></div><div class="seg lib-seg" role="group" aria-label="Zobrazení projektů"><button type="button" class="on" data-f="active" onclick="setHallFilter('active')">Aktivní</button><button type="button" data-f="archived" onclick="setHallFilter('archived')">Archiv</button></div><select id="project-filter" hidden onchange="renderHall()"><option value="active">Aktivní projekty</option><option value="archived">Archiv</option></select><span class="connection" id="connection"></span></div>
     <div class="project-library" id="hall-list"></div>
     <details id="connected-projects"><summary>Propojené pracovní složky z Claude Code</summary><div class="project-library" id="external-list"></div></details>
     <div id="hallscene" hidden></div>
   </section>
   <section id="officeview" hidden>
     <div class="ws-head">
-      <div class="ws-title"><span class="pill" id="ws-status">Připraveno</span><p id="ws-goal"></p><div id="ws-eta"></div></div>
+      <div class="ws-title"><span class="pill" id="ws-status" hidden>Připraveno</span><p id="ws-goal" hidden></p><div id="ws-newgoal"></div><div id="ws-eta"></div></div>
       <div class="ws-actions" id="ws-actions"></div>
     </div>
-    <ol class="ws-steps" id="ws-steps" aria-label="Postup projektu"></ol>
+    <div class="ws-progress-row"><ol class="ws-steps" id="ws-steps" aria-label="Postup projektu"></ol><div class="ws-ctrl" id="ws-ctrl" role="group" aria-label="Řízení projektu"></div></div>
     <div class="ws-stage">
-        <details class="panel ws-scene" id="ws-scene" open><summary onclick="if(!event.target.closest('button'))event.preventDefault()"><span class="seg stage-seg" role="tablist" aria-label="Zobrazení"><button type="button" role="tab" data-v="office" onclick="event.preventDefault();setStageView('office')">Kancelář</button><button type="button" role="tab" data-v="team" onclick="event.preventDefault();setStageView('team')">Tým <span id="team-count" class="count"></span></button></span><span class="office-location"><span class="live-dot"></span><span id="office-status">Kancelář šéfa</span></span><button type="button" class="quiet stage-add" onclick="event.preventDefault();openRoleDlg()">+ Přidat roli</button></summary>
+        <details class="panel ws-scene" id="ws-scene" open><summary onclick="if(!event.target.closest('button'))event.preventDefault()"><span class="seg stage-seg" role="tablist" aria-label="Zobrazení"><button type="button" role="tab" data-v="office" onclick="event.preventDefault();setStageView('office')">Kancelář</button><button type="button" role="tab" data-v="team" onclick="event.preventDefault();setStageView('team')">Přehled <span id="team-count" class="count"></span></button></span><span id="office-status" hidden></span><button type="button" class="stage-add" onclick="event.preventDefault();openRoleDlg()"><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Přidat roli</button></summary>
           <div class="scene" id="scene" aria-label="Kancelář agentů"></div>
           <div class="team-view" id="team-view" hidden><div id="ws-team" class="ws-team team-grid"></div></div>
         </details>
@@ -250,9 +249,9 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
       <div class="ws-col ws-main">
         <section class="panel boss-dock" id="boss-dock" aria-label="Rozhovor se šéfem">
       <div class="boss-heading"><button class="boss-name" onclick="openAgent('boss')">Harvey Specter <span>Šéf projektu</span></button><button class="quiet" id="login-nudge" onclick="openProviders()" hidden>Připojit model</button></div>
-      <div id="boss-reply" class="boss-reply">Jsem tady. Co má tým zařídit?</div><button id="boss-summary" class="ghost" hidden onclick="openOutput('deliverables/Souhrn.html')" style="margin-top:8px;padding:6px 12px">★ Zobrazit souhrn zakázky</button>
+      <div id="boss-reply" class="boss-reply">Jsem tady. Co má tým zařídit?</div><button id="boss-summary" class="ghost" hidden onclick="openOutput('deliverables/Souhrn.html')" style="margin-top:8px;padding:6px 12px"><svg class="i" aria-hidden="true"><use href="#i-star"/></svg> Zobrazit souhrn zakázky</button>
       <div id="inbox"></div>
-      <form class="boss-compose" onsubmit="instructBoss(event)"><label class="sr-only" for="boss-input">Pokyn pro šéfa</label><textarea id="boss-input" rows="1" placeholder="Řekni šéfovi, co potřebuješ…"></textarea><button id="boss-send" aria-label="Poslat šéfovi">↑</button></form>
+      <form class="boss-compose" onsubmit="instructBoss(event)"><label class="sr-only" for="boss-input">Pokyn pro šéfa</label><textarea id="boss-input" rows="1" placeholder="Řekni šéfovi, co potřebuješ…"></textarea><button id="boss-send" aria-label="Poslat šéfovi"><svg class="i" aria-hidden="true"><use href="#i-arrowUp"/></svg></button></form>
       <div id="boss-error" role="status"></div>
     </section>
         <section class="panel"><div class="panel-head"><h3>Úkoly</h3><span class="count" id="ws-board-count"></span></div><div id="ws-board" class="ws-board"></div></section>
@@ -263,38 +262,46 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
       </div>
     </div>
 
-    <section id="project-details" class="project-details" hidden><div class="details-heading"><b>Průběh projektu</b><button class="quiet" onclick="toggleProjectDetails()" aria-label="Zavřít průběh">✕</button></div><div class="bar" id="bar"></div><h2>Úkoly</h2><div id="tasks"></div><h2>Aktivita</h2><div class="log" id="log"></div><div id="final"></div><div id="usage"></div><div id="hist"></div></section>
+    <section id="project-details" class="project-details" hidden><div class="details-heading"><b>Průběh projektu</b><button class="quiet" onclick="toggleProjectDetails()" aria-label="Zavřít průběh"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div><div class="bar" id="bar"></div><h2>Úkoly</h2><div id="tasks"></div><h2>Aktivita</h2><div class="log" id="log"></div><div id="final"></div><div id="usage"></div><div id="hist"></div></section>
   </section>
 </main>
 <div class="limit-veil" id="limit-veil" hidden></div>
 
 <aside id="ap" class="ap" hidden>
-  <div class="aph"><div id="ap-portrait" class="ap-portrait" hidden></div><div><b id="apname"></b> <span class="chip" id="apmeta"></span></div><button class="ghost" style="padding:4px 10px" onclick="closeAgent()" aria-label="Zavřít">✕</button></div>
+  <div class="aph"><div id="ap-portrait" class="ap-portrait" hidden></div><div><b id="apname"></b> <span class="chip" id="apmeta"></span></div><button class="ghost" style="padding:4px 10px" onclick="closeAgent()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div>
   <div class="apnow" id="apnow"></div><div class="route-reason" id="aproute"></div>
   <details id="agent-routing" class="agent-routing"><summary>Model a intenzita tohoto agenta</summary><form onsubmit="saveAgentRouting(event)">
     <label for="agent-model">Model tohoto agenta</label><select id="agent-model"></select>
     <label for="agent-effort">Intenzita práce</label><select id="agent-effort"><option value="auto">Automaticky (Boss rozhodne)</option><option value="low">Nízká</option><option value="medium">Střední</option><option value="high">Vysoká</option><option value="xhigh">Velmi vysoká</option><option value="max">Maximální</option><option value="ultra">Ultra (Codex)</option></select>
     <button id="agent-routing-save" class="ghost">Uložit pro tohoto agenta</button><small id="agent-routing-note" role="status">Platí od dalšího kroku v této kanceláři.</small>
   </form></details>
-  <div class="feedbar"><button class="ghost" id="sumbtn" onclick="summarize()">✦ Shrnout lidsky</button><label class="detail-toggle"><input type="checkbox" id="feeddetail" onchange="renderFeed()"> Podrobnosti</label></div><div id="apsum" class="f-reply" hidden></div>
+  <div class="feedbar"><button class="ghost" id="sumbtn" onclick="summarize()"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg> Shrnout lidsky</button><label class="detail-toggle"><input type="checkbox" id="feeddetail" onchange="renderFeed()"> Podrobnosti</label></div><div id="apsum" class="f-reply" hidden></div>
   <div class="feed" id="apfeed"></div>
   <details id="aphist"><summary>Historie úkolů</summary><div id="aphistbody"></div></details>
-  <form class="apchat" id="apform" onsubmit="sendMsg(event)"><input id="apmsg" autocomplete="off" placeholder=""><button>Poslat</button></form>
+  <form class="apchat" id="apform" onsubmit="sendMsg(event)"><input id="apmsg" autocomplete="off" placeholder=""><button aria-label="Poslat"><svg class="i" aria-hidden="true"><use href="#i-arrowUp"/></svg></button></form>
 </aside>
 <div id="zoom" onclick="this.style.display='none'"><img id="zoomimg"></div>
 
-<dialog id="outputdlg"><div class="details-heading"><h3 id="output-title">Výstupy projektu</h3><button class="quiet" onclick="$('outputdlg').close()" aria-label="Zavřít výstup">✕</button></div><div id="output-preview"></div><button id="output-open" onclick="openOutputOnMac()">Otevřít v Macu ↗</button></dialog>
+<dialog id="outputdlg"><div class="details-heading"><h3 id="output-title">Výstupy projektu</h3><button class="quiet" onclick="$('outputdlg').close()" aria-label="Zavřít výstup"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div><div id="output-preview"></div><button id="output-open" onclick="openOutputOnMac()">Otevřít v Macu ↗</button></dialog>
 <dialog id="dlg" class="brief"><form method="dialog" onsubmit="start();return false">
-  <div class="brief-head"><div><p class="eyebrow">ZADÁNÍ PRO ŠÉFA</p><h3>Co má tým udělat?</h3></div><button type="button" class="quiet" onclick="dlg.close()" aria-label="Zavřít">✕</button></div>
+  <div class="brief-head"><div><p class="eyebrow" id="brief-eyebrow">ZADÁNÍ PRO ŠÉFA</p><h3>Co má tým udělat?</h3></div><button type="button" class="quiet" onclick="dlg.close()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div>
+  <div class="brief-sec"><span class="brief-label">Typ práce</span>
   <div class="kinds" id="kinds">
-    <button type="button" data-k="web">🌐 Web</button><button type="button" data-k="doc">📄 Dokument</button><button type="button" data-k="deck">📊 Prezentace</button><button type="button" data-k="research">🔎 Průzkum</button><button type="button" data-k="code">⌨️ Kód</button><button type="button" data-k="marketing">📣 Marketing</button><button type="button" data-k="other">✳️ Jiné</button>
+    <button type="button" data-k="web"><svg class="i" aria-hidden="true"><use href="#i-globe"/></svg> Web</button><button type="button" data-k="doc"><svg class="i" aria-hidden="true"><use href="#i-doc"/></svg> Dokument</button><button type="button" data-k="deck"><svg class="i" aria-hidden="true"><use href="#i-deck"/></svg> Prezentace</button><button type="button" data-k="research"><svg class="i" aria-hidden="true"><use href="#i-search"/></svg> Průzkum</button><button type="button" data-k="code"><svg class="i" aria-hidden="true"><use href="#i-code"/></svg> Kód</button><button type="button" data-k="marketing"><svg class="i" aria-hidden="true"><use href="#i-megaphone"/></svg> Marketing</button><button type="button" data-k="other"><svg class="i" aria-hidden="true"><use href="#i-sparkles"/></svg> Jiné</button>
+  </div></div>
+  <div class="brief-sec"><label class="brief-label" for="goal">Zadání</label><textarea id="goal" rows="7" placeholder="Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám."></textarea></div>
+  <div class="brief-sec"><span class="brief-label">Jak důkladně</span>
+  <div class="seg depth-seg" id="depth"><button type="button" data-d="ultra"><b><svg class="i" aria-hidden="true"><use href="#i-bolt"/></svg> Rovnou</b><small data-eta="ultra"></small></button><button type="button" data-d="fast"><b>Rychle</b><small data-eta="fast"></small></button><button type="button" data-d="std" class="on"><b>Pečlivě</b><small data-eta="std"></small></button><button type="button" data-d="max"><b>Do posledního detailu</b><small data-eta="max"></small></button></div>
+  <p class="depth-hint" id="depth-hint"></p></div>
+  <div class="brief-row">
+    <div class="brief-name" id="brief-name" hidden><label class="brief-label" for="new-name">Název projektu <span>(nepovinné)</span></label><input id="new-name" maxlength="80" autocomplete="off"></div>
+    <div class="brief-len"><label class="brief-label" for="reportLength">Délka výsledné zprávy</label><select id="reportLength"><option value="brief">Stručná</option><option value="standard" selected>Přehledná</option><option value="full">Podrobná</option></select></div>
   </div>
-  <label>Délka výsledné zprávy <select id="reportLength"><option value="brief">Stručná</option><option value="standard" selected>Přehledná</option><option value="full">Podrobná</option></select></label><textarea id="goal" rows="5" placeholder="Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám."></textarea>
-  <div class="depth"><span>Jak důkladně</span><div class="seg" id="depth"><button type="button" data-d="ultra">⚡ Ultra rychle</button><button type="button" data-d="fast">Rychle</button><button type="button" data-d="std" class="on">Pečlivě</button><button type="button" data-d="max">Do posledního detailu</button></div></div>
-  <p class="depth-hint" id="depth-hint"></p>
-  <details class="brief-more"><summary>Přidat odkazy, podklady nebo poznámky</summary><textarea id="notes" rows="3" placeholder="Odkazy na weby, cesty k souborům, co se ti líbí nebo nelíbí, termín…"></textarea></details>
+  <details class="brief-more"><summary><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Přidat odkazy, podklady nebo poznámky</summary><textarea id="notes" rows="3" placeholder="Odkazy na weby, cesty k souborům, co se ti líbí nebo nelíbí, termín…"></textarea></details>
   <select id="preset" hidden></select><input id="maxRounds" type="hidden"><input id="maxRuns" type="hidden"><input id="targetScore" type="hidden">
-  <div class="brief-foot"><p id="repoline"></p><div><button type="button" class="ghost" onclick="dlg.close()">Zrušit</button><button type="submit">Předat šéfovi →</button></div></div>
+  <div class="brief-foot"><p id="repoline"></p><div><button type="button" class="ghost" onclick="dlg.close()">Zrušit</button><button type="submit" id="brief-submit">Předat šéfovi →</button></div></div>
+  <p class="brief-alt" id="brief-alt" hidden><button type="button" class="quiet" onclick="dlg.close();openRepoDlg(true)">Mám už složku s projektem – připojit ji</button></p>
+  <div id="brief-error" class="form-error" role="status"></div>
 </form></dialog>
 
 <dialog id="roledlg"><form method="dialog" onsubmit="return false">
@@ -319,13 +326,23 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
     <label>Nedávné projekty</label><div id="sugg" class="sugg"></div>
   </details>
 </form></dialog>
-<dialog id="sessionsdlg"><div class="details-heading"><h3>Claude Code</h3><button class="quiet" onclick="$('sessionsdlg').close()" aria-label="Zavřít">✕</button></div><div id="session-list"></div></dialog>
+<dialog id="sessionsdlg"><div class="details-heading"><h3>Claude Code</h3><button class="quiet" onclick="$('sessionsdlg').close()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div><div id="session-list"></div></dialog>
 
-<dialog id="providersdlg"><div class="details-heading"><div><h3>Připojení</h3><p class="dialog-description">Boss používá Claude Opus, ostatním agentům vybírá model sám. Model konkrétního agenta změníš kliknutím na něj.</p></div><button class="quiet" onclick="$('providersdlg').close()" aria-label="Zavřít">✕</button></div>
+<dialog id="permdlg" class="perm" aria-live="assertive"><div class="perm-head"><p class="eyebrow" id="perm-eyebrow">AGENT SE PTÁ</p><span id="perm-count"></span></div>
+  <h3 id="perm-title"></h3><p class="perm-who" id="perm-who"></p><p class="perm-why" id="perm-why"></p><pre class="perm-detail" id="perm-detail"></pre>
+  <p class="perm-note" id="perm-note" hidden>Na tohle se aplikace zeptá pokaždé – může to něco odeslat, smazat nebo spustit něco neznámého.</p>
+  <div class="perm-actions"><button type="button" class="ghost" onclick="permAnswer('deny')">Zamítnout</button><button type="button" class="ghost" id="perm-once" onclick="permAnswer('once')">Povolit jednou</button><button type="button" id="perm-always" onclick="permAnswer('always')">Povolit vždy</button></div></dialog>
+<dialog id="macdlg" class="macdlg"><div class="mac-head"><div><p class="eyebrow" id="mac-eyebrow">NASTAVENÍ</p><h3>Přístup k Macu</h3></div><button class="quiet" onclick="closeMacAccess()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div>
+  <h4 class="mac-sec">Povolení v macOS</h4><div class="mac-group" id="mac-system"></div>
+  <h4 class="mac-sec">Co smějí agenti</h4><div class="mac-group" id="mac-cats"></div>
+  <div id="mac-rules-wrap" hidden><h4 class="mac-sec">Trvale povolené</h4><div class="mac-group" id="mac-rules"></div></div>
+  <p class="mac-never"><svg class="i" aria-hidden="true"><use href="#i-lock"/></svg><span>Nikdy, ani když to povolíš: hesla a klíčenka, práva správce (sudo), mazání celého disku nebo domovské složky, změny zabezpečení macOS a zveřejnění kódu na internet.</span></p>
+  <div class="mac-foot"><button type="button" onclick="closeMacAccess()">Hotovo</button></div></dialog>
+<dialog id="providersdlg"><div class="details-heading"><div><h3>Připojení</h3><p class="dialog-description">Boss používá Claude Opus, ostatním agentům vybírá model sám. Model konkrétního agenta změníš kliknutím na něj.</p></div><button class="quiet" onclick="$('providersdlg').close()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div>
 <div id="provider-list"></div><div id="skills-line" class="skills-line"></div>
 
 <div id="legacy-routing" hidden></div><div id="provider-models" hidden></div><p class="dialog-description" id="provider-note"></p></dialog>
-<dialog id="officedlg"><div class="details-heading"><h3>Projekt a repozitář</h3><button class="quiet" onclick="$('officedlg').close()" aria-label="Zavřít">✕</button></div><label for="office-name">Název projektu</label><input id="office-name" maxlength="80"><label for="office-description">O čem projekt je</label><textarea id="office-description" rows="2"></textarea><div id="office-paths"></div><p class="dialog-description">Název mění pouze označení kanceláře. Soubory ani repozitář se nepřesouvají.</p><div id="office-error" class="form-error" role="status"></div><div class="dialog-buttons"><button class="ghost" id="office-archive" onclick="archiveOffice()">Archivovat</button><button onclick="saveOffice()">Uložit</button></div></dialog>
+<dialog id="officedlg"><div class="details-heading"><h3>Upravit projekt</h3><button class="quiet" onclick="$('officedlg').close()" aria-label="Zavřít"><svg class="i" aria-hidden="true"><use href="#i-xmark"/></svg></button></div><label for="office-name">Název projektu</label><input id="office-name" maxlength="80"><label for="office-description">O čem projekt je</label><textarea id="office-description" rows="2"></textarea><div id="office-paths"></div><p class="dialog-description">Název mění pouze označení kanceláře. Soubory ani repozitář se nepřesouvají.</p><label>Otevřít práci jinde</label><div class="office-open"><button type="button" class="ghost" onclick="$('officedlg').close();openIn('codex')"><svg class="i" aria-hidden="true"><use href="#i-external"/></svg> Codex</button><button type="button" class="ghost" onclick="$('officedlg').close();openIn('claude')"><svg class="i" aria-hidden="true"><use href="#i-terminal"/></svg> Claude Code</button><button type="button" class="ghost" onclick="$('officedlg').close();openSessions()"><svg class="i" aria-hidden="true"><use href="#i-stack"/></svg> Hosté ve složce</button></div><div id="office-error" class="form-error" role="status"></div><div class="dialog-buttons"><button class="ghost" id="office-archive" onclick="archiveOffice()">Archivovat</button><button onclick="saveOffice()">Uložit</button></div></dialog>
 <script src="/art.js"></script>
 <script>
 const T=new URLSearchParams(location.search).get('t')||localStorage.t;try{localStorage.t=T}catch{}
@@ -356,12 +373,15 @@ $('scene').addEventListener('click',e=>{const z=e.target.closest('[data-role]');
 
 /* ---------- hallway ---------- */
 let hallSig='';
+function setHallFilter(f){$('project-filter').value=f;document.querySelectorAll('.lib-seg button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderHall()}
 function renderHall(){
   const query=($('project-search').value||'').trim().toLocaleLowerCase('cs-CZ'),archived=$('project-filter').value==='archived';
   const matches=S.repos.filter(r=>!!r.archived===archived&&`${r.name} ${r.goal||''} ${r.description||''}`.toLocaleLowerCase('cs-CZ').includes(query));
   const projects=matches.filter(r=>r.managed||r.projectId||r.source!=='claude'),external=matches.filter(r=>!projects.includes(r));
-  const status=r=>r.archived?'Archivováno':r.light==='working'?'Pracuje':r.waiting?`${r.waiting} otázek`:r.status==='done'?'Hotovo':'Připraveno';
-  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state state-${r.light}">${esc(status(r))}</span><button class="quiet" onclick="manageOffice('${r.id}')" aria-label="Spravovat projekt ${esc(r.name)}">•••</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button>${progressLine((S.projects||[]).find(x=>x.id===r.projectId))}<div class="project-card-footer"><span>${r.git?'Git repozitář':'Pracovní složka'}${r.totalTasks?` · ${r.completedTasks}/${r.totalTasks} úkolů`:''}</span><span>${r.sessions?`${r.sessions} sessions`:''}</span></div></article>`;
+  const pj=r=>(S.projects||[]).find(x=>x.id===r.projectId);
+  const status=r=>{const s=pj(r)?.status;return r.archived?'Archivováno':r.light==='working'?'Pracuje':r.waiting?`Čeká na tebe`:s==='paused'?'Pozastaveno':s==='limit'?'Čeká na limit':s==='partial'?'Rozpracováno':s==='error'?'Chyba':r.status==='done'||s==='done'?'Hotovo':'Připraveno'};
+  const tone=r=>{const s=pj(r)?.status;return r.archived?'muted':r.light==='working'?'run':r.waiting||s==='limit'?'ask':s==='paused'||s==='partial'?'hold':s==='error'?'err':r.status==='done'||s==='done'?'ok':'muted'};
+  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state tone-${tone(r)}"><i></i>${esc(status(r))}</span><button class="icon-btn" onclick="manageOffice('${r.id}')" aria-label="Upravit projekt ${esc(r.name)}" title="Upravit projekt">${ico('pencil')}</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button>${progressLine(pj(r))}<div class="project-card-footer"><span>${ico('folder')} ${r.git?'Git repozitář':'Pracovní složka'}</span>${r.totalTasks?`<span>${ico('check')} ${r.completedTasks}/${r.totalTasks} ${L('úkolů','tasks')}</span>`:''}${r.sessions?`<span>${r.sessions} sessions</span>`:''}</div></article>`;
   $('hall-list').innerHTML=projects.length?projects.map(card).join(''):`<div class="library-empty"><b>${archived?'Archiv je prázdný':'Vytvoř projekt a otevři jeho kancelář'}</b><p>${query?'Žádný projekt neodpovídá hledání.':'Projekt si sám založí vlastní repozitář. Existující práce z Claude Code je oddělená níže.'}</p>${!archived&&!query?'<button onclick="openRepoDlg()">+ Vytvořit projekt</button>':''}</div>`;
   $('external-list').innerHTML=external.map(card).join('');$('connected-projects').hidden=!external.length;
   $('connection').textContent=`${projects.length} projektů · ${external.length} propojených složek`;
@@ -369,7 +389,7 @@ function renderHall(){
 }
 
 $('hallscene').addEventListener('click',e=>{const d=e.target.closest('.door');if(!d)return;
-  if(d.dataset.add){openRepoDlg();return}
+  if(d.dataset.add){openNewProject();return}
   const box=d.getBoundingClientRect(),w=$('hallscene').getBoundingClientRect();
   $('hallscene').style.transformOrigin=`${box.left+box.width/2-w.left}px ${box.top+box.height/2-w.top}px`;
   $('hallscene').classList.add('go');setTimeout(()=>{enterRepo(d.dataset.repo);$('hallscene').classList.remove('go')},230)});
@@ -380,6 +400,7 @@ function goHall(){view='hall';$('project-details').hidden=true;closeAgent();curR
 
 /* ---------- render ---------- */
 const IC={play:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4.5 2.8v10.4L13 8z"/></svg>',pause:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 3h3v10H4zM9 3h3v10H9z"/></svg>',stop:'<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1.5"/></svg>',check:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.4 11.6 3.2 8.4l1.1-1.1 2.1 2.1 5.3-5.3 1.1 1.1z"/></svg>',dot:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="3"/></svg>',ring:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',half:'<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 3a5 5 0 0 1 0 10z"/></svg>',x:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.2 5.3 1.1-1.1L8 6.9l2.7-2.7 1.1 1.1L9.1 8l2.7 2.7-1.1 1.1L8 9.1l-2.7 2.7-1.1-1.1L6.9 8z"/></svg>',doc:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 1.5h5.5L13 5v9.5H4z" fill="none" stroke="currentColor" stroke-width="1.3"/><path d="M6 8h5M6 10.5h5" stroke="currentColor" stroke-width="1.2"/></svg>',star:'<svg viewBox="0 0 16 16" aria-hidden="true"><path d="m8 1.8 1.9 3.9 4.3.6-3.1 3 .7 4.3L8 11.6l-3.8 2 .7-4.3-3.1-3 4.3-.6z"/></svg>'};
+Object.assign(IC,{doc:ico('doc'),star:ico('star'),check:ico('check'),x:ico('xmark')}); // same line set as the rest of the app (icons.js)
 const STAT={running:'Pracuje',waiting_user:'Čeká na tebe',done:'Hotovo',partial:'Rozpracováno',error:'Chyba',stopped:'Zastaveno',paused:'Pozastaveno',interrupted:'Přerušeno',budget:'Došel rozpočet',limit:'Došel limit'};
 const STEPS=[['intake','Zadání'],['research','Rešerše'],['synthesis','Kritéria'],['plan','Plán'],['execute','Práce'],['verify','Kontrola'],['judge','Hodnocení'],['finish','Výsledek']];
 function avatarHtml(ch,name){const art=window.OfficeAvatars?.info(ch);if(art?.portrait)return `<span class="avatar portrait" style="background-image:url(${art.image})"></span>`;if(!art)return `<span class="avatar">${esc((name||'?').slice(0,1))}</span>`;const rows=2,col=art.index%art.columns,row=Math.floor(art.index/art.columns);return `<span class="avatar" style="background-image:url(${art.image});background-size:${art.columns*100}% ${rows*100}%;background-position:${art.columns>1?col/(art.columns-1)*100:0}% ${row/(rows-1)*100}%"></span>`}
@@ -396,20 +417,23 @@ function progressOf(p){
   if((p.round||0)>=2){const inner={execute:frac(t=>!/^[RV]-/.test(t.id))*.5,verify:.6,judge:.85}[p.phase]??.3;v=.8+.17*inner}
   else{const [a,b]=PH_RANGE[p.phase]||[0,.04];const inner=p.phase==='research'?frac(t=>/^R-/.test(t.id)):p.phase==='execute'?frac(t=>!/^[RV]-/.test(t.id)):p.phase==='verify'?frac(t=>/^V-/.test(t.id)):.35;v=a+(b-a)*inner}
   v=Math.min(.99,Math.max(PROG[p.id]||0,v));PROG[p.id]=v;return v}
+/** Minutes of finished runs of the same kind: "direct" runs (mode ultra) only count among themselves, the rest by round count. */
+function pastMinutes(mode,mr){const direct=mode==='ultra',past=[];
+  for(const q of S.projects||[])for(const h of [...(q.history||[]),q.finished&&q.status==='done'?{started:q.started,finished:q.finished,maxRounds:q.settings?.maxRounds,mode:q.settings?.mode,status:'done'}:null].filter(Boolean))
+    if(h.started&&h.finished&&h.status==='done'&&(h.mode==='ultra')===direct&&(direct||(h.maxRounds||3)===mr)){const m=(Date.parse(h.finished)-Date.parse(h.started))/60000;if(m>0.2&&m<600)past.push(m)}
+  return past.sort((a,b)=>a-b)}
 function typicalMinutes(p){
-  if(p.settings?.mode==='ultra')return .3;
-  const mr=p.settings?.maxRounds||3,past=[];
-  for(const q of S.projects||[])for(const h of [...(q.history||[]),q.finished&&q.status==='done'?{started:q.started,finished:q.finished,maxRounds:q.settings?.maxRounds,status:'done'}:null].filter(Boolean))
-    if(h.started&&h.finished&&h.status==='done'&&(h.maxRounds||3)===mr){const m=(Date.parse(h.finished)-Date.parse(h.started))/60000;if(m>0.5&&m<600)past.push(m)}
-  if(past.length){past.sort((a,b)=>a-b);return past[past.length>>1]}
-  return {1:8,3:25,5:50}[mr]||25}
+  const past=pastMinutes(p.settings?.mode,p.settings?.maxRounds||3);
+  if(p.settings?.mode==='ultra')return past.length?past[past.length>>1]:6;
+  if(past.length)return past[past.length>>1];
+  return {1:8,3:25,5:50}[p.settings?.maxRounds||3]||25}
 function etaOf(p){
   if(!p||p.status!=='running')return null;
   const start=Date.parse(p.started||p.created||'')||Date.now(),el=Math.max(0,(Date.now()-start)/60000),prog=progressOf(p),typ=typicalMinutes(p);
   const w=Math.max(0,1-prog*2.5),total=w*Math.max(typ,el)+(1-w)*(prog>.03?el/prog:typ);let rem=Math.max(.2,total-el);
   const prev=ETA[p.id];if(prev){const dt=(Date.now()-prev.t)/1000,aged=Math.max(.2,prev.rem-dt/60),k=1-Math.exp(-dt/90);rem=aged+k*(rem-aged)}   // eases toward the new estimate over ~1.5 min, so it does not jump
   ETA[p.id]={rem,t:Date.now()};return rem}
-function etaText(rem){if(rem==null)return '';if(rem<1)return 'zbývá méně než minuta';if(rem<10)return `zbývá cca ${Math.round(rem)} min`;if(rem<60)return `zbývá cca ${Math.round(rem/5)*5} min`;return `zbývá cca ${(rem/60).toFixed(1).replace('.0','')} h`}
+function etaText(rem){if(rem==null)return '';const at=new Date(Date.now()+rem*60000).toLocaleTimeString(LOC(),{hour:'numeric',minute:'2-digit'});if(rem<1)return L('hotovo za chvilku','done in a moment');return L(`hotovo asi za ${fmtMin(rem)} · kolem ${at}`,`done in about ${fmtMin(rem)} · around ${at}`)}
 function progressLine(p){
   if(!p||!['running','waiting_user','limit','paused'].includes(p.status))return '';
   const pct=Math.round(progressOf(p)*100),note=p.status==='waiting_user'?'čeká na tvou odpověď':p.status==='limit'?'čeká na obnovení limitu':p.status==='paused'?'pozastaveno':etaText(etaOf(p));
@@ -422,9 +446,17 @@ function renderWorkspace(p){
   $('ws-goal').textContent=p?.goal||'Zadej šéfovi první cíl.';
   renderEta();
   const canResume=p&&['error','partial','stopped','paused','interrupted','budget'].includes(st),canAccept=p&&['done','partial'].includes(st)&&!p.accepted;
-  $('ws-actions').innerHTML=`${active?`<button class="btn" onclick="pauseProj()">${IC.pause}Pozastavit</button><button class="btn danger" onclick="stop()">${IC.stop}Zastavit</button>`:''}${canResume?`<button class="btn primary" onclick="resumeProj()">${IC.play}Pokračovat</button>`:''}${canAccept?`<button class="btn" onclick="acceptProj()">${IC.check}Převzít</button>`:''}${p?.accepted?`<span class="pill s-done">Převzato</span>`:''}${!active?`<button class="btn ${p?'':'primary'}" onclick="openNew()">Nový cíl</button>`:''}<button class="btn" onclick="toggleProjectDetails()">Průběh a spotřeba</button><details class="more"><summary class="btn" aria-label="Další akce">⋯</summary><div class="menu"><button onclick="openProviders()">Připojení a limity</button><button onclick="manageOffice(curRepo)">Nastavení projektu</button><button onclick="openIn('codex')">Otevřít v Codexu</button><button onclick="openIn('claude')">Otevřít v Claude Code</button><button onclick="openSessions()">Hosté ve složce</button></div></details>`;
+  // run controls sit at the end of the progress row, shaped like the steps: green = continue, amber = pause, red = stop
+  const ctrl=`${active?`<button class="ctrl c-pause" onclick="pauseProj()"><span>${IC.pause}</span>Pozastavit</button><button class="ctrl c-stop" onclick="stop()"><span>${IC.stop}</span>Zastavit</button>`:''}${canResume?`<button class="ctrl c-go" onclick="resumeProj()"><span>${IC.play}</span>Pokračovat</button>`:''}`;
+  if($('ws-ctrl').innerHTML!==ctrl)$('ws-ctrl').innerHTML=ctrl;
+  $('ws-actions').innerHTML=`${canAccept?`<button class="btn" onclick="acceptProj()">${IC.check}Převzít</button>`:''}${p?.accepted?`<span class="pill s-done">Převzato</span>`:''}`;
+  // "New goal" sits on the left where the goal text used to be, shaped like the progress steps but larger
+  const ng=!active?`<button class="newgoal-pill${p?'':' first'}" onclick="openNew()"><span>${ico('plus')}</span>${p?'Nové zadání':'Zadat první cíl'}</button>`:'';
+  if($('ws-newgoal').innerHTML!==ng)$('ws-newgoal').innerHTML=ng;
   const cur_=STEPS.findIndex(s=>s[0]===p?.phase),doneAll=st==='done';
-  $('ws-steps').innerHTML=STEPS.map(([k,l],i)=>`<li class="${doneAll||i<cur_?'done':i===cur_&&p?(active?'now':'halt'):''}"><span>${i+1}</span>${l}</li>`).join('');
+  const stepIcon=st==='waiting_user'?'?':['paused','stopped','interrupted','limit'].includes(st)?IC.pause:['error','budget'].includes(st)?ico('warning'):null; // the project's state lives in its current step, not in a separate label
+  $('ws-steps').innerHTML=STEPS.map(([k,l],i)=>{const cls=doneAll||i<cur_?'done':i===cur_&&p?(active&&st!=='waiting_user'&&st!=='limit'?'now':['error','budget'].includes(st)?'halt err':'halt'):'';const here=i===cur_&&p&&!doneAll;
+    return `<li class="${cls}"${here?` title="${esc(STAT[st]||st)}" aria-current="step"`:''}><span>${here&&stepIcon?stepIcon:i+1}</span>${l}${here&&stepIcon?`<b class="sr-only">${esc(STAT[st]||st)}</b>`:''}</li>`}).join('');
   const must=(p?.checkpoint?.judged?.criteria||[]).filter(c=>c.level==='MUST');
   // team
   const SA={working:'Pracuje',waiting:'Čeká',blocked:'Zablokováno',done:'Hotovo',idle:'Volno'};
@@ -443,10 +475,14 @@ document.addEventListener('click',e=>{for(const d of document.querySelectorAll('
 let stageView='office';try{stageView=localStorage.aoStageView||'office'}catch{}
 function setStageView(v){stageView=v;try{localStorage.aoStageView=v}catch{};if(!$('ws-scene').open)$('ws-scene').open=true;applyStageView()}
 function applyStageView(){const team=stageView==='team';$('scene').hidden=team;$('team-view').hidden=!team;document.querySelectorAll('.stage-seg button').forEach(b=>{const on=b.dataset.v===stageView;b.classList.toggle('on',on);b.setAttribute('aria-selected',on)});$('office-status').parentElement.hidden=team;$('team-count').textContent=1+agents().length}
-function render(){renderLimit();applyStageView();
+let renderHeld=false;
+const modalOpen=()=>!!document.querySelector('dialog[open]:not(#permdlg)');
+document.addEventListener('close',e=>{if(e.target.tagName==='DIALOG'&&renderHeld&&!modalOpen()){renderHeld=false;render()}},true);
+function render(){if(modalOpen()){renderHeld=true;return} // behind an open dialog nothing redraws: no flicker
+  renderLimit();applyStageView();
   const inOffice=view==='office';document.body.dataset.view=inOffice?'office':'hall';document.body.dataset.repo=curRepo||'';
   $('hallview').hidden=inOffice;$('officeview').hidden=!inOffice;$('back').hidden=!inOffice;$('newgoal').hidden=!inOffice;
-  const r=repoOf(curRepo);$('crumb').textContent=inOffice&&r?r.name:'Agent Office';
+  const r=repoOf(curRepo);$('crumb').textContent=inOffice&&r?r.name:'';$('crumb').hidden=!(inOffice&&r);$('edit-proj').hidden=!(inOffice&&r);$('usage-btn').hidden=!(inOffice&&r);
   if(!inOffice){renderHall();return}
   cur=r?.projectId||cur;
   if(openRole&&panelProject&&panelProject!==cur&&openRole!=='guest'){openAgent(openRole)}
@@ -465,7 +501,7 @@ function render(){renderLimit();applyStageView();
   $('final').innerHTML=p.final?`<h2>Výsledek</h2><div class="card">${esc(p.final.summary)}${p.final.remaining?.length?'<br><br><b>Zbývá:</b><ul>'+p.final.remaining.map(x=>`<li>${esc(x)}</li>`).join('')+'</ul>':''}<div style="color:var(--mute);font-size:12px;margin-top:8px">Detail: projects/${p.id}/office/FINAL.md</div></div>`:(p.assumptions?.length?`<h2>Předpoklady bosse (můžeš vetovat)</h2><div class="card"><ul style="margin:0;padding-left:18px">${p.assumptions.map(a=>`<li>${esc(a)}</li>`).join('')}</ul></div>`:'');
   $('hist').innerHTML=p.history?.length?`<h2>Dřívější cíle v téhle kanceláři</h2><div class="card">${p.history.slice().reverse().map(h=>`<div class="row"><span class="st s-${h.status==='done'?'done':'failed'}"></span><span style="flex:1">${esc(h.goal)}</span><span class="chip">${h.score??'–'}/100</span></div>`).join('')}</div>`:'';
 }
-async function load(){S=await api('/api/state');if(S.lang&&S.lang!==AO_I18N.lang){AO_I18N.setLang(S.lang);location.reload();return}S.cast=S.cast||[];if(Q.get('demo'))demo();if(Q.get('view')==='office'&&S.repos[0]&&view==='hall')enterRepo(Q.get('repo')||S.repos[0].id);else render()}
+async function load(){S=await api('/api/state');if(S.lang&&S.lang!==AO_I18N.lang){AO_I18N.setLang(S.lang);location.reload();return}S.cast=S.cast||[];if(S.version)$('app-ver').textContent='v'+S.version;if(Q.get('demo'))demo();if(Q.get('view')==='office'&&S.repos[0]&&view==='hall')enterRepo(Q.get('repo')||S.repos[0].id);else render()}
 async function ans(qid,v){if(!v)return;await api(`/api/projects/${cur}/answer`,{method:'POST',body:JSON.stringify({qid,value:v})})}
 async function resumeProj(){const r=await api(`/api/projects/${cur}/resume`,{method:'POST',body:'{}'});if(r.error)alert(r.error)}
 async function acceptProj(){const r=await api(`/api/projects/${cur}/accept`,{method:'POST',body:'{}'});if(r.error)return alert(r.error);await refreshRepos();render()}
@@ -475,7 +511,16 @@ async function loadUsage(p){if(!$('usage')||$('project-details').hidden)return;i
   let u;try{u=await api(`/api/projects/${p.id}/usage`)}catch{return}if(!u||u.error){$('usage').innerHTML='';return}
   const k=n=>n>=1e6?(n/1e6).toFixed(1)+' M':n>=1e3?Math.round(n/1e3)+' k':String(n||0);const row=(name,x)=>`<tr><td>${esc(name)}</td><td>${x.attempts}${x.failed?` <span class="bad">(${x.failed}✕)</span>`:''}</td><td>${k(x.input)}</td><td>${k(x.output)}</td><td>${k(x.cacheRead)}</td><td>${Math.round(x.ms/60000)} min</td></tr>`;
   const t=u.current.total;
-  $('usage').innerHTML=`<h2>Spotřeba tohoto cíle</h2><table class="usage"><tr><th>Fáze</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byPhase.map(x=>row(PHASE[x.key]||x.key,x)).join('')}<tr class="sum">${row('Celkem',t).slice(4)}</table>
+  if(!PC.providers?.length)await refreshProviders();
+  // only the services connected right now; each shows what this project used on it, across all its goals
+  const conn=(PC.providers||[]).filter(x=>x.available||x.blocked||x.pausedUntil>Date.now()),byP=Object.fromEntries((u.project?.byProvider||[]).map(x=>[x.key,x]));
+  const all=Math.max(1,conn.reduce((a,x)=>a+((byP[x.id]?.input||0)+(byP[x.id]?.output||0)+(byP[x.id]?.cacheRead||0)),0));
+  const svc=conn.map(x=>{const b=byP[x.id],tok=b?b.input+b.output:0,share=b?Math.round((b.input+b.output+b.cacheRead)/all*100):0;
+    return `<div class="svc"><div class="svc-head"><b>${esc(x.name||PROV[x.id]||x.id)}</b><span>${b?`${tok||b.unknown<b.attempts?`${k(tok)} ${L('tokenů','tokens')}`:L('tokeny služba nehlásí','tokens not reported')} · ${b.attempts} ${L(b.attempts===1?'běh':b.attempts<5?'běhy':'běhů',b.attempts===1?'run':'runs')} · ${Math.round(b.ms/60000)} min${b.cost>=0.01?` · ${L('v cenách API asi','at API prices about')} $${b.cost.toFixed(2)}`:''}`:L('v tomto projektu zatím nepoužito','not used in this project yet')}</span></div>
+      <div class="svc-bar"><i style="width:${share}%"></i></div>
+      ${b?`<div class="svc-models">${b.models.map(m=>`<span>${esc(m.key)} <em>${k(m.input+m.output)}</em></span>`).join('')}</div>`:''}</div>`}).join('');
+  $('usage').innerHTML=`<h2>Spotřeba projektu</h2><p class="umeta">${L('Vše, co tento projekt zatím spotřeboval, podle připojených služeb. Tokeny = vstup + výstup; pruh ukazuje podíl služby včetně čtení z cache.','Everything this project has used so far, by connected service. Tokens = input + output; the bar shows each service\'s share including cache reads.')}</p>${svc||`<p class="umeta">${L('Žádná služba není připojená.','No service is connected.')}</p>`}
+  <h2>Spotřeba tohoto cíle</h2><table class="usage"><tr><th>Fáze</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byPhase.map(x=>row(PHASE[x.key]||x.key,x)).join('')}<tr class="sum">${row('Celkem',t).slice(4)}</table>
   <p class="umeta">Neúspěšné pokusy spotřebovaly ${k(t.failedTokens)} tokenů.${t.unknown?` U ${t.unknown} pokusů služba tokeny nehlásí.`:''}${u.perAccepted!=null?` Spotřeba na převzatou zakázku (včetně oprav a neúspěchů): <b>${k(u.perAccepted)}</b> tokenů.`:''}</p>
   <details><summary>Podle role a modelu</summary><table class="usage"><tr><th>Role</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byRole.map(x=>row(x.key,x)).join('')}</table><table class="usage"><tr><th>Model</th><th>Pokusy</th><th>Vstup</th><th>Výstup</th><th>Z cache</th><th>Čas</th></tr>${u.current.byModel.map(x=>row(x.key,x)).join('')}</table></details>`}
 const PROV={claude:'Claude',codex:'Codex'};
@@ -496,20 +541,42 @@ $('rchar').onchange=()=>{$('rname').hidden=$('rchar').value!=='custom'};
 async function addRole(){const c=$('rchar').value;const body={title:$('rtitle').value.trim(),responsibility:$('rresp').value.trim(),model:$('rmodel').value,effort:$('reffort').value,character:c&&c!=='custom'?c:undefined,name:c==='custom'?$('rname').value.trim()||undefined:undefined};
   const r=await api(`/api/repos/${curRepo}/roles`,{method:'POST',body:JSON.stringify(body)});if(r.error)return alert(r.error);roledlg.close();await refreshRepos();sceneSig='';render()}
 const KIND={web:{preset:'web-redesign',ph:'Např. Přepracuj web firmy X pro pitch investorům. Důležitý je první dojem a mobil. Web je ve složce projektu.'},doc:{preset:'general',ph:'Např. Napiš obchodní podmínky pro e-shop s ručně šitými taškami, srozumitelně a podle českého práva.'},deck:{preset:'general',ph:'Např. Pitch deck pro investory na 12 slajdů: problém, řešení, trh, byznys model, tým, finance.'},research:{preset:'general',ph:'Např. Zjisti, jaké jsou nejlepší nástroje na e-mailový marketing pro malé české firmy, a doporuč jeden.'},code:{preset:'general',ph:'Např. Přidej do aplikace přihlášení přes Google a napiš k tomu testy.'},marketing:{preset:'general',ph:'Např. Marketingový plán na 3 měsíce pro spuštění nového produktu, s rozpočtem do 50 000 Kč.'},other:{preset:'general',ph:'Popiš vlastními slovy, co chceš. Stačí pár vět – šéf si zbytek zjistí sám.'}};
-const DEPTH={ultra:{maxRounds:1,maxRuns:3,targetScore:0,mode:'ultra',hint:'Jedna rychlá odpověď jako v okně Claude: rychlý model, bez rešerše, plánu a kontroly. Výsledek není ověřený.'},fast:{maxRounds:1,maxRuns:15,targetScore:75,hint:'Jedno kolo práce a kontroly. Vhodné na rychlé věci.'},std:{maxRounds:3,maxRuns:40,targetScore:88,hint:'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.'},max:{maxRounds:5,maxRuns:80,targetScore:93,hint:'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.'}};
-let briefKind='other',briefDepth='std';
+const DEPTH={ultra:{maxRounds:1,maxRuns:3,targetScore:0,mode:'ultra',hint:'Jeden agent pracuje rovnou jako v Claude Code nebo Codexu: sám vybere model, použije skills i nástroje. Bez plánu a samostatné kontroly.'},fast:{maxRounds:1,maxRuns:15,targetScore:75,hint:'Jedno kolo práce a kontroly. Vhodné na rychlé věci.'},std:{maxRounds:3,maxRuns:40,targetScore:88,hint:'Až tři kola práce, kontroly a oprav. Šéf pustí výsledek, až bude opravdu dobrý.'},max:{maxRounds:5,maxRuns:80,targetScore:93,hint:'Až pět kol a přísné hodnocení. Spotřebuje víc limitu.'}};
+let briefKind='other',briefDepth='std',briefMode='goal';
+const L=(cs,en)=>AO_I18N.lang==='cs'?cs:en;
+// typical duration per depth: median of finished runs with the same number of rounds, else a sensible default
+function depthMinutes(d){
+  const past=pastMinutes(DEPTH[d].mode,DEPTH[d].maxRounds);
+  if(past.length>=2){const med=past[past.length>>1];return [Math.max(1,med*.6),med*1.5]}
+  if(d==='ultra')return [2,15]; // a normal agent session: a quick question takes a minute or two, a small app a quarter of an hour
+  return {1:[5,15],3:[20,45],5:[45,90]}[DEPTH[d].maxRounds]||[20,45]}
+const fmtMin=m=>m<1?L('méně než minuta','under a minute'):m<60?`${Math.max(1,Math.round(m/(m<15?1:5))*(m<15?1:5))} min`:`${(m/60).toFixed(1).replace('.0','').replace('.',AO_I18N.lang==='cs'?',':'.')} h`;
+function depthRange(d){const [a,b]=depthMinutes(d);const r=m=>m<60?String(Math.round(m/(m<15?1:5))*(m<15?1:5)):(m/60).toFixed(1).replace('.0','').replace('.',AO_I18N.lang==='cs'?',':'.');return b<60?`${r(a)}–${r(b)} min`:a>=60?`${r(a)}–${r(b)} h`:`${r(a)} min – ${r(b)} h`}
+function autoName(goal){const w=String(goal).replace(/[\n\r]+/g,' ').replace(/[^\p{L}\p{N}\s-]/gu,' ').trim().split(/\s+/).slice(0,6).join(' ');const n=(w.charAt(0).toUpperCase()+w.slice(1)).slice(0,60).trim();return n||L('Nový projekt','New project')}
 function setKind(k){briefKind=k;document.querySelectorAll('#kinds button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));$('goal').placeholder=KIND[k].ph}
-function setDepth(d){briefDepth=d;document.querySelectorAll('#depth button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));$('depth-hint').textContent=DEPTH[d].hint}
+function setDepth(d){briefDepth=d;document.querySelectorAll('#depth button').forEach(b=>b.classList.toggle('on',b.dataset.d===d));for(const s of document.querySelectorAll('#depth small'))s.textContent=depthRange(s.dataset.eta);$('depth-hint').textContent=AO_I18N.tr(DEPTH[d].hint)+' '+L(`Obvykle trvá ${depthRange(d)}.`,`Usually takes ${depthRange(d)}.`)}
 $('kinds').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setKind(b.dataset.k)});
 $('depth').addEventListener('click',e=>{const b=e.target.closest('button');if(b)setDepth(b.dataset.d)});
 function showBrief(){const p=proj();if(!p)return;const d=document.createElement('dialog'),h=document.createElement('h2'),body=document.createElement('p'),b=document.createElement('button');h.textContent='Zadání projektu';body.style.whiteSpace='pre-wrap';body.textContent=[p.goal,p.notes].filter(Boolean).join('\n\n');b.textContent='Zavřít';b.onclick=()=>d.close();d.onclose=()=>d.remove();d.append(h,body,b);document.body.append(d);d.showModal()}
-function openNew(){const r=repoOf(curRepo);if(!r)return;if(proj()&&['running','waiting_user'].includes(proj().status)){showBrief();return}
-  $('repoline').textContent=proj()?'Šéf naváže na to, co se v tomhle projektu už naučil.':'Šéf si sám udělá průzkum, plán i kontrolu kvality. Zeptá se jen na to nejnutnější.';
+function briefSetup(mode){briefMode=mode;const isNew=mode==='new';
+  $('brief-eyebrow').textContent=isNew?'NOVÝ PROJEKT':'ZADÁNÍ PRO ŠÉFA';$('brief-name').hidden=!isNew;$('brief-alt').hidden=!isNew;$('brief-error').textContent='';
+  $('brief-submit').textContent=isNew?'Založit a předat šéfovi →':'Předat šéfovi →';
+  $('repoline').textContent=isNew?'Projekt dostane vlastní složku a kancelář. Šéf si sám udělá průzkum, plán i kontrolu kvality.':proj()?'Šéf naváže na to, co se v tomhle projektu už naučil.':'Šéf si sám udělá průzkum, plán i kontrolu kvality. Zeptá se jen na to nejnutnější.';
   setKind(briefKind);setDepth(briefDepth);dlg.showModal();$('goal').focus()}
+function openNewProject(){$('new-name').value='';$('new-name').placeholder=L('Vymyslím ho podle zadání','I will name it from the brief');briefSetup('new')}
+$('goal').addEventListener('input',()=>{if(briefMode==='new'&&$('goal').value.trim())$('new-name').placeholder=autoName($('goal').value)});
+function openNew(){const r=repoOf(curRepo);if(!r)return;if(proj()&&['running','waiting_user'].includes(proj().status)){showBrief();return}briefSetup('goal')}
 function presetChange(){}
-async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').focus();return}const D=DEPTH[briefDepth];const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore,mode:D.mode||'full'}})});if(r.error)return alert(r.error);cur=r.id;dlg.close();$('goal').value='';await refreshRepos();render()}
+async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').focus();return}const D=DEPTH[briefDepth];
+  const btn=$('brief-submit');if(btn.disabled)return;
+  if(briefMode==='new'){btn.disabled=true;$('brief-error').textContent='';try{
+    const base=$('new-name').value.trim()||autoName(goal);let office=null;
+    for(let i=1;i<=6&&!office;i++){const r=await api('/api/offices',{method:'POST',body:JSON.stringify({name:i===1?base:`${base} ${i}`})});if(!r.error){office=r;break}if(!/existuje|exists/i.test(r.error)||$('new-name').value.trim()){$('brief-error').textContent=r.error;return}}
+    if(!office){$('brief-error').textContent=L('Projekt se nepodařilo vytvořit. Zkus jiný název.','Could not create the project. Try another name.');return}
+    await refreshRepos();curRepo=office.id}finally{btn.disabled=false}}
+  const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore,mode:D.mode||'full'}})});if(r.error){if(briefMode==='new'){$('brief-error').textContent=r.error;return}return alert(r.error)}cur=r.id;dlg.close();$('goal').value='';$('notes').value='';await refreshRepos();if(briefMode==='new'){enterRepo(curRepo)}else render()}
 async function refreshRepos(){const s=await api('/api/state');S.repos=s.repos;S.projects=s.projects;S.cast=s.cast}
-async function openRepoDlg(){rdlg.showModal();$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
+async function openRepoDlg(connect){rdlg.showModal();rdlg.querySelector('.connect-existing').open=!!connect;$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
   $('sugg').innerHTML=(r.suggestions||[]).map(s=>`<button class="ghost sg" onclick="addRepoPath(this.dataset.p)" data-p="${esc(s.path)}"><b>${esc(s.name)}</b> ${s.git?'<span class="chip">git</span>':''}<div class="act">${esc(s.path)}</div></button>`).join('')||'<div style="color:var(--mute);font-size:12px">Nic k nabídnutí.</div>'}
 function pickFolder(){window.webkit?.messageHandlers?.pickFolder?.postMessage(1)}
 window.onFolderPicked=p=>{if(p)addRepoPath(p)};
@@ -517,7 +584,7 @@ async function addRepoPath(p){p=(p||'').trim();if(!p)return;const r=await api('/
 
 let outputFiles=[],outputRepo=null,outputAt=0,outputBusy=false,selectedOutput=null;
 async function refreshOutputs(force=false){
-  if(view!=='office'||!curRepo||outputBusy)return;
+  if(view!=='office'||!curRepo||outputBusy||modalOpen())return;
   if(outputRepo===curRepo&&!force&&Date.now()-outputAt<5000){OfficeGame.outputs?.(outputFiles);return;}
   outputBusy=true;const id=curRepo;
   try{const r=await api(`/api/offices/${id}/outputs`);if(curRepo===id){outputFiles=r.files||[];outputRepo=id;outputAt=Date.now();OfficeGame.outputs?.(outputFiles);renderWorkspace(proj());}}finally{outputBusy=false;}
@@ -532,7 +599,7 @@ async function openOutput(id){
   else if(r.kind==='text'){const pre=document.createElement('pre');pre.textContent=r.content+(r.truncated?'\n… Náhled zkrácen. Celý soubor otevři v Macu.':'');box.append(pre);}
   else box.textContent='Dokument je připravený. Otevři ho v příslušné aplikaci na Macu.';
 }
-const outIcon=n=>/Souhrn\.html$/.test(n)?'★':/\.html$/i.test(n)?'📄':/\.(png|jpe?g|webp|svg)$/i.test(n)?'🖼':/\.(csv|xlsx|json)$/i.test(n)?'▦':'↗';const outName=n=>n==='Souhrn.html'?'Souhrn zakázky':n.replace(/\.html$/i,'');
+const outIcon=n=>ico(/Souhrn\.html$/.test(n)?'star':/\.html$/i.test(n)?'doc':/\.(png|jpe?g|webp|svg)$/i.test(n)?'photo':/\.(csv|xlsx|json)$/i.test(n)?'table':/\.md$/i.test(n)?'doc':'external');const outName=n=>n==='Souhrn.html'?'Souhrn zakázky':n.replace(/\.html$/i,'');
 function openAllOutputs(){selectedOutput=null;$('output-title').textContent='Výstupy projektu';$('output-open').hidden=true;$('output-preview').innerHTML=outputFiles.map(f=>`<button class="output-row ${f.name==='Souhrn.html'?'primary':''}" onclick="$('outputdlg').close();openOutput(this.dataset.file)" data-file="${esc(f.id)}"><span>${outIcon(f.name)}</span> ${esc(outName(f.name))}<small>${new Date(f.updated).toLocaleString(LOC(),{day:'numeric',month:'numeric',hour:'2-digit',minute:'2-digit'})}</small></button>`).join('')||'<p>Hotové soubory se tady objeví automaticky.</p>';$('outputdlg').showModal();}
 async function openOutputOnMac(){if(!selectedOutput)return;const r=await api(`/api/offices/${selectedOutput.repo}/open-output?file=${encodeURIComponent(selectedOutput.id)}`,{method:'POST'});if(r.error)alert(r.error);}
 setInterval(()=>{if(view==='office')refreshOutputs()},5000);
@@ -558,9 +625,10 @@ async function instructBoss(ev){
     const route=pending?`/api/projects/${cur}/answer`:active?`/api/projects/${cur}/agents/boss/message`:'/api/start';
     const r=await api(route,{method:'POST',body:JSON.stringify(pending?{qid:pending.id,value:text}:active?{text}:{repoId:curRepo,preset:'general',goal:text})});
     if(r.error||r.ok===false){$('boss-error').textContent=r.error||'Pokyn se nepodařilo předat.';return}
-    input.value='';bossReplies.set(curRepo,pending?'Díky, odpověď jsem předal šéfovi.':active?'Předávám tvůj pokyn šéfovi…':'Šéf přebírá zadání a připravuje tým…');if(r.id)cur=r.id;await refreshRepos();render();
+    input.value='';input.style.height='';bossReplies.set(curRepo,pending?'Díky, odpověď jsem předal šéfovi.':active?'Předávám tvůj pokyn šéfovi…':'Šéf přebírá zadání a připravuje tým…');if(r.id)cur=r.id;await refreshRepos();render();
   }catch{$('boss-error').textContent='Nepodařilo se spojit s kanceláří. Zkus to znovu.'}finally{button.disabled=false}
 }
+$('boss-input').addEventListener('input',e=>{const t=e.target;t.style.height='auto';t.style.height=Math.min(t.scrollHeight,140)+'px'});
 $('boss-input').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();instructBoss(e)}});
 async function openIn(app){if(!curRepo)return;const r=await api(`/api/offices/${curRepo}/open-in`,{method:'POST',body:JSON.stringify({app})});if(r.error)alert(r.error)}
 function openSessions(){
@@ -573,6 +641,53 @@ const es=new EventSource('/events?t='+T);
 es.onmessage=e=>{const s=JSON.parse(e.data);const i=S.projects.findIndex(x=>x.id===s.id);if(i>=0)S.projects[i]=s;else S.projects.unshift(s);
   const r=repoOf(s.repoId);if(r){r.projectId=s.id;r.waiting=s.inbox.filter(q=>q.answer===null).length;r.light=r.waiting?'question':s.status==='running'?'working':s.status==='partial'||s.status==='paused'||s.status==='limit'?'partial':s.status==='done'?'done':['error','budget'].includes(s.status)?'error':'idle';r.goal=s.goal;r.status=s.status;r.lastActive=new Date().toISOString();S.repos.sort((a,b)=>String(b.lastActive).localeCompare(String(a.lastActive)));if(view==='office'&&curRepo===r.id)cur=s.id}
   render()};
+/* ---------- permissions: agents ask, the user answers in plain language ---------- */
+let PERM={pending:[],policy:{categories:{},rules:{}},categories:{},system:{}};let permShown=null;
+es.addEventListener('permission',e=>{PERM.pending=JSON.parse(e.data);showPerm();if($('macdlg').open)api('/api/permissions').then(r=>{PERM=r;renderMac()})});
+const permTxt=(o)=>(AO_I18N.lang==='cs'?o?.cs:o?.en)||o?.cs||['',''];
+function showPerm(force){const d=$('permdlg');permBadge();if(force)permLater.clear();const q=PERM.pending.find(x=>!permLater.has(x.id));
+  if(!q){permShown=null;if(d.open)d.close();return}
+  $('perm-count').textContent=PERM.pending.length>1&&q===PERM.pending[0]?L(`1 z ${PERM.pending.length}`,`1 of ${PERM.pending.length}`):'';
+  if(permShown===q.id&&d.open)return;permShown=q.id;
+  const t=permTxt(q),c=permTxt(q.categoryText);
+  $('perm-title').textContent=t[0]||c[0];$('perm-why').textContent=c[1]||'';
+  $('perm-who').textContent=[q.agentName||q.agent,q.projectName].filter(Boolean).join(' · ');
+  $('perm-detail').textContent=t[1]||'';$('perm-detail').hidden=!t[1];
+  $('perm-always').hidden=!!q.alwaysAsk;$('perm-note').hidden=!q.alwaysAsk;$('perm-once').className=q.alwaysAsk?'':'ghost';
+  if(!d.open)d.showModal();}
+async function permAnswer(choice){const q=PERM.pending.find(x=>x.id===permShown);if(!q)return;PERM.pending=PERM.pending.filter(x=>x!==q);permShown=null;showPerm();await api('/api/permissions/decide',{method:'POST',body:JSON.stringify({id:q.id,choice})})}
+const permLater=new Set(); // questions put aside by clicking outside: they keep waiting, the Mac access button shows them
+$('permdlg').addEventListener('close',()=>{const q=PERM.pending[0];if(q&&permShown===q.id)permLater.add(q.id);permShown=null;permBadge()});
+function permBadge(){const n=PERM.pending.length,b=$('mac-btn');let x=b.querySelector('.badge');if(!n){x?.remove();return}if(!x){x=document.createElement('span');x.className='badge';b.appendChild(x)}x.textContent=n;b.title=L(`Čeká ${n} dotaz na povolení`,`${n} permission question(s) waiting`)}
+const SYS=[['screen','display',['Nahrávání obrazovky','Screen Recording'],['Agent uvidí, co je na obrazovce – třeba aby zkontroloval aplikaci, kterou postavil.','The agent can see what is on the screen – for example to check an app it built.']],
+  ['accessibility','cursor',['Zpřístupnění','Accessibility'],['Agent může klikat myší a psát klávesnicí za tebe.','The agent can click and type for you.']],
+  ['automation','wand',['Automatizace','Automation'],['Agent může říct jiné aplikaci (Safari, Finder, Hudba…), co má udělat. macOS se zeptá u každé aplikace zvlášť.','The agent can tell another app (Safari, Finder, Music…) what to do. macOS asks once per app.']],
+  ['files','folder',['Přístup ke všem souborům','Full Disk Access'],['Nepovinné. Jen když mají agenti pracovat se soubory v Dokumentech, na Ploše nebo v Mailu bez dalších dotazů.','Optional. Only if agents should work with files in Documents, Desktop or Mail without extra prompts.']]];
+async function openMacAccess(first){PERM=await api('/api/permissions');$('mac-eyebrow').textContent=first?L('NEŽ ZAČNEŠ · JEDNORÁZOVÉ NASTAVENÍ','BEFORE YOU START · ONE-TIME SETUP'):L('NASTAVENÍ','SETTINGS');renderMac();$('macdlg').showModal()}
+function closeMacAccess(){$('macdlg').close()}
+$('macdlg').addEventListener('close',()=>{if(!PERM.policy.macGuideDone){PERM.policy.macGuideDone=true;api('/api/permissions/policy',{method:'POST',body:JSON.stringify({macGuideDone:true})})}});
+function renderMac(){const sys=PERM.system||{};
+  $('mac-system').innerHTML=sys.supported===false?`<p class="dialog-description">${L('Tohle jde jen na Macu.','Only available on a Mac.')}</p>`:SYS.map(([k,ic,name,why])=>{const known=k in sys,ok=!!sys[k];
+    return `<div class="mac-row"><span class="mac-ic">${ico(ic)}</span><div><b>${esc(L(...name))}</b><p>${esc(L(...why))}</p></div><div class="mac-act">${known?`<span class="pill ${ok?'ok':'no'}">${ok?L('Povoleno','Allowed'):L('Nepovoleno','Not allowed')}</span>`:''}${known&&ok?'':`<button type="button" class="${k==='files'?'ghost':''}" onclick="macSystem('${k}')">${L('Povolit','Allow')}</button>`}</div></div>`}).join('');
+  const cats=PERM.categories||{},pol=PERM.policy.categories||{};
+  $('mac-cats').innerHTML=Object.entries(cats).map(([k,c])=>{const t=permTxt(c),v=pol[k]||c.default;
+    return `<div class="mac-row cat"><div><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div><div class="seg mac-seg" role="group" aria-label="${esc(t[0])}">${[['always',L('Vždy','Always')],['ask',L('Zeptat se','Ask')],['never',L('Nikdy','Never')]].map(([val,lab])=>`<button type="button" class="${v===val?'on':''}" onclick="macPolicy('${k}','${val}')">${lab}</button>`).join('')}</div></div>`}).join('');
+  const rules=Object.entries(PERM.policy.rules||{}).filter(([,v])=>v==='always');$('mac-rules-wrap').hidden=!rules.length;
+  $('mac-rules').innerHTML=rules.map(([k])=>{const [kind,...rest]=k.split(':'),what=rest.join(':');const lab=kind==='shell'?L(`Program „${what}“`,`Program “${what}”`):kind==='apps'?L(`Aplikace ${what}`,`App ${what}`):kind==='files'?L(`Soubory ve složce ${what}`,`Files in ${what}`):kind==='tool'?L(`Nástroj ${what}`,`Tool ${what}`):permTxt(cats[kind])[0]||k;
+    return `<div class="mac-rule"><span>${esc(lab)}</span><button type="button" class="quiet" onclick="macRule(${esc(JSON.stringify(k))})">${L('Zrušit','Remove')}</button></div>`}).join('');}
+async function macPolicy(category,value){PERM=await api('/api/permissions/policy',{method:'POST',body:JSON.stringify({category,value})});renderMac()}
+async function macRule(rule){PERM=await api('/api/permissions/policy',{method:'POST',body:JSON.stringify({rule,value:null})});renderMac()}
+async function macSystem(what){await api('/api/permissions/system',{method:'POST',body:JSON.stringify({what})});const poll=async(n)=>{PERM=await api('/api/permissions');if($('macdlg').open)renderMac();if(n>0&&!(PERM.system||{})[what])setTimeout(()=>poll(n-1),2500)};setTimeout(()=>poll(24),1500)}
+api('/api/permissions').then(r=>{PERM=r;if(r.pending?.length)showPerm();if(!r.policy.macGuideDone&&r.system?.supported&&!new URLSearchParams(location.search).has('demo'))setTimeout(()=>{if(!document.querySelector('dialog[open]'))openMacAccess(true)},900)}).catch(()=>{});
+/* ---------- every window closes when you click outside it; nothing closes by itself ---------- */
+let downOutside=false;
+const outsideOf=(el,e)=>{const r=el.getBoundingClientRect();return e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom};
+document.addEventListener('pointerdown',e=>{const d=e.target.closest?.('dialog[open]');downOutside=!!d&&e.target===d&&outsideOf(d,e);
+  // side panels (agent detail, project progress): a click elsewhere on the page closes them
+  if(document.querySelector('dialog[open]'))return;
+  const ap=$('ap');if(ap&&!ap.hidden&&getComputedStyle(ap).display!=='none'&&!ap.contains(e.target)&&!e.target.closest('.pp,.bust,.member,.more,.boss-name,[onclick*="openAgent"]'))closeAgent();
+  const pd=$('project-details');if(!pd.hidden&&!pd.contains(e.target)&&!e.target.closest('[onclick*="toggleProjectDetails"]'))pd.hidden=true;},true);
+document.addEventListener('click',e=>{const d=e.target.tagName==='DIALOG'?e.target:null;if(d&&d.open&&downOutside&&outsideOf(d,e))d.close();downOutside=false});
 let PC={providers:[],models:[]};
 async function checkHealth(force){await refreshProviders(force)}
 async function doLogin(provider='claude',mode){const r=await api('/api/login',{method:'POST',body:JSON.stringify({provider,mode})});if(r.error)return alert(r.error);$('provider-note').textContent='Dokonči přihlášení v Terminálu. Při tvorbě tokenu ho potom vlož do pole pro Klíčenku.'}
@@ -593,7 +708,12 @@ function renderProviders(){
   renderAgentRouting();
   // Antigravity is shown as a subsection of the Gemini card (both are Google; Gemini for study and research, Antigravity for code)
   const ag=PC.providers.find(p=>p.id==='antigravity'),hasG=PC.providers.some(p=>p.id==='gemini');
-  $('provider-list').innerHTML=PC.providers.filter(p=>!(hasG&&p.id==='antigravity')).map(p=>p.id==='gemini'?providerCard(p,ag):providerCard(p)).join('');
+  const list=$('provider-list'),html=PC.providers.filter(p=>!(hasG&&p.id==='antigravity')).map(p=>p.id==='gemini'?providerCard(p,ag):providerCard(p)).join('');
+  if(list.dataset.html!==html){ // the list refreshes on its own every few seconds: keep cards open/closed as the user left them
+    const was=[...list.querySelectorAll('details')].map(d=>d.open);
+    list.innerHTML=html;list.dataset.html=html;
+    if(was.length)list.querySelectorAll('details').forEach((d,i)=>{if(i<was.length)d.open=was[i]});
+  }
   $('provider-note').textContent=PC.note||'';
 }
 async function saveRouting(change){const r=await api('/api/providers/routing',{method:'POST',body:JSON.stringify(change)});if(r.error){alert(r.error);return}PC=r;renderProviders();$('provider-note').textContent='Uloženo. Volba platí od dalšího kroku každého agenta.'}
@@ -606,15 +726,15 @@ const fresh=p=>INST[p.id]?.ok&&p.installed===false?'Nainstalováno. Přihlas se 
 function subCard(p){const ok=p.available&&!p.blocked;
   return `<details class="subcard"><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><small>na kód a úpravy souborů</small><span class="pst ${ok?'':'bad'}">${pStatus(p)}</span></summary><div class="pbody"><p class="dialog-description">${esc(fresh(p))}</p>${p.installed||INST[p.id]?.ok?`<button class="ghost icon-btn" onclick="event.preventDefault();doLogin('${p.id}')">⟳ Připojit znovu</button>`:INST[p.id]&&!INST[p.id].ok?`<button class="icon-btn" onclick="event.preventDefault();installTool('${p.id}',this)">↓ Nainstalovat ${esc(p.name)}</button>`:''}${howtoHtml(p.id)}</div></details>`}
 function providerCard(p,sub){const ok=p.available&&!p.blocked||!!(sub&&sub.available&&!sub.blocked);const st=sub&&!(p.available&&!p.blocked)&&ok?'Připojeno přes Antigravity':pStatus(p);
-  const wins=(p.windows||[]).filter(w=>Number.isFinite(w.usedPercent)).map(w=>{const left=Math.max(0,100-w.usedPercent);return `<div class="limit"><div><span>${WIN_LABEL(w)}</span><b>${Math.round(left)} % zbývá</b></div><progress max="100" value="${left}"></progress><small>${resetTxt(w)}</small></div>`}).join('')||'<small>Limity zatím nejsou známé.</small>';
-  const reconnect=`<button class="ghost icon-btn" title="Připojit znovu" onclick="event.preventDefault();doLogin('${p.id}')">⟳ Připojit znovu</button>`;
-  const settings=p.id==='claude'?`${claudeFeatures()}<p class="dialog-description">Přihlášení: ${p.auth==='oauth-token'?'trvalý token z Klíčenky':'účet v Terminálu (může vypršet)'}.</p>${reconnect}<form onsubmit="storeClaudeToken(event)" class="tokenform"><label for="claude-token">Trvalý token (platí rok) – v Terminálu spusť <code>claude setup-token</code> a vlož ho sem</label><div style="display:flex;gap:8px"><input id="claude-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token"><button id="claude-token-save">Uložit</button></div><p id="claude-token-note" role="status"></p></form>`
+  const wins=(p.windows||[]).filter(w=>Number.isFinite(w.usedPercent)).map(w=>{const left=Math.max(0,100-w.usedPercent);return `<div class="limit${left<20?' low':''}"><div><span>${WIN_LABEL(w)}</span><b>${Math.round(left)} % zbývá</b></div><div class="eta-bar"><i style="width:${Math.max(0,Math.min(100,left))}%"></i></div><small>${resetTxt(w)}</small></div>`}).join('')||'<small>Limity zatím nejsou známé.</small>';
+  const reconnect=`<button class="ghost" title="Připojit znovu" onclick="event.preventDefault();doLogin('${p.id}')">${ico('refresh')} Připojit znovu</button>`;
+  const settings=p.id==='claude'?`${claudeFeatures()}<p class="dialog-description">Přihlášení: ${p.auth==='oauth-token'?'trvalý token z Klíčenky':'účet v Terminálu (může vypršet)'}.</p><details class="reconnect"><summary>${ico('refresh')} Připojit znovu</summary><div class="reconnect-body"><button type="button" class="ghost" onclick="doLogin('claude')">${ico('terminal')} Přihlásit v Terminálu</button><form onsubmit="storeClaudeToken(event)" class="tokenform"><label for="claude-token">Nebo vlož trvalý token (platí rok) – v Terminálu spusť <code>claude setup-token</code></label><div style="display:flex;gap:8px"><input id="claude-token" type="password" autocomplete="off" spellcheck="false" placeholder="Token"><button id="claude-token-save">Uložit</button></div><p id="claude-token-note" role="status"></p></form></div></details>`
     :p.id==='codex'?`<p class="dialog-description">Používá přihlášení aplikace Codex / ChatGPT na tomhle Macu.</p>${reconnect}`
     :`${sub?`<div class="feat"><div><b>Gemini CLI</b><p class="dialog-description">Na studium a rešerše s vyhledáváním Google. ${esc(fresh(p))}</p></div><span class="pst ${p.available&&!p.blocked?'':'bad'}">${pStatus(p)}</span></div>`:`<p class="dialog-description">${esc(fresh(p))}</p>`}${p.installed||INST[p.id]?.ok?reconnect:''}`;
   const guide=howtoHtml(p.id)+(sub?subCard(sub):'');
   const optional=['antigravity','gemini'].includes(p.id)&&!p.installed&&!(sub&&sub.installed);
-  const inst=(id,name)=>`<button class="icon-btn" onclick="event.preventDefault();installTool('${id}',this)">↓ Nainstalovat ${esc(name)}</button>`;
-  return `<details class="provider-card" ${!ok&&!optional?'open':''}><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><span class="pst ${ok?'':'bad'}">${st}</span>${!ok?`<span class="relink" title="Připojit znovu" onclick="event.preventDefault();event.stopPropagation();doLogin('${p.id}')">⟳</span>`:''}</summary><div class="pbody">${INST[p.id]&&!INST[p.id].ok?inst(p.id,p.id==='gemini'?'Gemini CLI':p.name):''}${['antigravity','gemini'].includes(p.id)?'':wins}${settings}${guide}</div></details>`}
+  const inst=(id,name)=>`<button class="ghost" onclick="event.preventDefault();installTool('${id}',this)">${ico('download')} Nainstalovat ${esc(name)}</button>`;
+  return `<details class="provider-card" ${!ok&&!optional?'open':''}><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><span class="pst ${ok?'':'bad'}">${st}</span><span class="pchev">${ico('chevron')}</span>${!ok?`<span class="relink" title="Připojit znovu" onclick="event.preventDefault();event.stopPropagation();doLogin('${p.id}')">${ico('refresh')}</span>`:''}</summary><div class="pbody">${INST[p.id]&&!INST[p.id].ok?inst(p.id,p.id==='gemini'?'Gemini CLI':p.name):''}${['antigravity','gemini'].includes(p.id)?'':wins}${settings}${guide}</div></details>`}
 // Claude account features, shown inside the Claude card: fast mode and the cloud code review (ultrareview).
 function claudeFeatures(){const F=PC.features?.fast,U=PC.features?.ultrareview;if(!F&&!U)return '';
   const sel=(id,opts,cur,dis,on)=>`<select id="${id}" style="width:auto" onchange="${on}" ${dis?'disabled':''}>${opts.map(([v,l])=>`<option value="${v}" ${v===cur?'selected':''}>${l}</option>`).join('')}</select>`;
@@ -661,7 +781,7 @@ document.addEventListener('office-game-ready',()=>{sceneSig='';hallSig='';docume
 
 /* ---------- agent panel: live feed + chat ---------- */
 const imgUrl=f=>`/api/projects/${cur}/file?t=${T}&path=${encodeURIComponent(f)}`;
-const ICON={Read:'📖',Edit:'✏️',MultiEdit:'✏️',Write:'📝',WebFetch:'🌐',WebSearch:'🔎',Glob:'🗂️',Grep:'🔍',Bash:'⚙️'};
+const ICON={Read:'book',Edit:'pencil',MultiEdit:'pencil',Write:'compose',WebFetch:'globe',WebSearch:'search',Glob:'stack',Grep:'search',Bash:'terminal'};
 function feedHtml(e){
   const detail=$('feeddetail')?.checked;
   if(!detail){ if(e.kind==='tool'||e.kind==='sys')return ''; if(openRole==='boss'&&(e.kind==='task'||e.kind==='shot'))return ''; if(e.kind==='text'){const t=e.text.length>260?e.text.slice(0,257)+'…':e.text;return `<div class="f-text">${esc(t)}</div>`} if(e.kind==='taskend')return `<div class="f-end">✓ Hotovo: ${esc(e.text.split(':')[0])}</div>`; if(e.kind==='task')return `<div class="f-task">▶ ${esc(e.text)}</div>` }
@@ -670,14 +790,14 @@ function feedHtml(e){
     case 'text':return `<div class="f-text">${esc(e.text)}</div>`;
     case 'reply':return `<div class="f-reply">${esc(e.text)}</div>`;
     case 'user':return `<div class="f-user">${esc(e.text)}</div>`;
-    case 'tool':return `<div class="f-tool ${e.changed?'ch':''}">${/screenshot/.test(e.text)?'📸':ICON[e.tool]||'•'} ${esc(e.text)}</div>`;
+    case 'tool':return `<div class="f-tool ${e.changed?'ch':''}">${ico(/screenshot/.test(e.text)?'camera':/^mcp__mac__|mac__/.test(e.tool||'')?'laptop':ICON[e.tool]||'gear')} ${esc(e.text)}</div>`;
     case 'shot':return `<div class="f-shot"><img loading="lazy" src="${imgUrl(e.file)}" alt="${esc(e.text)}" onclick="zoomImg(this.src)"><div class="f-tool">${esc(e.text)}</div></div>`;
     case 'taskend':return `<div class="f-end">✓ ${esc(e.text)}${e.files?.length?'<br>Změněno: '+e.files.map(esc).join(', '):''}</div>`;
-    case 'error':return `<div class="f-err">⚠ ${esc(e.text)}</div>`;
+    case 'error':return `<div class="f-err">${ico('warning')} ${esc(e.text)}</div>`;
     case 'sys':return `<div class="f-tool">${esc(e.text)}</div>`;
   }return ''}
 async function summarize(){if(!cur||!openRole)return;const b=$('sumbtn');b.disabled=true;b.textContent='Shrnuji…';
-  try{const r=await api(`/api/projects/${cur}/agents/${openRole}/summary`,{method:'POST',body:'{}'});$('apsum').hidden=false;$('apsum').textContent=r.text||r.error||'Nepovedlo se.'}catch{}b.disabled=false;b.textContent='✦ Shrnout lidsky'}
+  try{const r=await api(`/api/projects/${cur}/agents/${openRole}/summary`,{method:'POST',body:'{}'});$('apsum').hidden=false;$('apsum').textContent=r.text||r.error||'Nepovedlo se.'}catch{}b.disabled=false;b.innerHTML=ico('sparkles')+' Shrnout lidsky'}
 function zoomImg(src){$('zoomimg').src=src;$('zoom').style.display='flex'}
 let feedOpen=false;
 function renderFeed(stick=true){
@@ -704,7 +824,7 @@ async function openAgent(role){
 let guestIdx=0;
 function openGuest(i=0){document.body.classList.add('has-agent');const g=guests[i];if(!g)return;guestIdx=i;openRole='guest';renderAgentRouting();$('ap').hidden=false;$('apform').hidden=true;$('aphist').hidden=true;
   $('aproute').textContent='';$('ap-portrait').hidden=true;$('apname').textContent=g.title;$('apmeta').textContent='Claude Code · místní historie';$('apnow').innerHTML=g.active?`Nedávná aktivita: <b>${esc(g.now||'')}</b>`:`Poslední aktivita: ${new Date(g.updated||Date.now()-g.ageSec*1000).toLocaleString(LOC())}`;
-  $('apfeed').innerHTML=(g.recent||[]).map(e=>e.kind==='tool'?`<div class="f-tool">⚙️ ${esc(e.text)}</div>`:`<div class="f-text">${esc(e.text)}</div>`).join('')||'<div class="f-tool">Zatím nic.</div>';updateScene(proj())}
+  $('apfeed').innerHTML=(g.recent||[]).map(e=>e.kind==='tool'?`<div class="f-tool">${ico('gear')} ${esc(e.text)}</div>`:`<div class="f-text">${esc(e.text)}</div>`).join('')||'<div class="f-tool">Zatím nic.</div>';updateScene(proj())}
 function closeAgent(){document.body.classList.remove('has-agent');openRole=null;$('ap').hidden=true;updateScene(proj())}
 async function sendMsg(ev){ev.preventDefault();const i=$('apmsg');const text=i.value.trim();if(!text||!openRole)return;i.value='';
   const r=await api(`/api/projects/${cur}/agents/${openRole}/message`,{method:'POST',body:JSON.stringify({text})});
@@ -723,21 +843,22 @@ function demo(){const nRepos=+Q.get('repos')||6,nRoles=+Q.get('n')||0;
   const d={id:'demo',repoId:'r1',goal:'Redesign webu pro pitch',status:'running',round:1,score:null,settings:{maxRounds:3,maxRuns:40},stats:{runs:5,cost:0},tasks:[],log:[],roles:CASTD.slice(0,nRoles).map(([c,n,t],i)=>({id:'r'+i,character:c,name:n,title:t,manual:i===0})),inbox:Q.get('guest')||nRoles?[]:[{id:'q',text:'Tmavý nebo světlý design?',options:['Tmavý','Světlý'],default:'Světlý',answer:null}],assumptions:[],history:[],agents:{boss:{status:'waiting',activity:'čeká na tebe',model:'opus',effort:'high'},researcher:{status:'idle'},designer:{status:'working',activity:'edituje hero.css',task:'Hero sekce',model:'sonnet',effort:'medium'},tester:{status:nRoles?'working':'waiting',activity:'dělá screenshot'},...Object.fromEntries(CASTD.slice(0,nRoles).map((_,i)=>['r'+i,{status:['working','idle','done','working'][i%4],activity:'pracuje'}]))}};
   S.projects=[d];if(Q.get('motion')){setTimeout(()=>{d.agents.researcher.status='waiting';render()},1000);setTimeout(()=>{d.agents.researcher.status='working';d.agents.tester.status='working';d.agents.boss.status='working';d.inbox.forEach(q=>q.answer='Světlý');render()},19000)}if(Q.get('guest')){guests=[{id:'g',title:'Oprava přihlášení v API',active:true,ageSec:3,now:'edituje auth.ts',recent:[{kind:'text',text:'Projdu místa, kde se token obnovuje.'},{kind:'tool',text:'čte src/auth.ts'},{kind:'tool',text:'edituje src/auth.ts'}]}]}}
 /* Updates: the server checks version.json on GitHub; a new version lights up a button in the header. */
+const setLabel=(b,icon,text)=>{b.innerHTML=ico(icon)+' '+esc(text)};
 let UPD=null;
 async function checkUpdate(force){try{UPD=await api('/api/update'+(force?'?force=1':''));}catch{return}
   const b=$('update-btn');b.classList.toggle('update-btn',!!UPD.available);
-  b.textContent=UPD.available?(UPD.needsApp?`Nová aplikace ${UPD.latest}`:`Aktualizovat na ${UPD.latest}`):'Aktualizace';
+  setLabel(b,'refresh',UPD.available?(UPD.needsApp?`Nová aplikace ${UPD.latest}`:`Aktualizovat na ${UPD.latest}`):'Aktualizace');
   b.title=UPD.available?(UPD.notes||'Je k dispozici nová verze Agent Office.'):`Verze ${UPD.current}`}
 async function doUpdate(){const b=$('update-btn');
-  if(!UPD?.available){b.disabled=true;b.textContent='Hledám…';await checkUpdate(true);b.disabled=false;
+  if(!UPD?.available){b.disabled=true;setLabel(b,'refresh','Hledám…');await checkUpdate(true);b.disabled=false;
     if(!UPD?.available){alert(UPD?.error||`Máš nejnovější verzi ${UPD?.current||''}.`);return}}
   if(UPD.needsApp){if(confirm(`Verze ${UPD.latest} potřebuje novou aplikaci. Otevřít stránku ke stažení?`))window.open(UPD.download,'_blank');return}
   if(!UPD.app){alert('Ve složce s kódem aktualizuj přes git pull.');return}
   if(!confirm(`Aktualizovat Agent Office z ${UPD.current} na ${UPD.latest}?${UPD.notes?'\n\nCo je nového: '+UPD.notes:''}\n\nBěžící projekty se na chvilku přeruší a pak pokračují.`))return;
-  b.disabled=true;b.textContent='Stahuji…';
+  b.disabled=true;setLabel(b,'refresh','Stahuji…');
   const r=await api('/api/update',{method:'POST',body:'{}'}).catch(e=>({error:e.message}));
-  if(r.error){b.disabled=false;b.textContent=`Aktualizovat na ${UPD.latest}`;alert(r.error);return}
-  b.textContent='Restartuji…';
+  if(r.error){b.disabled=false;setLabel(b,'refresh',`Aktualizovat na ${UPD.latest}`);alert(r.error);return}
+  setLabel(b,'refresh','Restartuji…');
   if(window.webkit?.messageHandlers?.restartServer)window.webkit.messageHandlers.restartServer.postMessage(1);
   else alert(`Staženo (${r.version}). Restartuj aplikaci.`)}
 const LOC=()=>AO_I18N.lang==='cs'?'cs-CZ':'en-GB';

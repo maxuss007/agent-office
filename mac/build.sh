@@ -21,6 +21,10 @@ MINOS=13.0
 swiftc -O -swift-version 5 -target arm64-apple-macos$MINOS AgentOffice.swift -o build/AgentOffice-arm64
 swiftc -O -swift-version 5 -target x86_64-apple-macos$MINOS AgentOffice.swift -o build/AgentOffice-x86_64
 lipo -create build/AgentOffice-arm64 build/AgentOffice-x86_64 -output "$APP/Contents/MacOS/AgentOffice"; rm -f build/AgentOffice-arm64 build/AgentOffice-x86_64
+# helper that lets agents see the screen and use mouse/keyboard (permissions are asked in the app's name)
+swiftc -O -swift-version 5 -target arm64-apple-macos$MINOS ao-input.swift -o build/ao-input-arm64
+swiftc -O -swift-version 5 -target x86_64-apple-macos$MINOS ao-input.swift -o build/ao-input-x86_64
+lipo -create build/ao-input-arm64 build/ao-input-x86_64 -output "$APP/Contents/MacOS/ao-input"; rm -f build/ao-input-arm64 build/ao-input-x86_64
 cp Info.plist "$APP/Contents/"
 cp setup.html "$APP/Contents/Resources/"   # first-launch screen that installs the tools
 /usr/libexec/PlistBuddy -c "Set :LSMinimumSystemVersion $MINOS" "$APP/Contents/Info.plist"
@@ -34,13 +38,16 @@ for sz in 16 32 128 256 512; do cp "build/AppIcon.iconset/icon_$((sz*2))x$((sz*2
 rm -f build/AppIcon.iconset/icon_64x64.png build/AppIcon.iconset/icon_1024x1024.png
 iconutil -c icns build/AppIcon.iconset -o "$APP/Contents/Resources/AppIcon.icns"
 # bundled server (no dependencies)
-for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-auth.mjs project-outputs.mjs claude-usage.mjs local-runner.mjs report.mjs updater.mjs i18n-server.mjs boss.md version.json; do cp "$ROOT/$f" "$APP/Contents/Resources/server/"; done
+for f in server.mjs orchestrator.mjs claude-bridge.mjs providers.mjs provider-auth.mjs project-outputs.mjs claude-usage.mjs local-runner.mjs report.mjs updater.mjs i18n-server.mjs permissions.mjs mac-mcp.mjs boss.md version.json; do cp "$ROOT/$f" "$APP/Contents/Resources/server/"; done
 mkdir -p "$APP/Contents/Resources/server/scripts"
 cp "$ROOT/scripts/claude-usage-pty.py" "$APP/Contents/Resources/server/scripts/"
 cp "$ROOT/scripts/setup.sh" "$APP/Contents/Resources/server/scripts/"
 cp "$ROOT/scripts/install.sh" "$ROOT/scripts/skill-packs.txt" "$APP/Contents/Resources/server/scripts/"
 cp -R "$ROOT/roles" "$ROOT/presets" "$ROOT/public" "$APP/Contents/Resources/server/"
-codesign --force --deep --sign - "$APP"
+# Local (ad-hoc) signature with a stable designated requirement: macOS ties privacy permissions (Screen Recording,
+# Accessibility, Automation) to it, so they survive rebuilds and updates instead of silently resetting each time.
+codesign --force --sign - --identifier com.agentoffice.app.input "$APP/Contents/MacOS/ao-input"
+codesign --force --sign - --requirements '=designated => identifier "com.agentoffice.app"' "$APP"
 echo "Built: $PWD/$APP"
 [[ "${1:-}" == "--no-install" ]] && exit 0
 

@@ -277,6 +277,10 @@ export async function runCodex(p, o, { entry, onEvent, onChild }) {
   args.push('--model', o.model);
   if (o.provider === 'codex') args.push('-c', `model_reasoning_effort=${JSON.stringify(o.effort)}`);
   for (const d of o.addDirs || []) args.push('--add-dir', d);
+  if (o.mcp && o.provider === 'codex') { // same Mac tools as Claude agents; the server asks the user before acting
+    const toml = (v) => Array.isArray(v) ? `[${v.map(toml).join(',')}]` : typeof v === 'object' ? `{${Object.entries(v).map(([k, x]) => `${k}=${toml(x)}`).join(',')}}` : JSON.stringify(String(v));
+    args.push('-c', `mcp_servers.mac.command=${toml(o.mcp.command)}`, '-c', `mcp_servers.mac.args=${toml(o.mcp.args)}`, '-c', `mcp_servers.mac.env=${toml(o.mcp.env)}`);
+  }
   // Avoid mixing Claude session IDs or a different model/provider's state into this conversation.
   args.push('-');
   return new Promise((resolve, reject) => {

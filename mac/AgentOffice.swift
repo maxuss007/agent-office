@@ -83,7 +83,7 @@ final class ServerManager {
     }
 
     // Version of this Mac shell. Bump it (and "shell" in version.json) only when this file changes in a way the server relies on.
-    static let shellVersion = 4
+    static let shellVersion = 5
     var runningUpdate = false
     var onCrash: (() -> Void)?   // the server exited without being asked to
     var bundledDir: URL? { Bundle.main.resourceURL?.appendingPathComponent("server") }

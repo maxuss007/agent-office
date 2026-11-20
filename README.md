@@ -31,7 +31,8 @@ It runs on the subscriptions you already pay for (Claude, ChatGPT/Codex, optiona
 
 **A proper Mac app**
 - Menu bar status, notifications when the boss asks something (answer right from the notification) or finishes, and projects keep running in the background.
-- Each project gets its own git branch and worktree; nothing is ever pushed. Open the work in Codex or Claude Code with one click.
+- A new project lives in a normal visible folder, `~/Agent Office/<name>`, where you see every file in Finder as it is made; git only keeps a local history. A connected existing code folder keeps a separate branch and worktree so your own work is untouched. Nothing is ever pushed. Open the work in Codex or Claude Code with one click.
+- Agents can use the Mac like a person: see the screen, click, type, open apps, files and links, control apps with AppleScript, search with Spotlight and use the clipboard. Everyday things they do on their own; for important ones the app asks in plain words with **Allow once / Always allow / Deny**.
 - Learns as it goes: lessons about your taste are kept per project, and the autoharness plugin turns finished work into reusable skills.
 - Updates itself from GitHub, in English or Czech (chosen on the setup screen), and runs on macOS 13 or newer, Apple silicon and Intel.
 
@@ -145,11 +146,15 @@ Agent Office never stores passwords. Each service uses its own sign-in on your M
 
 ## 4. How to use it
 
-1. On the **Projects** page click **New project** (creates a folder and a git repository) or connect an existing folder.
-2. In the project, write the boss a goal. **New goal** offers the type of work, how thorough to be and room for materials. **⚡ Ultra fast** skips research, planning and review: one quick answer from a fast model in seconds, like typing into Claude, but not verified.
+1. On the **Projects** page click **New project**. One dialog does everything: describe what the team should do, pick the type of work and how thorough to be (each option shows how long it usually takes), optionally name the project, and press **Create and hand to the boss**. The project gets its own folder and git repository and the work starts right away; without a name the app names it from the brief. An existing folder can be connected from the same dialog.
+2. Later goals for the same project go through **New brief** in the project, with the same choices. **Direct** works like a normal Claude Code or Codex session: one agent picks the model for the task itself and uses all tools (files, terminal, web, the Mac) and any fitting skill, with no research, plan or separate review. Its time estimate learns from your own direct runs (default 2–15 min).
 3. The boss researches, writes criteria and a plan, splits up the tasks and has them verified. It only asks what it really needs, at most 3 questions with buttons.
-4. Follow along in the office (the **Office | Team** switch), in the tasks and in the chat with the boss. Click a character to open the agent's details: what it does, which model it uses, a plain-language summary and a chat.
-5. Results are on the right under **Outputs**; the main one is the `Project summary`. A project can be paused, stopped, accepted or opened in Codex or Claude Code.
+4. While the team works, the project header shows progress and an estimate such as *done in about 25 min · around 14:35*; it learns from your finished projects. Follow along in the office (the **Office | Overview** switch; **+ Add role** next to it adds a team member), in the tasks and in the chat with the boss. Click a character to open the agent's details: what it does, which model it uses, a plain-language summary and a chat.
+5. Results are on the right under **Outputs**; the main one is the `Project summary`. A project can be paused, stopped or accepted. The pencil next to the project name (in the header and on each project card) edits its name and description and opens the work in Codex, Claude Code or the guests in its folder. **Progress and usage** shows what the project has used so far on each connected service (tokens, runs, time, models; at API prices where the service reports it); services that are not connected are left out. Every window and side panel closes when you click outside it; nothing closes by itself.
+
+### Mac access and permissions
+
+On first launch the app opens **Mac access** (also in the header later). **macOS permissions** asks macOS once for **Screen Recording**, **Accessibility** and **Automation**: click **Allow** and turn on *Agent Office* in System Settings; **Full Disk Access** is optional. **What agents may do** sets it per kind of action: **Always**, **Ask** or **Never** (opening apps and links, Spotlight search and reading web pages are *Always* by default). When an agent needs something set to *Ask*, a window explains in plain words who asks and why; **Always allow** remembers it (for example one program or one app), and **Always allowed** lists what you allowed so you can remove it. Actions that may send, delete or run something unknown are asked every time. Projects created before this version have their outputs copied once from the hidden working copy into the visible folder (nothing is overwritten).
 
 ## 5. How the orchestration works
 
@@ -158,7 +163,7 @@ Agent Office never stores passwords. Each service uses its own sign-in on your M
 - **Resuming:** after an error, a restart or a used-up limit, work continues from the last verified state.
 - **Saving tokens:** every agent gets only the tools and skills its task needs. Calculations and tests run as commands without a model, and code assembles the final report.
 - **Usage:** every call is logged in `projects/<id>/attempts.jsonl`. The table is under **Progress and usage**.
-- **Safety:** work happens on its own git branch `office/<id>` in a separate worktree, nothing is pushed, and agents only get Bash through an allowlist.
+- **Safety:** nothing is pushed. Projects created by the app work in their own folder; connected existing repositories get their own branch `office/<id>` in a separate worktree. Common, safe programs run without asking (git, node, python, file tools, ffmpeg, sips…); anything else is asked about in the app. Passwords and the keychain, `sudo`, wiping the disk, changes to macOS security and `git push` are never allowed, whatever the answer.
 
 The boss's instructions are in `boss.md`, roles in `roles/*.md`, shared rules in `roles/_contract.md` and presets in `presets/`.
 
