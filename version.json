@@ -1,7 +1,7 @@
 {
-  "version": "1.5.1",
+  "version": "1.5.2",
   "shell": 5,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "Mac access: a permission that stays 'Not allowed' although it is switched on can be repaired with one click. A brief connection glitch no longer counts as a used-up Claude limit, and a wrong block clears itself; the ⟳ on a service card reloads the data. Project cards no longer blink, and 'New project' has a back arrow."
+  "notes": "If Fable is not available to your account (for example it needs usage credits), work switches to Opus instead of stopping. Mac access now shows whether Automation and Full Disk Access are allowed, and explains how to add Agent Office to Full Disk Access (the Automation status needs the new app from the DMG)."
 }

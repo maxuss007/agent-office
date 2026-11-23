@@ -37,7 +37,10 @@ let keyCodes: [String: CGKeyCode] = [
 
 switch a[1] {
 case "perms":
-  out("{\"screen\":\(CGPreflightScreenCaptureAccess()),\"accessibility\":\(AXIsProcessTrusted())}")
+  // Automation: allowed when macOS already lets this app control Finder or System Events (checked without asking)
+  let automation = ["com.apple.finder", "com.apple.systemevents"].contains { id in
+    AEDeterminePermissionToAutomateTarget(NSAppleEventDescriptor(bundleIdentifier: id).aeDesc, typeWildCard, typeWildCard, false) == noErr }
+  out("{\"screen\":\(CGPreflightScreenCaptureAccess()),\"accessibility\":\(AXIsProcessTrusted()),\"automation\":\(automation)}")
 case "request":
   if a.count > 2 && a[2] == "screen" { out("{\"screen\":\(CGRequestScreenCaptureAccess())}") }
   else {

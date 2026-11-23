@@ -155,8 +155,14 @@ export function helperPath() {
 export function systemAccess() {
   if (process.platform !== 'darwin') return { supported: false };
   const h = helperPath(); if (!h) return { supported: true, helper: false, screen: false, accessibility: false };
-  try { return { supported: true, helper: true, ...JSON.parse(execFileSync(h, ['perms'], { encoding: 'utf8', timeout: 5000 })) }; } catch { return { supported: true, helper: true, screen: false, accessibility: false }; }
+  try { return { supported: true, helper: true, files: fullDiskAccess(), ...JSON.parse(execFileSync(h, ['perms'], { encoding: 'utf8', timeout: 5000 })) }; } catch { return { supported: true, helper: true, screen: false, accessibility: false, files: fullDiskAccess() }; }
 }
+/** Full Disk Access: only then can the app open the macOS privacy database (read nothing, just try to open it). */
+function fullDiskAccess() {
+  try { fs.closeSync(fs.openSync(path.join(os.homedir(), 'Library', 'Application Support', 'com.apple.TCC', 'TCC.db'), 'r')); return true; } catch { return false; }
+}
+/** The .app around the helper, or null in development. */
+function appBundle(h) { const app = path.resolve(path.dirname(h), '..', '..'); return app.endsWith('.app') ? app : null; }
 const PANES = {
   screen: 'x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture',
   accessibility: 'x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility',
@@ -176,6 +182,8 @@ export function requestSystemAccess(what, { repair = false } = {}) {
   // Repair clears only this app's own entry, so macOS asks again and the new answer counts.
   if (repair && h && TCC_SERVICE[what]) { const id = bundleId(h); if (id) { try { execFileSync('/usr/bin/tccutil', ['reset', TCC_SERVICE[what], id], { timeout: 5000, stdio: 'ignore' }); } catch {} } }
   if (h && (what === 'screen' || what === 'accessibility')) { try { execFileSync(h, ['request', what], { timeout: 5000, stdio: 'ignore' }); } catch {} }
+  // macOS never adds an app to Full Disk Access by itself: show the app in Finder so it can be dragged into the list
+  if (what === 'files' && h && appBundle(h)) setTimeout(() => execFile('/usr/bin/open', ['-R', appBundle(h)], () => {}), 900);
   if (what === 'automation') execFile('osascript', ['-e', 'tell application "Finder" to get name of startup disk'], () => {}); // makes macOS ask once, in the app's name
   setTimeout(() => execFile('/usr/bin/open', [PANES[what]], () => {}), what === 'automation' ? 1200 : 400);
   return { ok: true };

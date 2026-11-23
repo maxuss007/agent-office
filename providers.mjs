@@ -48,6 +48,11 @@ export function recordLimit(provider, event) {
 export function clearBlocked() { const all = metric(); for (const k of Object.keys(all)) if (all[k]?.blockedUntil) all[k] = { ...all[k], blockedUntil: 0 }; fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(stateFile(), JSON.stringify(all, null, 2)); cached = null; }
 export function markUnavailable(provider, seconds = 900) { const all = metric(); all[provider] = { ...(all[provider] || {}), blockedUntil: Math.max(all[provider]?.blockedUntil || 0, Date.now() + seconds * 1000) }; fs.writeFileSync(stateFile(), JSON.stringify(all, null, 2)); cached = null; }
 
+/** A model the account cannot use right now (e.g. "Fable requires usage credits", no access, unknown model).
+ *  It is skipped for a few hours, the rest of the provider keeps working. */
+export const MODEL_FALLBACK = { 'claude/fable': 'claude/opus' };
+export const isModelUnavailable = (msg) => /requires usage credits|usage credits|switch to another model|(do not|don't) have access to (this |the )?model|model.{0,40}(not available|not found|unavailable|not supported)|invalid model|not_found_error/i.test(String(msg || ''));
+export function markModelUnavailable(id, reason = '', hours = 6) { if (!id) return; const all = metric(); all.modelBlocked = { ...(all.modelBlocked || {}), [id]: { until: Date.now() + hours * 3600000, reason: String(reason).slice(0, 200) } }; fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(stateFile(), JSON.stringify(all, null, 2)); cached = null; }
 export const routingPreference = () => metric().routing || { model: 'auto' };
 export const ultrareviewPref = () => metric().ultrareviewPref || 'ask';
 export function updateRouting({ model, pauseProvider, pauseUntil, fast, ultrareview } = {}) {
@@ -166,7 +171,8 @@ export async function providerCatalog(force = false) {
       const p = providers.find(p => p.id === m.provider);
       const windows = p.windows.filter(w => !/^seven_day_/.test(w.name) || m.provider === 'claude' && w.name === 'seven_day_' + m.model);
       const left = remaining(windows);
-      return { ...m, remainingPercent: left, available: p.available && !p.blocked && left !== 0 };
+      const mb = history.modelBlocked?.[m.id], off = mb && mb.until > Date.now() ? mb.reason || 'Model teď není dostupný.' : null;
+      return { ...m, remainingPercent: left, available: p.available && !p.blocked && left !== 0 && !off, ...(off ? { unavailableReason: off } : {}) };
     });
     const feats = history.features || {}; const caps = claudeCapabilities(claude);
     const features = {
@@ -182,6 +188,10 @@ export async function providerCatalog(force = false) {
 export function normalizeModelId(model) { return model.replace(/^(claude|codex|antigravity|gemini|ollama):/, '$1/'); }
 
 export function chooseRoute(catalog, request) {
+  // A pinned model the account cannot use right now falls back (Fable -> Opus) instead of stopping the work
+  const gone = (id) => catalog.models.find((m) => m.id === normalizeModelId(id || ''))?.unavailableReason;
+  if (request.model && gone(request.model)) request = { ...request, model: MODEL_FALLBACK[normalizeModelId(request.model)] || 'auto', pinned: !!MODEL_FALLBACK[normalizeModelId(request.model)] && request.pinned };
+  if (catalog.routing?.model && gone(catalog.routing.model)) catalog = { ...catalog, routing: { ...catalog.routing, model: MODEL_FALLBACK[catalog.routing.model] || 'auto' } };
   const choice = catalog.routing?.model || 'auto';
   const override = choice !== 'auto' && !request.agentOverride && !request.pinned;
   if (override) request = { ...request, provider: choice.split('/')[0], model: choice.includes('/') ? choice : 'auto', pinned: choice.includes('/') };

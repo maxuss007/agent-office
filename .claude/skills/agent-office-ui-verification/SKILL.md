@@ -13,3 +13,4 @@ Verify every Agent Office UI change in a browser against a throwaway dev server,
 5. Check desktop and phone widths. Open panels can cover the whole scene at narrow widths, so repeat the check on a wide window.
 6. Run the test suite (`node --test tests/`) before reinstalling.
 7. After rebuilding the installed app, report only what was checked: dev-server browser tests are not the same as clicks in the installed app.
+8. Browser viewport emulation outlives the check, so reset the tab to the desktop preset as soon as testing ends. A narrow emulated viewport can also hide the whole scene behind an open panel, which looks like a bug when it is only the size.

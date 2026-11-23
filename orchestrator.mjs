@@ -9,7 +9,7 @@ import { resetTimeFromText } from './claude-usage.mjs';
 import os from 'node:os';
 import { claudeSnapshot } from './claude-bridge.mjs';
 import { providerEnv } from './provider-auth.mjs';
-import { providerCatalog, normalizeModelId, chooseRoute, runCodex, recordLimit, markUnavailable, clearBlocked, routingPreference, recordFeature, ultrareviewPref } from './providers.mjs';
+import { providerCatalog, normalizeModelId, chooseRoute, runCodex, recordLimit, markUnavailable, clearBlocked, isModelUnavailable, markModelUnavailable, routingPreference, recordFeature, ultrareviewPref } from './providers.mjs';
 import { fileURLToPath } from 'node:url';
 import { T, Tdoc, locale } from './i18n-server.mjs';
 
@@ -524,7 +524,7 @@ async function ask(p, name, o0) {
   const rid = crypto.randomUUID(); L.running.set(rid, entry);
   st.agents[name] = { ...(st.agents[name] || {}), task: o.label || st.agents[name]?.task || '' };
   if (!o.quiet) feedPush(p, name, { kind: 'task', text: o.label || 'úkol', model: o.model, effort: o.effort });
-  let attempt = 0, timeoutRetries = 0;
+  let attempt = 0, timeoutRetries = 0, modelSwitches = 0;
   try {
     for (;;) {
       if (L.stopped) throw new Error('stopped');
@@ -589,6 +589,14 @@ async function ask(p, name, o0) {
           feedPush(p,name,{kind:'sys',text:'Obnovuji krok po timeoutu; hotové soubory zůstávají.'});continue;
         }
 
+        if (!smoke && entry.model && !e.limit && isModelUnavailable(e.message) && modelSwitches++ < 3) {
+          st.stats.runs = Math.max(0, st.stats.runs - 1); // the model refused before doing any work
+          markModelUnavailable(entry.model, e.message);
+          o = { ...o, excludeModels: [...(o.excludeModels || []), entry.model] };
+          log(p, name, `${entry.model} teď není dostupný (${String(e.message).slice(0, 80)}) – pokračuji s jiným modelem.`);
+          feedPush(p, name, { kind: 'sys', text: `${entry.model} nedostupný → jiný model` });
+          continue;
+        }
         if (e.limit) {
           st.stats.runs = Math.max(0, st.stats.runs - 1); // a refused call is not work: it does not eat the run budget
           let refreshed = null; try { refreshed = smoke ? null : await providerCatalog(true); } catch {}
