@@ -300,7 +300,7 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
   <details class="brief-more"><summary><svg class="i" aria-hidden="true"><use href="#i-plus"/></svg> Přidat odkazy, podklady nebo poznámky</summary><textarea id="notes" rows="3" placeholder="Odkazy na weby, cesty k souborům, co se ti líbí nebo nelíbí, termín…"></textarea></details>
   <select id="preset" hidden></select><input id="maxRounds" type="hidden"><input id="maxRuns" type="hidden"><input id="targetScore" type="hidden">
   <div class="brief-foot"><p id="repoline"></p><div><button type="button" class="ghost" onclick="dlg.close()">Zrušit</button><button type="submit" id="brief-submit">Předat šéfovi →</button></div></div>
-  <p class="brief-alt" id="brief-alt" hidden><button type="button" class="quiet" onclick="dlg.close();openRepoDlg(true)">Mám už složku s projektem – připojit ji</button></p>
+  <p class="brief-alt" id="brief-alt" hidden><button type="button" class="quiet" onclick="dlg.close();openRepoDlg(true,'brief')">Mám už složku s projektem – připojit ji</button></p>
   <div id="brief-error" class="form-error" role="status"></div>
 </form></dialog>
 
@@ -315,7 +315,7 @@ body.limited #officeview{filter:grayscale(1);opacity:.6}
 </form></dialog>
 
 <dialog id="rdlg"><form method="dialog" onsubmit="createProjectOffice();return false">
-  <h3 style="margin:0 0 8px">Nový projekt</h3>
+  <div class="rdlg-head"><button type="button" class="quiet back-btn" id="rdlg-back" hidden onclick="rdlg.close();dlg.showModal()" aria-label="Zpět" title="Zpět"><svg class="i" aria-hidden="true"><use href="#i-arrowLeft"/></svg></button><h3 style="margin:0">Nový projekt</h3></div>
   <p class="dialog-description">Projekt dostane vlastní kancelář i repozitář. Všechno založím za tebe.</p>
   <label for="project-name">Název projektu</label><input id="project-name" placeholder="Např. Pitch pro klienta" maxlength="80" autocomplete="off">
   <div id="create-error" class="form-error" role="status"></div>
@@ -374,6 +374,12 @@ $('scene').addEventListener('click',e=>{const z=e.target.closest('[data-role]');
 /* ---------- hallway ---------- */
 let hallSig='';
 function setHallFilter(f){$('project-filter').value=f;document.querySelectorAll('.lib-seg button').forEach(b=>b.classList.toggle('on',b.dataset.f===f));renderHall()}
+// Background refreshes touch only cards whose content changed, so cards do not blink or lose their hover state
+function setHtml(el,html){if(el._html!==html){el.innerHTML=html;el._html=html}}
+function patchCards(el,cards){const tpl=document.createElement('template');
+  const ids=cards.map(h=>(h.match(/data-id="([^"]*)"/)||[])[1]),old=[...el.children];
+  if(old.length!==cards.length||old.some((c,i)=>c.dataset.id!==ids[i])){el.innerHTML=cards.join('');el._html=null;[...el.children].forEach((c,i)=>c._html=cards[i]);return}
+  old.forEach((c,i)=>{if(c._html!==cards[i]){tpl.innerHTML=cards[i];const n=tpl.content.firstElementChild;n._html=cards[i];c.replaceWith(n)}})}
 function renderHall(){
   const query=($('project-search').value||'').trim().toLocaleLowerCase('cs-CZ'),archived=$('project-filter').value==='archived';
   const matches=S.repos.filter(r=>!!r.archived===archived&&`${r.name} ${r.goal||''} ${r.description||''}`.toLocaleLowerCase('cs-CZ').includes(query));
@@ -381,9 +387,9 @@ function renderHall(){
   const pj=r=>(S.projects||[]).find(x=>x.id===r.projectId);
   const status=r=>{const s=pj(r)?.status;return r.archived?'Archivováno':r.light==='working'?'Pracuje':r.waiting?`Čeká na tebe`:s==='paused'?'Pozastaveno':s==='limit'?'Čeká na limit':s==='partial'?'Rozpracováno':s==='error'?'Chyba':r.status==='done'||s==='done'?'Hotovo':'Připraveno'};
   const tone=r=>{const s=pj(r)?.status;return r.archived?'muted':r.light==='working'?'run':r.waiting||s==='limit'?'ask':s==='paused'||s==='partial'?'hold':s==='error'?'err':r.status==='done'||s==='done'?'ok':'muted'};
-  const card=r=>`<article class="project-card"><div class="project-card-top"><span class="project-state tone-${tone(r)}"><i></i>${esc(status(r))}</span><button class="icon-btn" onclick="manageOffice('${r.id}')" aria-label="Upravit projekt ${esc(r.name)}" title="Upravit projekt">${ico('pencil')}</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button>${progressLine(pj(r))}<div class="project-card-footer"><span>${ico('folder')} ${r.git?'Git repozitář':'Pracovní složka'}</span>${r.totalTasks?`<span>${ico('check')} ${r.completedTasks}/${r.totalTasks} ${L('úkolů','tasks')}</span>`:''}${r.sessions?`<span>${r.sessions} sessions</span>`:''}</div></article>`;
-  $('hall-list').innerHTML=projects.length?projects.map(card).join(''):`<div class="library-empty"><b>${archived?'Archiv je prázdný':'Vytvoř projekt a otevři jeho kancelář'}</b><p>${query?'Žádný projekt neodpovídá hledání.':'Projekt si sám založí vlastní repozitář. Existující práce z Claude Code je oddělená níže.'}</p>${!archived&&!query?'<button onclick="openRepoDlg()">+ Vytvořit projekt</button>':''}</div>`;
-  $('external-list').innerHTML=external.map(card).join('');$('connected-projects').hidden=!external.length;
+  const card=r=>`<article class="project-card" data-id="${esc(r.id)}"><div class="project-card-top"><span class="project-state tone-${tone(r)}"><i></i>${esc(status(r))}</span><button class="icon-btn" onclick="manageOffice('${r.id}')" aria-label="Upravit projekt ${esc(r.name)}" title="Upravit projekt">${ico('pencil')}</button></div><button class="project-open" onclick="enterRepo('${r.id}')"><b>${esc(r.name)}</b><p>${esc(r.description||r.goal||'Zadej první úkol šéfovi.')}</p></button>${progressLine(pj(r))}<div class="project-card-footer"><span>${ico('folder')} ${r.git?'Git repozitář':'Pracovní složka'}</span>${r.totalTasks?`<span>${ico('check')} ${r.completedTasks}/${r.totalTasks} ${L('úkolů','tasks')}</span>`:''}${r.sessions?`<span>${r.sessions} sessions</span>`:''}</div></article>`;
+  if(projects.length)patchCards($('hall-list'),projects.map(card));else setHtml($('hall-list'),`<div class="library-empty"><b>${archived?'Archiv je prázdný':'Vytvoř projekt a otevři jeho kancelář'}</b><p>${query?'Žádný projekt neodpovídá hledání.':'Projekt si sám založí vlastní repozitář. Existující práce z Claude Code je oddělená níže.'}</p>${!archived&&!query?'<button onclick="openRepoDlg()">+ Vytvořit projekt</button>':''}</div>`);
+  patchCards($('external-list'),external.map(card));$('connected-projects').hidden=!external.length;
   $('connection').textContent=`${projects.length} projektů · ${external.length} propojených složek`;
   // Projects use cards; no hallway renderer is allocated.
 }
@@ -576,7 +582,7 @@ async function start(){const goal=$('goal').value.trim();if(!goal){$('goal').foc
     await refreshRepos();curRepo=office.id}finally{btn.disabled=false}}
   const r=await api('/api/start',{method:'POST',body:JSON.stringify({repoId:curRepo,preset:KIND[briefKind].preset,goal,notes:$('notes').value,settings:{reportLength:$('reportLength').value,maxRounds:D.maxRounds,maxRuns:D.maxRuns,targetScore:D.targetScore,mode:D.mode||'full'}})});if(r.error){if(briefMode==='new'){$('brief-error').textContent=r.error;return}return alert(r.error)}cur=r.id;dlg.close();$('goal').value='';$('notes').value='';await refreshRepos();if(briefMode==='new'){enterRepo(curRepo)}else render()}
 async function refreshRepos(){const s=await api('/api/state');S.repos=s.repos;S.projects=s.projects;S.cast=s.cast}
-async function openRepoDlg(connect){rdlg.showModal();rdlg.querySelector('.connect-existing').open=!!connect;$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
+async function openRepoDlg(connect,from){$('rdlg-back').hidden=from!=='brief';rdlg.showModal();rdlg.querySelector('.connect-existing').open=!!connect;$('create-error').textContent='';$('project-name').focus();$('pickbtn').hidden=!window.webkit?.messageHandlers?.pickFolder;const r=await api('/api/repos/suggestions');
   $('sugg').innerHTML=(r.suggestions||[]).map(s=>`<button class="ghost sg" onclick="addRepoPath(this.dataset.p)" data-p="${esc(s.path)}"><b>${esc(s.name)}</b> ${s.git?'<span class="chip">git</span>':''}<div class="act">${esc(s.path)}</div></button>`).join('')||'<div style="color:var(--mute);font-size:12px">Nic k nabídnutí.</div>'}
 function pickFolder(){window.webkit?.messageHandlers?.pickFolder?.postMessage(1)}
 window.onFolderPicked=p=>{if(p)addRepoPath(p)};
@@ -665,10 +671,12 @@ const SYS=[['screen','display',['Nahrávání obrazovky','Screen Recording'],['A
   ['files','folder',['Přístup ke všem souborům','Full Disk Access'],['Nepovinné. Jen když mají agenti pracovat se soubory v Dokumentech, na Ploše nebo v Mailu bez dalších dotazů.','Optional. Only if agents should work with files in Documents, Desktop or Mail without extra prompts.']]];
 async function openMacAccess(first){PERM=await api('/api/permissions');$('mac-eyebrow').textContent=first?L('NEŽ ZAČNEŠ · JEDNORÁZOVÉ NASTAVENÍ','BEFORE YOU START · ONE-TIME SETUP'):L('NASTAVENÍ','SETTINGS');renderMac();$('macdlg').showModal()}
 function closeMacAccess(){$('macdlg').close()}
+// Coming back from System Settings: check again, so a switch turned on there shows right away
+window.addEventListener('focus',async()=>{if(!$('macdlg').open)return;try{PERM=await api('/api/permissions');renderMac()}catch{}});
 $('macdlg').addEventListener('close',()=>{if(!PERM.policy.macGuideDone){PERM.policy.macGuideDone=true;api('/api/permissions/policy',{method:'POST',body:JSON.stringify({macGuideDone:true})})}});
 function renderMac(){const sys=PERM.system||{};
   $('mac-system').innerHTML=sys.supported===false?`<p class="dialog-description">${L('Tohle jde jen na Macu.','Only available on a Mac.')}</p>`:SYS.map(([k,ic,name,why])=>{const known=k in sys,ok=!!sys[k];
-    return `<div class="mac-row"><span class="mac-ic">${ico(ic)}</span><div><b>${esc(L(...name))}</b><p>${esc(L(...why))}</p></div><div class="mac-act">${known?`<span class="pill ${ok?'ok':'no'}">${ok?L('Povoleno','Allowed'):L('Nepovoleno','Not allowed')}</span>`:''}${known&&ok?'':`<button type="button" class="${k==='files'?'ghost':''}" onclick="macSystem('${k}')">${L('Povolit','Allow')}</button>`}</div></div>`}).join('');
+    return `<div class="mac-row"><span class="mac-ic">${ico(ic)}</span><div><b>${esc(L(...name))}</b><p>${esc(L(...why))}</p></div><div class="mac-act">${known?`<span class="pill ${ok?'ok':'no'}">${ok?L('Povoleno','Allowed'):L('Nepovoleno','Not allowed')}</span>`:''}${known&&ok?'':`<button type="button" class="${k==='files'?'ghost':''}" onclick="macSystem('${k}')">${L('Povolit','Allow')}</button>`}</div>${known&&!ok&&(k==='screen'||k==='accessibility')?`<p class="mac-fix">${L('Přepínač v Nastavení už je zapnutý?','Already switched on in System Settings?')} <button type="button" class="linkish" onclick="macSystem('${k}',true)">${L('Opravit povolení','Repair permission')}</button> – ${L('macOS se zeptá znovu, pak Agent Office zapni.','macOS asks again, then switch Agent Office on.')}</p>`:''}</div>`}).join('');
   const cats=PERM.categories||{},pol=PERM.policy.categories||{};
   $('mac-cats').innerHTML=Object.entries(cats).map(([k,c])=>{const t=permTxt(c),v=pol[k]||c.default;
     return `<div class="mac-row cat"><div><b>${esc(t[0])}</b><p>${esc(t[1])}</p></div><div class="seg mac-seg" role="group" aria-label="${esc(t[0])}">${[['always',L('Vždy','Always')],['ask',L('Zeptat se','Ask')],['never',L('Nikdy','Never')]].map(([val,lab])=>`<button type="button" class="${v===val?'on':''}" onclick="macPolicy('${k}','${val}')">${lab}</button>`).join('')}</div></div>`}).join('');
@@ -677,7 +685,7 @@ function renderMac(){const sys=PERM.system||{};
     return `<div class="mac-rule"><span>${esc(lab)}</span><button type="button" class="quiet" onclick="macRule(${esc(JSON.stringify(k))})">${L('Zrušit','Remove')}</button></div>`}).join('');}
 async function macPolicy(category,value){PERM=await api('/api/permissions/policy',{method:'POST',body:JSON.stringify({category,value})});renderMac()}
 async function macRule(rule){PERM=await api('/api/permissions/policy',{method:'POST',body:JSON.stringify({rule,value:null})});renderMac()}
-async function macSystem(what){await api('/api/permissions/system',{method:'POST',body:JSON.stringify({what})});const poll=async(n)=>{PERM=await api('/api/permissions');if($('macdlg').open)renderMac();if(n>0&&!(PERM.system||{})[what])setTimeout(()=>poll(n-1),2500)};setTimeout(()=>poll(24),1500)}
+async function macSystem(what,repair){await api('/api/permissions/system',{method:'POST',body:JSON.stringify({what,repair:!!repair})});const poll=async(n)=>{PERM=await api('/api/permissions');if($('macdlg').open)renderMac();if(n>0&&!(PERM.system||{})[what])setTimeout(()=>poll(n-1),2500)};setTimeout(()=>poll(24),1500)}
 api('/api/permissions').then(r=>{PERM=r;if(r.pending?.length)showPerm();if(!r.policy.macGuideDone&&r.system?.supported&&!new URLSearchParams(location.search).has('demo'))setTimeout(()=>{if(!document.querySelector('dialog[open]'))openMacAccess(true)},900)}).catch(()=>{});
 /* ---------- every window closes when you click outside it; nothing closes by itself ---------- */
 let downOutside=false;
@@ -691,6 +699,8 @@ document.addEventListener('click',e=>{const d=e.target.tagName==='DIALOG'?e.targ
 let PC={providers:[],models:[]};
 async function checkHealth(force){await refreshProviders(force)}
 async function doLogin(provider='claude',mode){const r=await api('/api/login',{method:'POST',body:JSON.stringify({provider,mode})});if(r.error)return alert(r.error);$('provider-note').textContent='Dokonči přihlášení v Terminálu. Při tvorbě tokenu ho potom vlož do pole pro Klíčenku.'}
+// The ⟳ on a service card fetches fresh limits and login state (a stale "limit used up" clears itself when the numbers show capacity)
+async function reloadProviders(el){if(el.classList.contains('spin'))return;el.classList.add('spin');document.querySelectorAll('.relink').forEach(x=>x.classList.add('spin'));try{await refreshProviders(true)}finally{document.querySelectorAll('.relink').forEach(x=>x.classList.remove('spin'))}}
 async function refreshProviders(force=false){try{PC=await api('/api/providers'+(force?'?force=1':''));$('login-nudge').hidden=PC.models?.some(m=>m.available);renderProviders()}catch{$('provider-note').textContent='Kapacitu se nepodařilo načíst.'}}
 // One-click install of a missing tool or of the recommended skills (scripts/install.sh on the server)
 async function installTool(item,btn){const t=btn.textContent;btn.disabled=true;btn.textContent='Instaluji…';
@@ -734,7 +744,7 @@ function providerCard(p,sub){const ok=p.available&&!p.blocked||!!(sub&&sub.avail
   const guide=howtoHtml(p.id)+(sub?subCard(sub):'');
   const optional=['antigravity','gemini'].includes(p.id)&&!p.installed&&!(sub&&sub.installed);
   const inst=(id,name)=>`<button class="ghost" onclick="event.preventDefault();installTool('${id}',this)">${ico('download')} Nainstalovat ${esc(name)}</button>`;
-  return `<details class="provider-card" ${!ok&&!optional?'open':''}><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><span class="pst ${ok?'':'bad'}">${st}</span><span class="pchev">${ico('chevron')}</span>${!ok?`<span class="relink" title="Připojit znovu" onclick="event.preventDefault();event.stopPropagation();doLogin('${p.id}')">${ico('refresh')}</span>`:''}</summary><div class="pbody">${INST[p.id]&&!INST[p.id].ok?inst(p.id,p.id==='gemini'?'Gemini CLI':p.name):''}${['antigravity','gemini'].includes(p.id)?'':wins}${settings}${guide}</div></details>`}
+  return `<details class="provider-card" ${!ok&&!optional?'open':''}><summary><span class="pdot ${ok?'ok':'bad'}"></span><b>${esc(p.name)}</b><span class="pst ${ok?'':'bad'}">${st}</span><span class="pchev">${ico('chevron')}</span><span class="relink${ok?' ok':''}" role="button" title="Načíst znovu" onclick="event.preventDefault();event.stopPropagation();reloadProviders(this)">${ico('refresh')}</span></summary><div class="pbody">${INST[p.id]&&!INST[p.id].ok?inst(p.id,p.id==='gemini'?'Gemini CLI':p.name):''}${['antigravity','gemini'].includes(p.id)?'':wins}${settings}${guide}</div></details>`}
 // Claude account features, shown inside the Claude card: fast mode and the cloud code review (ultrareview).
 function claudeFeatures(){const F=PC.features?.fast,U=PC.features?.ultrareview;if(!F&&!U)return '';
   const sel=(id,opts,cur,dis,on)=>`<select id="${id}" style="width:auto" onchange="${on}" ${dis?'disabled':''}>${opts.map(([v,l])=>`<option value="${v}" ${v===cur?'selected':''}>${l}</option>`).join('')}</select>`;

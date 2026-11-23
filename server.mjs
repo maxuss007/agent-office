@@ -79,7 +79,7 @@ http.createServer({ requestTimeout: 0 }, async (req, res) => { // no timeout: pe
     }
     if (url.pathname === '/api/permissions/decide' && req.method === 'POST') { const b = await body(req); return json(res, 200, { ok: permDecide(b.id, b.choice) }); }
     if (url.pathname === '/api/permissions/policy' && req.method === 'POST') { setPolicy(await body(req)); return json(res, 200, permInfo()); }
-    if (url.pathname === '/api/permissions/system' && req.method === 'POST') return json(res, 200, requestSystemAccess((await body(req)).what));
+    if (url.pathname === '/api/permissions/system' && req.method === 'POST') return json(res, 200, (({ what, repair }) => requestSystemAccess(what, { repair: !!repair }))(await body(req)));
     if (url.pathname === '/api/install' && req.method === 'GET') { // what is installed (tools, plugins, recommended skills)
       const out = await new Promise((ok) => _execFile('/bin/bash', [path.join(ROOT, 'scripts', 'install.sh'), '--status'], { timeout: 30000, env: { ...process.env, PATH: [path.join(DATA, 'runtime', 'node', 'bin'), path.join(os.homedir(), '.local', 'bin'), '/opt/homebrew/bin', '/usr/local/bin', process.env.PATH].join(':') } }, (err, so) => ok(String(so || '{}'))));
       try { return json(res, 200, JSON.parse(out)); } catch { return json(res, 200, {}); }

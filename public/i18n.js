@@ -96,7 +96,7 @@
     'Designér': 'Designer', 'Výzkumnice': 'Researcher', 'Výzkumník': 'Researcher', 'Právník': 'Lawyer', 'Tester': 'Tester', 'Copywriter': 'Copywriter', 'Ostatní': 'Others',
     // connections
     'Připojení a limity': 'Connections and limits', 'Boss používá Claude Opus, ostatním agentům vybírá model sám. Model konkrétního agenta změníš kliknutím na něj.': 'The boss uses Claude Opus and picks a model for every other agent. Click an agent to change its model.',
-    'Připojeno': 'Connected', 'Odpojeno': 'Disconnected', 'Limit vyčerpán': 'Limit used up', 'Připojeno přes Antigravity': 'Connected via Antigravity', 'Připojit znovu': 'Reconnect', '⟳ Připojit znovu': '⟳ Reconnect',
+    'Připojeno': 'Connected', 'Odpojeno': 'Disconnected', 'Limit vyčerpán': 'Limit used up', 'Připojeno přes Antigravity': 'Connected via Antigravity', 'Připojit znovu': 'Reconnect', 'Načíst znovu': 'Reload', 'Zpět': 'Back', 'Opravit povolení': 'Repair permission', '⟳ Připojit znovu': '⟳ Reconnect',
     'Jak připojit': 'How to connect', 'Limity zatím nejsou známé.': 'Limits are not known yet.', '5hodinový limit': '5-hour limit', 'Týdenní limit': 'Weekly limit', '· obnoví se': '· resets',
     'Kapacitu se nepodařilo načíst.': 'Could not load capacity.', 'Připojit model': 'Connect a model', 'Přihlášení:': 'Sign-in:', 'trvalý token z Klíčenky': 'long-lived token from the Keychain', 'účet v Terminálu (může vypršet)': 'account in Terminal (can expire)',
     'Používá přihlášení aplikace Codex / ChatGPT na tomhle Macu.': 'Uses the Codex / ChatGPT sign-in on this Mac.', 'na kód a úpravy souborů': 'for code and file edits',

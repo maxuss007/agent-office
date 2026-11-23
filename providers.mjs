@@ -147,6 +147,10 @@ export async function providerCatalog(force = false) {
     const u = usage.status === 'fulfilled' ? usage.value : { windows: [], source: 'unknown', message: 'Usage Claude nyní není dostupné.' };
     if (u.windows.length && !u.stale) { const current = metric(); current.claude = { ...current.claude, windows: u.windows, updated: u.updated }; fs.mkdirSync(dataDir(), { recursive: true }); fs.writeFileSync(stateFile(), JSON.stringify(current, null, 2)); }
     const claudeWindows = u.windows.length ? u.windows : history.claude?.windows || [];
+    // A block saved after a glitch must not outlive fresh numbers that show capacity left.
+    const fresh = { claude: u.windows.length && !u.stale ? u.windows : null, codex: c.windows?.length ? c.windows : null };
+    const healed = Object.entries(fresh).filter(([id, w]) => w && (history[id]?.blockedUntil || 0) > Date.now() && w.every((x) => !Number.isFinite(x.usedPercent) || x.usedPercent < 99)).map(([id]) => id);
+    if (healed.length) { const current = metric(); for (const id of healed) current[id] = { ...current[id], blockedUntil: 0 }; fs.writeFileSync(stateFile(), JSON.stringify(current, null, 2)); history = current; }
     const providers = [
       { id: 'claude', name: 'Claude', available: claudeAuth.status === 'fulfilled' && !!claudeAuth.value, windows: claudeWindows, source: u.windows.length ? u.source : claudeWindows.length ? 'rate_limit_event' : 'unknown', updated: u.updated || history.claude?.updated || null, stale: !!u.stale, auth: claudeToken() ? 'oauth-token' : 'cli-login', message: !claude ? 'Claude CLI chybí.' : claudeAuth.status !== 'fulfilled' || !claudeAuth.value ? 'Claude není přihlášený. Přihlas účet nebo ulož dlouhodobý token.' : claudeToken() ? 'OAuth token nastavený; platnost ověří první úkol. ' + (u.message || '') : u.message },
       { id: 'codex', name: 'Codex', ...c },

@@ -316,11 +316,11 @@ function runClaude(p, o) {
       if (!o.quiet) { collectShots(p, o.agent, imgs); if (o.agent === 'tester') scanReports(p, o.agent, startedAt); }
       if (live1?.stopped) return reject(new Error('stopped'));
       if (o.entry?.interrupted) return reject(Object.assign(new Error('interrupted'), { interrupted: true }));
-      if (!result) return reject(Object.assign(new Error('claude exited without result: ' + err.slice(-300)), { limit: /limit|rate|overload|429|quota|usage.*exceed/i.test(err) }));
+      if (!result) return reject(Object.assign(new Error('claude exited without result: ' + err.slice(-300)), { limit: /hit your|usage limit|session limit|weekly limit|limit reached|rate.?limit|429|quota|usage.*exceed/i.test(err) }));   // "overloaded" / a dropped connection is a glitch, not a used-up limit
       if (o.fast && result.fast_mode_state) recordFeature('fast', { available: result.fast_mode_state === 'on', reason: result.fast_mode_disabled_reason || '' });
       if (result.is_error) {
         const e = new Error(String(result.result || err).slice(0, 300));
-        e.limit = /hit your|usage limit|session limit|weekly limit|limit reached|rate.?limit|overload|429|quota/i.test(e.message);
+        e.limit = /hit your|usage limit|session limit|weekly limit|limit reached|rate.?limit|429|quota/i.test(e.message);
         return reject(e);
       }
       resolve({ text: result.result, data: result.structured_output ?? tryParse(result.result), session: result.session_id, cost: result.total_cost_usd || 0, usage: result.usage || {}, provider: 'claude' });

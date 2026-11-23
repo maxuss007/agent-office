@@ -420,3 +420,12 @@ form.boss-compose #boss-send:disabled{opacity:.45}
 .reconnect>summary:hover{background:var(--bg2)}.reconnect>summary svg.i{width:14px;height:14px;margin:0}
 .reconnect[open]>summary{border-color:var(--acc);color:var(--acc)}
 .reconnect-body{display:grid;gap:10px;margin-top:10px;padding:12px;border:1px solid var(--line);border-radius:12px;background:var(--bg2)}
+/* Claude: the ⟳ on a service card reloads the data; it spins while fetching */
+.relink.ok{color:var(--muted)}.relink:hover{transform:none;color:var(--acc)}
+.relink.spin svg.i{animation:relink-spin .8s linear infinite}
+@keyframes relink-spin{to{transform:rotate(360deg)}}
+/* Claude: back arrow in "New project" when it was opened from the brief */
+.rdlg-head{display:flex;align-items:center;gap:8px;margin:0 0 8px}.rdlg-head .back-btn{width:32px;height:32px;padding:0;border-radius:99px;display:inline-grid;place-items:center}.rdlg-head .back-btn svg.i{width:16px;height:16px;margin:0}
+/* Claude: "Repair permission" under a Mac access row that macOS still refuses */
+.mac-fix{grid-column:2/-1;margin:-4px 0 0;font-size:12px;line-height:1.45;color:var(--muted)}
+.mac-fix .linkish{background:none;border:0;padding:0;color:var(--acc);font:inherit;font-weight:600;cursor:pointer;text-decoration:underline;box-shadow:none;min-height:0}

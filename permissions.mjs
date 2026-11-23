@@ -164,9 +164,17 @@ const PANES = {
   files: 'x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles',
 };
 /** Ask macOS for the permission (shows the system dialog once), then open the right page of System Settings. */
-export function requestSystemAccess(what) {
+/** The app's bundle id (the helper sits in Contents/MacOS next to Info.plist); null outside the app. */
+function bundleId(h) {
+  try { const plist = path.resolve(path.dirname(h), '..', 'Info.plist'); return execFileSync('/usr/libexec/PlistBuddy', ['-c', 'Print :CFBundleIdentifier', plist], { encoding: 'utf8', timeout: 3000 }).trim() || null; } catch { return null; }
+}
+const TCC_SERVICE = { screen: 'ScreenCapture', accessibility: 'Accessibility' };
+export function requestSystemAccess(what, { repair = false } = {}) {
   if (!PANES[what]) throw new Error('screen | accessibility | automation | files');
   const h = helperPath();
+  // The switch in System Settings can stay on while macOS no longer accepts it (it was given to an older build).
+  // Repair clears only this app's own entry, so macOS asks again and the new answer counts.
+  if (repair && h && TCC_SERVICE[what]) { const id = bundleId(h); if (id) { try { execFileSync('/usr/bin/tccutil', ['reset', TCC_SERVICE[what], id], { timeout: 5000, stdio: 'ignore' }); } catch {} } }
   if (h && (what === 'screen' || what === 'accessibility')) { try { execFileSync(h, ['request', what], { timeout: 5000, stdio: 'ignore' }); } catch {} }
   if (what === 'automation') execFile('osascript', ['-e', 'tell application "Finder" to get name of startup disk'], () => {}); // makes macOS ask once, in the app's name
   setTimeout(() => execFile('/usr/bin/open', [PANES[what]], () => {}), what === 'automation' ? 1200 : 400);
