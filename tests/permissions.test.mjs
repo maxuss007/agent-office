@@ -22,7 +22,16 @@ test('dangerous things are never allowed, everyday things are asked in plain wor
   const docker = perm.classify('Bash', { command: 'docker ps' });
   assert.equal(docker.verdict, 'ask'); assert.equal(docker.key, 'shell:docker'); assert.match(docker.cs[0], /docker/); assert.match(docker.en[0], /docker/);
   const piped = perm.classify('Bash', { command: 'ls | sh' });
-  assert.equal(piped.alwaysAsk, true, 'compound commands can never be allowed forever');
+  assert.equal(piped.alwaysAsk, true, 'piping into a shell is asked every time');
+  // everyday compound commands run without asking; unknown programs in them can be allowed forever
+  for (const command of ['cd app && npm test 2>&1 | tail -20', 'S=/private/tmp/x; sed -n 1,16p $S/run.log; cat $S/package.json', 'for f in *.md; do wc -l "$f"; done', "python3 - <<EOF\nprint(1)\nEOF", 'rm -rf node_modules'])
+    assert.equal(perm.classify('Bash', { command }, { cwd: '/p' }).verdict, 'allow', command);
+  const mixed = perm.classify('Bash', { command: 'cd app && supabase start && docker ps' }, { cwd: '/p' });
+  assert.deepEqual(mixed.keys, ['shell:supabase', 'shell:docker']); assert.equal(mixed.alwaysAsk, false);
+  assert.equal(perm.classify('Bash', { command: 'bash -c "eval $X"' }).alwaysAsk, true);
+  assert.equal(perm.classify('Bash', { command: `/bin/zsh -lc "python3 -c 'print(1)'"` }, { cwd: '/p' }).verdict, 'allow');
+  assert.equal(perm.classify('Bash', { command: 'O="/Users/a/Application Support/x"; ls "$O"' }, { cwd: '/p' }).verdict, 'allow');
+  assert.equal(perm.classify('Bash', { command: 'echo x > ~/.zshrc' }, { cwd: '/p' }).alwaysAsk, true);
   assert.equal(perm.classify('Bash', { command: 'brew install ffmpeg' }).category, 'install');
   assert.equal(perm.classify('Write', { file_path: '/p/a.txt' }, { cwd: '/p' }).verdict, 'allow');
   assert.equal(perm.classify('Write', { file_path: '/etc/hosts' }, { cwd: '/p' }).verdict, 'deny');

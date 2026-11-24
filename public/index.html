@@ -441,8 +441,9 @@ function etaOf(p){
   ETA[p.id]={rem,t:Date.now()};return rem}
 function etaText(rem){if(rem==null)return '';const at=new Date(Date.now()+rem*60000).toLocaleTimeString(LOC(),{hour:'numeric',minute:'2-digit'});if(rem<1)return L('hotovo za chvilku','done in a moment');return L(`hotovo asi za ${fmtMin(rem)} · kolem ${at}`,`done in about ${fmtMin(rem)} · around ${at}`)}
 function progressLine(p){
-  if(!p||!['running','waiting_user','limit','paused'].includes(p.status))return '';
-  const pct=Math.round(progressOf(p)*100),note=p.status==='waiting_user'?'čeká na tvou odpověď':p.status==='limit'?'čeká na obnovení limitu':p.status==='paused'?'pozastaveno':etaText(etaOf(p));
+  const retry=p&&p.autoRetryAt&&['error','interrupted','partial'].includes(p.status);
+  if(!p||!retry&&!['running','waiting_user','limit','paused'].includes(p.status))return '';
+  const pct=Math.round(progressOf(p)*100),note=retry?L(`pokračuji sám v ${new Date(p.autoRetryAt).toLocaleTimeString(LOC(),{hour:'numeric',minute:'2-digit'})}`,`continuing by itself at ${new Date(p.autoRetryAt).toLocaleTimeString(LOC(),{hour:'numeric',minute:'2-digit'})}`):p.status==='waiting_user'?'čeká na tvou odpověď':p.status==='limit'?'čeká na obnovení limitu':p.status==='paused'?'pozastaveno':etaText(etaOf(p));
   return `<div class="eta${p.status==='running'?'':' held'}"><div class="eta-bar"><i style="width:${pct}%"></i></div><span>${pct} %${note?' · '+note:''}</span></div>`}
 function renderEta(){const p=proj();const el=$('ws-eta');if(el){const h=progressLine(p);if(el.innerHTML!==h)el.innerHTML=h}}
 setInterval(()=>{if(view==='office')renderEta()},5000);
@@ -453,7 +454,8 @@ function renderWorkspace(p){
   renderEta();
   const canResume=p&&['error','partial','stopped','paused','interrupted','budget'].includes(st),canAccept=p&&['done','partial'].includes(st)&&!p.accepted;
   // run controls sit at the end of the progress row, shaped like the steps: green = continue, amber = pause, red = stop
-  const ctrl=`${active?`<button class="ctrl c-pause" onclick="pauseProj()"><span>${IC.pause}</span>Pozastavit</button><button class="ctrl c-stop" onclick="stop()"><span>${IC.stop}</span>Zastavit</button>`:''}${canResume?`<button class="ctrl c-go" onclick="resumeProj()"><span>${IC.play}</span>Pokračovat</button>`:''}`;
+  const planned=p?.autoRetryAt&&['error','interrupted','partial'].includes(st); // an automatic retry is coming: pause/stop can still cancel it
+  const ctrl=`${active||planned?`<button class="ctrl c-pause" onclick="pauseProj()"><span>${IC.pause}</span>Pozastavit</button><button class="ctrl c-stop" onclick="stop()"><span>${IC.stop}</span>Zastavit</button>`:''}${canResume?`<button class="ctrl c-go" onclick="resumeProj()"><span>${IC.play}</span>Pokračovat</button>`:''}`;
   if($('ws-ctrl').innerHTML!==ctrl)$('ws-ctrl').innerHTML=ctrl;
   $('ws-actions').innerHTML=`${canAccept?`<button class="btn" onclick="acceptProj()">${IC.check}Převzít</button>`:''}${p?.accepted?`<span class="pill s-done">Převzato</span>`:''}`;
   // "New goal" sits on the left where the goal text used to be, shaped like the progress steps but larger

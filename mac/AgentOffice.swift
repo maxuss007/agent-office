@@ -2,6 +2,7 @@
 import AppKit
 import WebKit
 import UserNotifications
+import ServiceManagement
 
 // MARK: - Mascot (same pixel-art Claude Code mascot as LidAwake)
 
@@ -83,7 +84,7 @@ final class ServerManager {
     }
 
     // Version of this Mac shell. Bump it (and "shell" in version.json) only when this file changes in a way the server relies on.
-    static let shellVersion = 5
+    static let shellVersion = 6
     var runningUpdate = false
     var onCrash: (() -> Void)?   // the server exited without being asked to
     var bundledDir: URL? { Bundle.main.resourceURL?.appendingPathComponent("server") }
@@ -195,6 +196,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate, WKUI
     var signalSources: [DispatchSourceSignal] = []
 
     func applicationDidFinishLaunching(_ n: Notification) {
+        // Projects keep running until paused, even after the Mac restarts: open at login once (the user can remove it in Login Items).
+        if !UserDefaults.standard.bool(forKey: "loginItemSet") {
+            UserDefaults.standard.set(true, forKey: "loginItemSet")
+            if SMAppService.mainApp.status != .enabled { try? SMAppService.mainApp.register() }
+        }
         NSApp.setActivationPolicy(.regular)
         if let a = UserDefaults.standard.string(forKey: "appearance") { NSApp.appearance = NSAppearance(named: a == "dark" ? .darkAqua : .aqua) } // testing hook; normally follows the system
         // make sure the node child never outlives the app, even on SIGTERM/SIGINT

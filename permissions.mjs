@@ -74,7 +74,8 @@ function notifyMac(title, text) {
  */
 export function request(req) {
   const pol = getPolicy();
-  const rule = req.key && pol.rules[req.key];
+  const keys = req.keys?.length ? req.keys : req.key ? [req.key] : [];
+  const rule = keys.length && keys.every((k) => pol.rules[k] === 'always') ? 'always' : keys.some((k) => pol.rules[k] === 'never') ? 'never' : null;
   const cat = pol.categories[req.category] || 'ask';
   if (!req.alwaysAsk && (rule === 'always' || (!rule && cat === 'always'))) return Promise.resolve({ allow: true, auto: true });
   if (rule === 'never' || cat === 'never') return Promise.resolve({ allow: false, message: 'Uživatel tuto akci v nastavení zakázal. Najdi jiný postup, nebo napiš, proč je nutná.' });
@@ -83,7 +84,7 @@ export function request(req) {
   const id = crypto.randomBytes(6).toString('hex');
   const full = { ...req, id, at: Date.now(), categoryText: { cs: CATEGORIES[req.category]?.cs || CATEGORIES.other.cs, en: CATEGORIES[req.category]?.en || CATEGORIES.other.en } };
   return new Promise((resolve) => {
-    const timer = setTimeout(() => finish(id, 'timeout'), 20 * 60000);
+    const timer = setTimeout(() => finish(id, 'timeout'), 5 * 60000); // an unanswered question must not stall the agent for long
     pending.set(id, { req: full, resolve, waiters: [], timer });
     permBus.emit('pending', pendingList());
     const lang = req.lang === 'cs' ? 'cs' : 'en';
@@ -93,7 +94,9 @@ export function request(req) {
 function finish(id, choice) {
   const x = pending.get(id); if (!x) return false;
   clearTimeout(x.timer); pending.delete(id);
-  if (choice === 'always' && !x.req.alwaysAsk) setPolicy(x.req.key ? { rule: x.req.key, value: 'always' } : { category: x.req.category, value: 'always' });
+  if (choice === 'always' && !x.req.alwaysAsk) { const keys = x.req.keys?.length ? x.req.keys : x.req.key ? [x.req.key] : []; if (keys.length) for (const k of keys) setPolicy({ rule: k, value: 'always' }); else setPolicy({ category: x.req.category, value: 'always' }); }
+  // the same kind of question from other agents waiting at the same time is answered too
+  if (choice === 'always') for (const [oid, o] of [...pending]) if (oid !== id && !o.req.alwaysAsk) { const pol = getPolicy(), ks = o.req.keys?.length ? o.req.keys : o.req.key ? [o.req.key] : []; if (ks.length && ks.every((k) => pol.rules[k] === 'always')) finish(oid, 'once'); }
   const allow = choice === 'once' || choice === 'always';
   const res = allow ? { allow: true } : { allow: false, message: choice === 'timeout' ? 'Uživatel neodpověděl včas. Pokračuj bez této akce, nebo ji navrhni ve výsledku.' : 'Uživatel tuto akci nepovolil. Pokračuj jinou cestou bez ní.' };
   x.resolve(res); for (const w of x.waiters) w(res);
@@ -104,7 +107,99 @@ export const decide = (id, choice) => { if (!['once', 'always', 'deny'].includes
 export function cancelProject(project) { for (const [id, x] of pending) if (x.req.project === project) finish(id, 'deny'); }
 
 // ---------- what Claude asks about through --permission-prompt-tool ----------
-const SHELLS = new Set(['bash', 'sh', 'zsh', 'eval', 'exec', 'source', '.', 'osascript', 'env', 'xargs', 'nohup', 'time']);
+// Programs that run code given inline (asked each time); prefixes that only wrap the real program.
+const RISKY = new Set(['eval', 'exec', 'source', '.', 'osascript']);
+const WRAPPERS = new Set(['env', 'nohup', 'time', 'command', 'builtin', 'xargs', 'timeout', 'caffeinate']);
+const KEYWORDS = new Set(['if', 'then', 'else', 'elif', 'fi', 'for', 'while', 'until', 'do', 'done', 'case', 'esac', 'in', '{', '}', '!', '[[', ']]', 'function']);
+// Everyday, project-local programs: agents run them without asking (same spirit as the CLI allowlist in orchestrator.mjs)
+export const SAFE_PROGS = new Set(('cd pwd ls cat head tail wc sort uniq cut tr awk sed grep rg find echo printf test [ true false export set unset read sleep date which type ' +
+  'basename dirname realpath readlink stat file du df diff cmp comm tee touch mkdir cp mv ln chmod jq yq xxd od hexdump shasum md5 base64 seq nl column paste join fold expand ' +
+  'git node npm npx yarn pnpm bun deno python python3 pip3 pytest uv tsc vite vitest jest eslint prettier make swift swiftc xcodebuild xcrun go cargo rustc ruby java javac ' +
+  'curl wget zip unzip tar gzip gunzip open mdfind mdls sips textutil ffmpeg ffprobe pdftotext qlmanage plutil iconutil screencapture pbcopy pbpaste say afplay pandoc magick convert ' +
+  'ps lsof kill pkill pgrep top uptime whoami hostname uname sw_vers id env printenv bash sh zsh wait trap exit return local declare let').split(/\s+/));
+const TMP_OK = (f, cwd) => /^\/dev\/(null|stdout|stderr)$/.test(f) || /^\/(private\/)?tmp\//.test(f) || /^&?\d*$/.test(f) || (cwd && inside(path.resolve(cwd, f.replace(/^~(?=\/)/, HOME)), cwd)) || !f.startsWith('/') && !f.startsWith('~');
+/** Read the matching ")" of a "$(" that starts at `i`; quotes inside are respected. Returns [inner text, index after ")"]. */
+function closeParen(src, i) {
+  let depth = 1, j = i, q = null;
+  for (; j < src.length; j++) {
+    const c = src[j];
+    if (q) { if (c === '\\' && q === '"') j++; else if (c === q) q = null; continue; }
+    if (c === "'" || c === '"') q = c; else if (c === '\\') j++; else if (c === '(') depth++; else if (c === ')' && --depth === 0) break;
+  }
+  return [src.slice(i, j), j + 1];
+}
+/** A small POSIX-shell tokenizer: unquoted words, operators, redirections; heredoc bodies and comments dropped; $(…) and `…` collected. */
+function tokenize(src) {
+  const toks = [], subs = [], heredocs = []; let i = 0, word = null; const n = src.length;
+  const push = () => { if (word !== null) { toks.push({ w: word }); word = null; } };
+  while (i < n) {
+    const c = src[i];
+    if (c === '\n') { push(); toks.push({ op: ';' }); i++;
+      for (const d of heredocs.splice(0)) while (i < n) { let j = src.indexOf('\n', i); if (j < 0) j = n; const line = src.slice(i, j); i = j + 1; if ((d.strip ? line.replace(/^\t+/, '') : line).trim() === d.tag) break; }
+      continue; }
+    if (c === ' ' || c === '\t' || c === '\r') { push(); i++; continue; }
+    if (c === '#' && word === null) { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '\\') { if (src[i + 1] !== '\n') word = (word ?? '') + (src[i + 1] ?? ''); i += 2; continue; }
+    if (c === "'") { const j = src.indexOf("'", i + 1), e = j < 0 ? n : j; word = (word ?? '') + src.slice(i + 1, e); i = e + 1; continue; }
+    if (c === '"') { let v = ''; i++;
+      while (i < n && src[i] !== '"') {
+        if (src[i] === '\\' && i + 1 < n) { v += src[i + 1]; i += 2; continue; }
+        if (src[i] === '$' && src[i + 1] === '(') { const [inner, e] = closeParen(src, i + 2); if (src[i + 2] !== '(') subs.push(inner); v += '$(…)'; i = e; continue; }
+        if (src[i] === '`') { const j = src.indexOf('`', i + 1), e = j < 0 ? n : j; subs.push(src.slice(i + 1, e)); v += '$(…)'; i = e + 1; continue; }
+        v += src[i++];
+      }
+      i++; word = (word ?? '') + v; continue; }
+    if (c === '$' && src[i + 1] === '(') { const [inner, e] = closeParen(src, i + 2); if (src[i + 2] !== '(') subs.push(inner); word = (word ?? '') + '$(…)'; i = e; continue; }
+    if (c === '`') { const j = src.indexOf('`', i + 1), e = j < 0 ? n : j; subs.push(src.slice(i + 1, e)); word = (word ?? '') + '$(…)'; i = e + 1; continue; }
+    if (c === ';' || c === '|' || c === '&') {
+      const two = src.slice(i, i + 2);
+      if (two === '&>') { push(); toks.push({ op: 'redir', r: '>' }); i += src[i + 2] === '>' ? 3 : 2; continue; }
+      push(); toks.push({ op: two === '&&' || two === '||' || two === ';;' || two === '|&' ? two : c }); i += two === '&&' || two === '||' || two === ';;' || two === '|&' ? 2 : 1; continue; }
+    if (c === '<' || c === '>') {
+      if (word !== null && /^\d+$/.test(word)) word = null; // a file descriptor number such as 2>
+      push(); let r = c; i++;
+      if (src[i] === c) { r += c; i++; } if (r === '<<' && src[i] === '<') { r = '<<<'; i++; } else if (r === '<<' && src[i] === '-') { r = '<<-'; i++; }
+      if (src[i] === '&') { r += '&'; i++; }
+      if (r === '<<' || r === '<<-') { while (src[i] === ' ' || src[i] === '\t') i++; const m = /^(['"]?)([^\s'";|&<>()]+)\1/.exec(src.slice(i)); if (m) { heredocs.push({ tag: m[2], strip: r === '<<-' }); i += m[0].length; } continue; }
+      toks.push({ op: 'redir', r }); continue; }
+    if (c === '(' || c === ')' || c === '{' && word === null && /[\s;]/.test(src[i + 1] || ' ') || c === '}' && word === null) { push(); toks.push({ op: c }); i++; continue; }
+    word = (word ?? '') + c; i++;
+  }
+  push(); return { toks, subs };
+}
+/** Programs a shell command line runs (split on ; && || | & and newlines, plus $(…), `…` and sh -c "…"), whether it runs inline code, and whether it writes outside the project. */
+export function shellPrograms(cmd, cwd, depth = 0) {
+  const progs = []; let risky = false, writesOutside = false;
+  if (depth > 4) return { progs, risky: true, writesOutside };
+  const { toks, subs } = tokenize(String(cmd || ''));
+  const segs = []; let cur = [];
+  for (let k = 0; k < toks.length; k++) {
+    const t = toks[k];
+    if (t.op === 'redir') { const target = toks[k + 1]?.w; if (target !== undefined) { k++; if (/^>/.test(t.r) && !/&$/.test(t.r) && !TMP_OK(target, cwd)) writesOutside = true; } continue; }
+    if (t.op) { if (cur.length) segs.push(cur); cur = []; continue; }
+    cur.push(t.w);
+  }
+  if (cur.length) segs.push(cur);
+  for (const words of segs) {
+    if (/^(for|select|case)$/.test(words[0])) continue; // loop / case header: only a variable and a list
+    let i = 0;
+    while (i < words.length && (KEYWORDS.has(words[i]) || /^[A-Za-z_][A-Za-z0-9_]*\+?=/.test(words[i]) || WRAPPERS.has(words[i]) || (/^-/.test(words[i]) && i > 0 && WRAPPERS.has(words[i - 1])))) i++;
+    if (i >= words.length) continue;
+    const w = words[i];
+    if (w.startsWith('$') || w.endsWith(')') && w.includes('(')) continue; // a variable or function call: its parts are judged on their own
+    const prog = path.basename(w);
+    if (['bash', 'sh', 'zsh'].includes(prog)) {
+      const ci = words.findIndex((x, k) => k > i && /^-\w*c\w*$/.test(x));
+      if (ci > 0 && words[ci + 1] !== undefined) { const r = shellPrograms(words[ci + 1], cwd, depth + 1); progs.push(...r.progs); risky ||= r.risky; writesOutside ||= r.writesOutside; continue; }
+      if (!words.slice(i + 1).some((x) => !x.startsWith('-'))) risky = true; // a shell reading commands from a pipe
+    }
+    if (RISKY.has(prog)) risky = true;
+    if (prog === 'rm') { const rest = words.slice(i + 1).filter((x) => !x.startsWith('-')); if (!rest.length || rest.some((f) => !TMP_OK(f, cwd))) progs.push('rm'); continue; }
+    progs.push(prog);
+  }
+  for (const sub of subs) { const r = shellPrograms(sub, cwd, depth + 1); progs.push(...r.progs); risky ||= r.risky; writesOutside ||= r.writesOutside; }
+  return { progs: [...new Set(progs)], risky, writesOutside };
+}
 const INSTALL = /^(brew\s+(install|upgrade|reinstall|tap)|pip3?\s+install|python3?\s+-m\s+pip\s+install|npm\s+(i|install)\s+(-g|--global)|gem\s+install|cargo\s+install|go\s+install|pipx\s+install|uv\s+(tool\s+)?install|mas\s+install)\b/;
 const inside = (f, dir) => { try { const a = path.resolve(f), b = path.resolve(dir); return a === b || a.startsWith(b + path.sep); } catch { return false; } };
 const shortPath = (f) => String(f || '').replace(HOME, '~');
@@ -125,9 +220,13 @@ export function classify(tool, input = {}, ctx = {}) {
       const what = cmd.split(/\s+/).slice(2).filter((w) => !w.startsWith('-')).join(', ').slice(0, 80);
       return { verdict: 'ask', category: 'install', key: null, alwaysAsk: false, cs: [`Nainstalovat: ${what || cmd.slice(0, 60)}`, `${desc ? desc + '\n' : ''}Příkaz: ${cmd.slice(0, 400)}`], en: [`Install: ${what || cmd.slice(0, 60)}`, `${desc ? desc + '\n' : ''}Command: ${cmd.slice(0, 400)}`] };
     }
-    const prog = path.basename(cmd.split(/\s+/)[0] || '');
-    const remember = !SHELLS.has(prog) && !/[;&|`$<>]/.test(cmd) ? `shell:${prog}` : null;
-    return { verdict: 'ask', category: 'shell', key: remember, alwaysAsk: !remember, cs: [`Spustit program „${prog}“`, `${desc ? desc + '\n' : ''}Příkaz: ${cmd.slice(0, 500)}`], en: [`Run the program “${prog}”`, `${desc ? desc + '\n' : ''}Command: ${cmd.slice(0, 500)}`] };
+    // A command line is judged by the programs it runs: `cd x && npm test`, `S=…; sed …; cat …` are everyday work.
+    const { progs, risky, writesOutside } = shellPrograms(cmd, ctx.cwd);
+    const unknown = progs.filter((x) => !SAFE_PROGS.has(x));
+    if (!unknown.length && !risky && !writesOutside) return { verdict: 'allow' };
+    const keys = [...new Set(unknown.length ? unknown : progs.slice(0, 1))].map((x) => `shell:${x}`);
+    const prog = (unknown.length ? unknown : progs).slice(0, 3).join(', ') || cmd.split(/\s+/)[0];
+    return { verdict: 'ask', category: 'shell', key: keys[0] || null, keys, alwaysAsk: risky || writesOutside || !keys.length, cs: [writesOutside ? `Zapsat soubor mimo projekt (${prog})` : `Spustit program „${prog}“`, `${desc ? desc + '\n' : ''}Příkaz: ${cmd.slice(0, 500)}`], en: [writesOutside ? `Write a file outside the project (${prog})` : `Run the program “${prog}”`, `${desc ? desc + '\n' : ''}Command: ${cmd.slice(0, 500)}`] };
   }
   if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool)) {
     const f = input.file_path || input.notebook_path || '';

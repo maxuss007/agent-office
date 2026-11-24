@@ -7,6 +7,7 @@ import { EventEmitter } from 'node:events';
 import { publishReports } from './report.mjs';
 import { resetTimeFromText } from './claude-usage.mjs';
 import os from 'node:os';
+import dns from 'node:dns';
 import { claudeSnapshot } from './claude-bridge.mjs';
 import { providerEnv } from './provider-auth.mjs';
 import { providerCatalog, normalizeModelId, chooseRoute, runCodex, recordLimit, markUnavailable, clearBlocked, isModelUnavailable, markModelUnavailable, routingPreference, recordFeature, ultrareviewPref } from './providers.mjs';
@@ -504,6 +505,19 @@ async function waitForCapacity(p, name, entry, provider, until, message) {
   if ([...(L?.running.values() || [])].every((e) => e === entry || !e.waitingLimit)) { st.limit = null; if (st.status === 'limit') st.status = 'running'; }
   agent(p, name, { status: 'working', activity: 'pokračuji po limitu' }); save(p);
 }
+// ---------- lost internet: wait for the connection instead of failing the task ----------
+const OFFLINE = /ENOTFOUND|EAI_AGAIN|ECONNREFUSED|ECONNRESET|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|Can't reach the API|waiting for network|error sending request|Connection failed|socket hang up|network error/i;
+export const isOffline = (msg) => OFFLINE.test(String(msg || ''));
+async function waitOnline(p, name, entry, provider) {
+  const L = live.get(p.state.id), host = provider === 'codex' ? 'chatgpt.com' : 'api.anthropic.com';
+  agent(p, name, { status: 'waiting', activity: 'Bez internetu · čekám na spojení' });
+  for (let i = 0; ; i++) {
+    await new Promise((ok) => setTimeout(ok, i ? 15000 : 5000));
+    if (L?.stopped) throw new Error('stopped');
+    try { await dns.promises.lookup(host); break; } catch {}
+  }
+  agent(p, name, { status: 'working', activity: 'spojení je zpět, pokračuji' });
+}
 /** "Zkusit znovu": wake every agent parked on a limit now; a project that is not running is resumed. */
 export function retryNow(id) {
   const L = live.get(id);
@@ -524,7 +538,7 @@ async function ask(p, name, o0) {
   const rid = crypto.randomUUID(); L.running.set(rid, entry);
   st.agents[name] = { ...(st.agents[name] || {}), task: o.label || st.agents[name]?.task || '' };
   if (!o.quiet) feedPush(p, name, { kind: 'task', text: o.label || 'úkol', model: o.model, effort: o.effort });
-  let attempt = 0, timeoutRetries = 0, modelSwitches = 0;
+  let attempt = 0, timeoutRetries = 0, modelSwitches = 0, netRetries = 0;
   try {
     for (;;) {
       if (L.stopped) throw new Error('stopped');
@@ -566,6 +580,7 @@ async function ask(p, name, o0) {
         tokens.input += r.usage?.input_tokens || 0; tokens.output += r.usage?.output_tokens || 0; tokens.cached += r.usage?.cached_input_tokens || r.usage?.cache_read_input_tokens || 0;
         st.stats.cost += r.cost; agent(p, name, { status: 'idle', activity: '' });
         recordAttempt(p, { role: name, task: o.label || '', taskId: o.taskId || null, provider: selected.provider, model: selected.model, effort: selected.effort, ms: Date.now() - t0, outcome: 'ok', tokens: tokensOf(selected.provider, r.usage), cost: r.cost || 0 });
+        st.errorRetries = 0;
         if (r.session) { st.agentSession ||= {}; st.agentSession[name] = r.session; (st.ownSessions ||= []).push(r.session); if (st.ownSessions.length > 200) st.ownSessions.shift(); }
         return r;
       } catch (e) {
@@ -589,6 +604,12 @@ async function ask(p, name, o0) {
           feedPush(p,name,{kind:'sys',text:'Obnovuji krok po timeoutu; hotové soubory zůstávají.'});continue;
         }
 
+        if (!smoke && !e.limit && isOffline(e.message) && netRetries++ < 30) {
+          st.stats.runs = Math.max(0, st.stats.runs - 1); // nothing was done, it does not eat the run budget
+          if (netRetries === 1) log(p, name, 'Spojení se službou vypadlo – počkám na internet a zkusím to znovu (nic se neztratí).');
+          await waitOnline(p, name, entry, entry.provider);
+          continue;
+        }
         if (!smoke && entry.model && !e.limit && isModelUnavailable(e.message) && modelSwitches++ < 3) {
           st.stats.runs = Math.max(0, st.stats.runs - 1); // the model refused before doing any work
           markModelUnavailable(entry.model, e.message);
@@ -1038,6 +1059,15 @@ async function pipeline(p, { resume = false } = {}) {
   const verified = verifiedDone(judged);
   if (!verified) {
     writePartialFinal(p, judged ? 'došel počet kol a povinná kritéria nejsou všechna ověřená' : 'kontrola neproběhla'); learn(p); publishHtml(p);
+    // Not done yet: keep working with more rounds as long as the rounds still move the result forward.
+    const ac = st.autoContinue ||= { stale: 0, best: null };
+    if (st.score != null && (ac.best == null || st.score > ac.best)) { ac.best = st.score; ac.stale = 0; } else ac.stale++;
+    if (ac.stale < 3) {
+      st.status = 'interrupted'; agent(p, 'boss', { status: 'working', activity: 'pokračuji dalším kolem' });
+      log(p, 'boss', `Ještě to není hotové (chybí: ${st.final.remaining.slice(0, 3).join('; ')}) – pokračuji dalším kolem.`);
+      scheduleAutoRetry(p, 5000, { extraRuns: 0, extraRounds: 1 }); save(p); return;
+    }
+    log(p, 'boss', 'Tři kola po sobě výsledek nezlepšila – zastavuji se a vracím rozpracovaný výsledek. Napiš mi, jak dál, nebo dej Pokračovat.');
     st.status = 'partial'; agent(p, 'boss', { status: 'idle', activity: 'rozpracováno' }); save(p);
     log(p, 'boss', `Rozpracováno – chybí: ${st.final.remaining.slice(0, 4).join('; ')}`); notify(p, 'Projekt rozpracovaný', st.final.remaining.slice(0, 3).join(' | ')); return;
   }
@@ -1226,10 +1256,15 @@ function runPipeline(p, opts = {}) {
   live.set(state.id, { p, children: new Set(), stopped: false, running: new Map(), lock: Promise.resolve() });
   save(p);
   pipeline(p, opts).catch((e) => {
-    if (e.message === 'stopped') { state.limit = null; state.status = live.get(state.id)?.paused ? 'paused' : 'stopped'; if (state.status === 'paused') log(p, 'boss', 'Pozastaveno. Až budeš chtít, navážu přesně tady.'); }
-    else if (e.budget) { if (p.ctx) writePartialFinal(p, 'vyčerpal se rozpočet běhů'); state.status = 'partial'; log(p, 'boss', 'Vyčerpán rozpočet běhů – vracím rozpracovaný výsledek se seznamem mezer.'); }
-    else { if (p.ctx) writePartialFinal(p, `chyba: ${String(e.message).slice(0, 160)}`); state.status = 'error'; log(p, 'boss', `Chyba: ${e.message}`); }
-    save(p); notify(p, `Projekt ${state.status}`, e.message);
+    if (e.message === 'stopped') { state.limit = null; state.autoRetryAt = null; state.status = live.get(state.id)?.paused ? 'paused' : 'stopped'; if (state.status === 'paused') log(p, 'boss', 'Pozastaveno. Až budeš chtít, navážu přesně tady.'); save(p); return; }
+    // Until the user pauses or stops it, a project keeps going: a used-up run budget or an error is retried by itself.
+    if (e.budget) { state.status = 'interrupted'; log(p, 'boss', 'Došel rozpočet běhů – přidávám další a pokračuji.'); scheduleAutoRetry(p, 5000, { extraRuns: 0 }); save(p); return; }
+    if (p.ctx) writePartialFinal(p, `chyba: ${String(e.message).slice(0, 160)}`);
+    state.status = 'error'; state.errorRetries = (state.errorRetries || 0) + 1;
+    const wait = [1, 2, 5, 10, 15][state.errorRetries - 1] || 30;
+    log(p, 'boss', `Chyba: ${String(e.message).slice(0, 200)} – zkusím to sám znovu za ${wait} min (nic se neztratilo).`);
+    scheduleAutoRetry(p, wait * 60000, { extraRuns: 1 });
+    save(p); if (state.errorRetries === 1) notify(p, 'Projekt narazil na chybu', `Zkusím to znovu za ${wait} min.`);
   });
   return state;
 }
@@ -1247,7 +1282,7 @@ export function startProject({ repoId, preset = 'general', goal, cwd, notes = ''
     const dir = path.join(PROJECTS_DIR, old.id); const st = old;
     (st.history ||= []).push({ goal: st.goal, started: st.started || null, finished: now(), status: st.status, score: st.score, summary: st.final?.summary || '', maxRounds: st.settings?.maxRounds, mode: st.settings?.mode || 'full' });
     (st.history[st.history.length - 1]).human = st.human || null; (st.history[st.history.length - 1]).accepted = !!st.accepted;
-    Object.assign(st, { goal, notes, preset, started: now(), status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
+    Object.assign(st, { goal, notes, preset, started: now(), status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, autoContinue: null, errorRetries: 0, autoRetryAt: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
     for (const k of Object.keys(st.agents)) st.agents[k] = { ...st.agents[k], status: 'idle', activity: '' };
     st.agents.boss = { ...st.agents.boss, status: 'working', activity: 'start' };
     const p = { state: st, dir, feeds: (() => { try { return JSON.parse(read(path.join(dir, 'feeds.json'), '{}')); } catch { return {}; } })() };
@@ -1269,7 +1304,7 @@ export function resumeProject(id, { extraRuns = 0, extraRounds = 0 } = {}) {
   if (live.has(id) && ['running', 'waiting_user'].includes(live.get(id).p.state.status)) throw new Error('Projekt právě běží.');
   const st = readState(id); if (!st) throw new Error('Projekt neexistuje.');
   if (!['error', 'stopped', 'paused', 'partial', 'budget', 'interrupted', 'limit'].includes(st.status)) throw new Error('Pokračovat jde jen u nedokončeného projektu.');
-  st.limit = null;
+  st.limit = null; st.autoRetryAt = null; cancelAutoRetry(id);
   const dir = path.join(PROJECTS_DIR, id);
   st.status = 'running'; st.final = null;
   st.settings.maxRuns = (st.settings.maxRuns || 40) + (extraRuns || Math.ceil((st.settings.maxRuns || 40) / 2));
@@ -1321,17 +1356,37 @@ export function openOfficeIn(repoId, app) {
 /** After a server restart: projects that were mid-flight continue by themselves from their last verified state.
  *  Each run starts with a clean context and reads its state from the office files, so a crash stops nothing.
  *  A project that keeps dying is left alone after 3 automatic restarts within an hour. */
+/** Resume a project by itself later (error back-off, more budget, another round). Survives an app restart via state.autoRetryAt. */
+const retryTimers = new Map();
+function scheduleAutoRetry(p, ms, opts = {}) {
+  const st = p.state; st.autoRetryAt = new Date(Date.now() + ms).toISOString(); st.autoRetryOpts = opts;
+  armRetry(st.id, ms, opts);
+}
+function armRetry(id, ms, opts = {}) {
+  clearTimeout(retryTimers.get(id));
+  const t = setTimeout(() => {
+    retryTimers.delete(id);
+    if (live.has(id) && ['running', 'waiting_user'].includes(live.get(id).p.state.status)) return;
+    const cur = readState(id); if (!cur || !cur.autoRetryAt || ['paused', 'stopped', 'done'].includes(cur.status)) return;
+    live.delete(id);
+    try { resumeProject(id, opts); } catch (e) { console.error('auto-retry', id, e.message); }
+  }, Math.max(1000, ms));
+  t.unref?.(); retryTimers.set(id, t);
+}
+const cancelAutoRetry = (id) => { clearTimeout(retryTimers.get(id)); retryTimers.delete(id); clearTimeout(limitTimers.get(id)); limitTimers.delete(id); };
 export function autoResume() {
   const resumed = [];
   for (const r of loadRepos()) {
     if (!r.projectId || r.archived || live.has(r.projectId)) continue;
     let raw; try { raw = JSON.parse(read(path.join(PROJECTS_DIR, r.projectId, 'state.json'))); } catch { continue; }
     if (raw.status === 'limit') { scheduleLimitResume(r.projectId, raw.limit?.until || Date.now()); resumed.push(r.name + ' (po limitu)'); continue; } // waits for the reset, not 3 failed attempts
-    if (raw.status !== 'running') continue; // waiting_user, stopped, paused, error, partial: the user decides
+    if (raw.autoRetryAt && ['error', 'interrupted', 'partial'].includes(raw.status)) { armRetry(r.projectId, Date.parse(raw.autoRetryAt) - Date.now(), raw.autoRetryOpts || { extraRuns: 1 }); resumed.push(r.name + ' (naplánováno)'); continue; }
+    if (!['running', 'waiting_user', 'interrupted'].includes(raw.status)) continue; // paused, stopped, done, partial without a plan: the user decides
+    // Only pause/stop ends a run. Repeated crashes are slowed down, never given up on.
     const recent = (raw.autoResumes || []).filter((t) => Date.now() - Date.parse(t) < 3600e3);
-    if (recent.length >= 3) { raw.status = 'error'; (raw.log ||= []).push({ t: now(), who: 'boss', msg: 'Projekt se třikrát za hodinu přerušil – nepokračuji automaticky. Použij „Pokračovat“.' }); fs.writeFileSync(path.join(PROJECTS_DIR, r.projectId, 'state.json'), JSON.stringify(raw, null, 2)); continue; }
-    raw.autoResumes = [...recent, now()]; raw.status = 'interrupted';
+    raw.autoResumes = [...recent, now()].slice(-10); raw.status = 'interrupted';
     fs.writeFileSync(path.join(PROJECTS_DIR, r.projectId, 'state.json'), JSON.stringify(raw, null, 2));
+    if (recent.length >= 3) { armRetry(r.projectId, 10 * 60000, { extraRuns: 1 }); resumed.push(r.name + ' (za 10 min)'); continue; }
     try { const st = resumeProject(r.projectId, { extraRuns: 1 }); log(live.get(st.id).p, 'boss', 'Aplikace se restartovala – pokračuji sám od posledního ověřeného stavu.'); resumed.push(r.name); } catch {}
   }
   return resumed;
@@ -1344,10 +1399,19 @@ function scheduleLimitResume(id, until) {
 }
 export function stopAll() { for (const L of live.values()) { L.stopped = true; for (const entry of L.running.values()) entry.wakeRetry?.(); for (const c of L.children) try { c.kill(); } catch {} } }
 /** Pause = stop the running agents now, keep everything; "Pokračovat" resumes from the last verified state. */
-export function pauseProject(id) { const L = live.get(id); if (!L) return false; L.paused = true; return stopProject(id); }
+export function pauseProject(id) { const L = live.get(id); if (!L || !['running', 'waiting_user'].includes(L.p.state.status)) return parkIdle(id, 'paused'); L.paused = true; return stopProject(id); }
+/** Pause/stop a project that is between attempts (waiting for an automatic retry): it then stays put. */
+function parkIdle(id, status) {
+  cancelAutoRetry(id);
+  const st = readState(id); if (!st || ['done', 'paused', 'stopped'].includes(st.status)) return false;
+  st.status = status; st.autoRetryAt = null; st.limit = null;
+  const p = live.get(id)?.p || { state: st, dir: path.join(PROJECTS_DIR, id) };
+  if (status === 'paused') log(p, 'boss', 'Pozastaveno. Až budeš chtít, navážu přesně tady.');
+  save(p); return true;
+}
 export function stopProject(id) {
   cancelPermissions(id);
-  const L = live.get(id); if (!L) return false;
+  const L = live.get(id); if (!L || !['running', 'waiting_user'].includes(L.p.state.status)) return parkIdle(id, 'stopped');
   L.stopped = true; for (const entry of L.running.values()) entry.wakeRetry?.(); for (const c of L.children) c.kill();
   return true;
 }
