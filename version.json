@@ -1,7 +1,7 @@
 {
-  "version": "1.6.0",
+  "version": "1.6.1",
   "shell": 6,
   "repo": "maxuss007/agent-office",
   "branch": "main",
-  "notes": "Projects keep going until you pause or stop them: errors are retried by themselves, a lost internet connection is waited out, a used-up run budget is extended, unfinished work gets more rounds while it improves, and after a restart of the app or the Mac work continues (the app adds itself to Login Items once). Shell commands are judged by the programs they run, so everyday commands no longer ask again and again, and an unanswered question waits 5 minutes instead of 20. Needs the new app (DMG)."
+  "notes": "Faster team: up to 4 agents at once, and agents that write different files work at the same time; the extra double check runs only in the first round. Every agent gets the skills that fit its position. Agents on Codex run without your own Codex plugins (no more Chrome crash dialogs). The time estimate counts only working time, a quiet model shows 'thinking', and Fable credit errors no longer appear as the boss's message."
 }

@@ -18,3 +18,7 @@
   take a screenshot, click through it. Prefer `open`/`applescript` over clicking when an app is scriptable; take a
   screenshot before clicking and click on coordinates from that screenshot. The user is asked before sensitive actions;
   if something is not allowed, carry on without it and say so in `uncertainties`. Never type passwords or payment data.
+- Never start Google Chrome, Chromium or another GUI browser from the shell, not even `--headless`, and no
+  Playwright/Puppeteer that launches one: in the agent sandbox it crashes at once and the user gets a crash dialog.
+  To look at a page or document, `open` it with the Mac tools and take a `screenshot`; for an image of a file use
+  `qlmanage -t -s 1400 -o <dir> <file>` (Quick Look) or `sips`. If none of that is available, say so in `uncertainties`.

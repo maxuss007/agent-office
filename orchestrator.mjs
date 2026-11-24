@@ -31,7 +31,7 @@ const DEFAULT_CFG = {
   ntfyTopic: '', // optional: set to get phone pushes via ntfy.sh (sends question text to that service)
   // Everyday programs agents run on their own. Anything else is asked about in plain language (permissions.mjs);
   // the really dangerous things (sudo, passwords, system security, git push, deleting everything) are never allowed.
-  bash: ['git *', 'node *', 'npm *', 'npx *', 'python3 *', 'python *', 'curl *', 'wget *', 'ls *', 'cat *', 'mkdir *', 'open *', 'kill *', 'lsof *', 'sleep *', '*Google Chrome*',
+  bash: ['git *', 'node *', 'npm *', 'npx *', 'python3 *', 'python *', 'curl *', 'wget *', 'ls *', 'cat *', 'mkdir *', 'open *', 'kill *', 'lsof *', 'sleep *',
     'find *', 'grep *', 'rg *', 'head *', 'tail *', 'wc *', 'sort *', 'uniq *', 'jq *', 'zip *', 'unzip *', 'tar *', 'gzip *', 'cp *', 'mv *', 'touch *', 'date*', 'echo *', 'printf *', 'pwd', 'which *', 'diff *', 'file *', 'du *', 'df *', 'ps *', 'cut *', 'tr *', 'awk *', 'sed *', 'basename *', 'dirname *', 'realpath *', 'shasum *', 'md5 *', 'base64 *', 'test *',
     'mdfind *', 'mdls *', 'sips *', 'textutil *', 'ffmpeg *', 'ffprobe *', 'pdftotext *', 'qlmanage *', 'plutil *', 'iconutil *', 'screencapture *', 'pbcopy*', 'pbpaste*', 'say *', 'afplay *', 'pandoc *', 'magick *', 'convert *',
     'yarn *', 'pnpm *', 'bun *', 'deno *', 'make *', 'swift *', 'swiftc *', 'xcodebuild *', 'xcrun *', 'pytest *', 'pip3 show*', 'pip3 list*', 'brew list*', 'brew info*', 'brew search*'],
@@ -304,7 +304,8 @@ function runClaude(p, o) {
               for (const m of JSON.stringify(b.input || {}).matchAll(IMG)) imgs.add(m[1]);
             } else if (b.type === 'text' && !o.quiet) {
               const tx = (b.text || '').trim();
-              if (tx && !(tx.startsWith('{') && tryParse(tx))) feedPush(p, o.agent, { kind: 'text', text: tx });
+              // the CLI also prints its own errors as text ("Fable requires usage credits", "API Error: …"): those are handled, not said by the agent
+              if (tx && !(tx.startsWith('{') && tryParse(tx)) && !isModelUnavailable(tx) && !/^API Error:/i.test(tx)) feedPush(p, o.agent, { kind: 'text', text: tx });
             }
           }
         } else if (ev.type === 'result') result = ev;
@@ -379,7 +380,7 @@ export function skillsCatalog(force = false) {
 }
 function skillText(names) {
   const cat = skillsCatalog(); let out = '';
-  for (const n of (names || []).slice(0, 3)) {
+  for (const n of (names || []).slice(0, 4)) {
     const sk = cat.find((x) => x.name === n) || cat.find((x) => x.name.endsWith(':' + n)); if (!sk) continue;
     const body = read(path.join(sk.dir, 'SKILL.md')).replace(/^---[\s\S]*?---\s*/, '').slice(0, 7000);
     out += `\n\nSKILL "${sk.name}" – follow it for this task (its reference files, if it mentions any, are in ${sk.dir}; you may Read them):\n${body}`;
@@ -391,6 +392,30 @@ function autoSkills(t) {
   const words = new Set(`${t.title} ${t.question || ''} ${String(t.instructions || '').slice(0, 400)}`.toLowerCase().match(/[a-z][a-z-]{3,}/g) || []);
   const scored = skillsCatalog().map((k) => { const kw = `${k.name} ${k.desc}`.toLowerCase().match(/[a-z][a-z-]{3,}/g) || []; const nameHit = k.name.toLowerCase().split(/[:-]/).filter((w) => w.length > 3 && words.has(w)).length; return { k, score: nameHit * 3 + kw.filter((w) => words.has(w)).length }; }).filter((x) => x.score >= 5).sort((a, b) => b.score - a.score);
   return scored.slice(0, 1).map((x) => x.k.name);
+}
+/** Every agent gets the installed skills that fit its position, whatever language the role and task are written in
+ *  (the word match in autoSkills only catches English). First matching rule wins its slots; up to 3 skills in all. */
+const ROLE_SKILLS = [
+  [/research|výzkum|rešerš|analyt|průzkum|studi|zdroj|srovn|compar|market.?research/i, ['deep-research', 'anthropic-skills:deep-research', 'web-research-primary-sources', 'sourced-vendor-research-matrix', 'customer-research', 'competitor-profiling']],
+  [/tester|test|kontrol|ověř|verif|qa\b|review|audit/i, ['scorecard-before-work', 'deliverable-claim-code-check', 'node-test-runner-fallback', 'browser-ui-verification']],
+  [/design|designér|\bui\b|\bux\b|vzhled|grafi|landing/i, ['ui-ux-pro-max', 'emil-design-eng', 'apple-design', 'design-system', 'design', 'animate']],
+  [/backend|frontend|vývoj|develop|engineer|program|kód|code|architekt|architect|devops|typescript|python|swift|node/i, ['karpathy-guidelines', 'node-test-runner-fallback', 'sandboxed-shell-fallbacks']],
+  [/copy|text|píš|writer|autor|dokument|report|zpráv|redakt|editor|obsah|content|strateg/i, ['copywriting', 'copy-editing', 'content-strategy']],
+  [/marketing|seo|reklam|ads?\b|kampa|growth|sociál|social|brand|značk/i, ['marketing-plan', 'seo', 'ad-creative', 'brand', 'social']],
+  [/financ|pricing|cenotvorb|rozpočet|budget|ekonom/i, ['pricing', 'offers', 'sourced-vendor-research-matrix']],
+  [/prodej|sales|obchod|outreach|lead/i, ['sales-enablement', 'cold-email', 'prospecting']],
+  [/práv|legal|gdpr|smlouv|compliance/i, ['czech-legal-footer', 'web-research-primary-sources']],
+  [/\b3d\b|blender|rendering/i, ['blender-core', 'blender-workflow-recipes']],
+];
+export function kindSkills(t, p) {
+  const role = p ? roleOf(p.state, t.role) : null;
+  // the position itself decides; what the role is responsible for and the task title only help when the title says nothing
+  const position = `${/^R-/.test(t.id || '') ? 'research' : ''} ${t.role || ''} ${role?.title || ''}`;
+  const detail = `${String(role?.responsibility || '').slice(0, 300)} ${t.title || ''}`;
+  const rules = ROLE_SKILLS.filter(([re]) => re.test(position));
+  const names = new Set(skillsCatalog().map((k) => k.name)), out = [];
+  for (const [, list] of rules.length ? rules : ROLE_SKILLS.filter(([re]) => re.test(detail))) for (const n of list.filter((x) => names.has(x)).slice(0, 2)) if (out.length < 3 && !out.includes(n)) out.push(n);
+  return out;
 }
 function writeSkillsIndex(p) { // workers may open any skill themselves
   try { fs.writeFileSync(path.join(p.ctx.office, 'SKILLS.md'), `# Skills library\n\nOpen <dir>/SKILL.md of any skill that fits your task and follow it.\n\n${skillsCatalog().map((k) => `- **${k.name}** – ${k.desc} → \`${k.dir}\``).join('\n')}\n`); } catch {}
@@ -568,7 +593,7 @@ async function ask(p, name, o0) {
         if (selected.provider === 'claude' && st.lastProvider?.[name] && st.lastProvider[name] !== 'claude') { delete opts.resume; opts.sessionId = crypto.randomUUID(); }
         const r = selected.provider === 'claude' ? await runClaude(p, opts) : await runCodex(p, opts, {
           entry,
-          onEvent: (e) => { feedPush(p, name, e); if (e.kind === 'tool') agent(p, name, { activity: e.text }); },
+          onEvent: (e) => { feedPush(p, name, e); if (e.kind === 'tool') agent(p, name, { activity: e.text }); else if (e.thinking) agent(p, name, { activity: 'Přemýšlí nad tím, co zjistil…' }); },
           onChild: (child, add) => add ? L.children.add(child) : L.children.delete(child),
         });
         if (L.stopped) throw new Error('stopped');
@@ -612,10 +637,10 @@ async function ask(p, name, o0) {
         }
         if (!smoke && entry.model && !e.limit && isModelUnavailable(e.message) && modelSwitches++ < 3) {
           st.stats.runs = Math.max(0, st.stats.runs - 1); // the model refused before doing any work
-          markModelUnavailable(entry.model, e.message);
+          markModelUnavailable(entry.model, e.message, /usage credits/i.test(e.message) ? 24 : 6); // credits do not come back by themselves within hours
           o = { ...o, excludeModels: [...(o.excludeModels || []), entry.model] };
           log(p, name, `${entry.model} teď není dostupný (${String(e.message).slice(0, 80)}) – pokračuji s jiným modelem.`);
-          feedPush(p, name, { kind: 'sys', text: `${entry.model} nedostupný → jiný model` });
+          feedPush(p, name, { kind: 'sys', text: `${String(entry.model).replace('claude/', '')} teď není k dispozici – pokračuji s jiným modelem` });
           continue;
         }
         if (e.limit) {
@@ -790,7 +815,8 @@ async function worker(p, t, ctx) {
   const isRO = role.base ? READONLY.has(t.role) : !tl.includes('write');
   const cwd = t.role === 'researcher' || isRO ? ctx.office : ctx.work;
   const system = `${role.base ? roleSys(t.role) : `${role.prompt}\n\nYou are ${role.name}, ${role.title}. ${PERSONALITY[role.character] || ''} (flavour only; never at the cost of quality)`}\n\n${roleSys('_contract')}`;
-  if (!(t.skills || []).length && !t.command) t.skills = autoSkills(t);
+  // the boss's picks first, then what fits the agent's position, then a plain word match on the task
+  if (!t.command) t.skills = [...new Set([...(t.skills || []), ...kindSkills(t, p), ...autoSkills(t)])].slice(0, 4);
   const skillDirs = [...new Set(skillRoots().map(([d]) => d))];
   const prompt = `Office files (read only what you need): ${ctx.office}/BRIEF.md (goal, assumptions, answers) · SCORECARD.md (definition of done) · TASTE.md · DECISIONS.md · SKILLS.md (library of expert skills: open and follow any that fits your task – prefer a skill over improvising).\nWorking dir (project files): ${ctx.work}\n\nTASK ${t.id}: ${t.title}\n${t.question ? `Question it answers: ${t.question}\nInputs that already exist (reuse, do not redo): ${(t.inputs || []).join('; ') || '-'}\nOutput to create: ${t.output || '-'}\nUsed by: ${t.consumer || '-'}\n` : ''}${t.instructions}\n\nACCEPTANCE:\n${(t.acceptance || []).map((a) => '- ' + a).join('\n')}${skillText(t.skills)}`;
   const tools = [...new Set(['Read', 'Glob', 'Grep', 'Write', ...(tl.includes('write') ? ['Edit'] : []), ...(tl.includes('web') ? ['WebSearch', 'WebFetch'] : [])])];
@@ -839,22 +865,33 @@ function writeBoard(p) {
 }
 const isReader = (st, t) => { const r = roleOf(st, t.role); return !!r && (r.base ? READONLY.has(t.role) : !(r.tools || []).includes('write')); };
 async function runTasks(p, tasks, ctx) {
-  const st = p.state; const conc = Math.max(1, st.settings.concurrency || 2);
+  const st = p.state; const conc = Math.max(st.settings.concurrency || 0, 4); // 2 at a time left most of the team waiting
   for (const t of tasks) { t.status = 'pending'; t.claimedBy = null; const i = st.tasks.findIndex((x) => x.id === t.id); if (i >= 0) st.tasks[i] = t; else st.tasks.push(t); }
   writeBoard(p); save(p);
   const depsDone = (t) => (t.depends_on || []).every((d) => { const x = st.tasks.find((y) => y.id === d); return !x || x.status === 'done' || x.status === 'failed'; });
-  let writerBusy = false;
+  // Writers share one working copy, so two of them never touch the same place – but a document and the code,
+  // or two different documents, are written at the same time (before: strictly one writer at a time).
+  // `output` is free text from the plan ("deliverables/a.md (edited) + office/handoffs/G2.md"): take the paths in it
+  const scope = (t) => {
+    const parts = String(t.output || '').replace(/\((?:\+\s*)?[^)]*\)/g, ' ').split(/\s+\+\s+|,\s*|\s+(?:a|and)\s+/);
+    const paths = parts.map((x) => x.trim().replace(/\/\*.*$/, '/')).filter((x) => /^(\/|~\/)?[\w.@-]+(\/[\w.@ -]*)*$/.test(x) && /[./]/.test(x));
+    return paths.length ? paths.map((x) => path.resolve(ctx.work, x.replace(/^~(?=\/)/, os.homedir()))) : null;
+  };
+  const clash1 = (a, b) => a === b || a.startsWith(b + path.sep) || b.startsWith(a + path.sep);
+  const clash = (A, B) => !A || !B || A.some((a) => B.some((b) => clash1(a, b)));   // unknown scope = exclusive
+  const writing = new Set();
+  const canWrite = (t) => { const sc = scope(t); return ![...writing].some((w) => clash(w, sc)); };
   const slot = async () => {
     for (;;) {
-      // a free worker looks at the board and takes the first ready task it is allowed to do (one writer at a time: shared working copy)
-      const t = tasks.find((x) => x.status === 'pending' && depsDone(x) && (isReader(st, x) || !writerBusy) && claim(p, x, x.role));
+      // a free worker looks at the board and takes the first ready task it is allowed to do
+      const t = tasks.find((x) => x.status === 'pending' && depsDone(x) && (isReader(st, x) || canWrite(x)) && claim(p, x, x.role));
       if (!t) {
         if (live.get(st.id)?.stopped || !tasks.some((x) => x.status === 'running')) return; // stopped, or nothing running and nothing claimable
         await new Promise((r) => setTimeout(r, 150)); continue;
       }
-      const writer = !isReader(st, t); if (writer) writerBusy = true;
+      const writer = !isReader(st, t), wscope = writer ? scope(t) : undefined; if (writer) writing.add(wscope);
       t.status = 'running'; t.claimedBy = t.role; writeBoard(p); save(p);
-      try { await worker(p, t, ctx); } catch (e) { if (t.status === 'running') t.status = 'pending'; throw e; } finally { if (writer) writerBusy = false; if (t.status !== 'pending') release(p, t); writeBoard(p); }
+      try { await worker(p, t, ctx); } catch (e) { if (t.status === 'running') t.status = 'pending'; throw e; } finally { if (writer) writing.delete(wscope); if (t.status !== 'pending') release(p, t); writeBoard(p); }
     }
   };
   await Promise.all(Array.from({ length: conc }, slot));
@@ -1026,7 +1063,8 @@ async function pipeline(p, { resume = false } = {}) {
     const tasks = cp.tasks.map((t) => prior.get(t.id)?.status === 'done' && (!t.output || fileOk(t.output) || !t.output.startsWith('/')) ? null : t).filter(Boolean);
     if (tasks.length < cp.tasks.length) log(p, 'boss', `${cp.tasks.length - tasks.length} úkolů je hotových z minula – nedělám je znovu.`);
     // independent double check for conclusions that would change the recommendation
-    const checks = tasks.filter((t) => t.critical && !t.id.endsWith('-check')).map((t) => ({ id: `${t.id}-check`, title: `Nezávislé ověření: ${t.title}`, role: 'tester', question: `Is the conclusion of ${t.id} correct?`, inputs: [t.output || ''], output: `${office}/handoffs/${t.id}-check.md`, consumer: 'boss', depends_on: [t.id], critical: false, instructions: `Independently re-derive the result of task ${t.id} ("${t.question || t.title}") from the ORIGINAL sources (recompute numbers, re-open the sources, re-run checks). Do it before reading ${t.id}'s conclusion; then compare and list every discrepancy.`, acceptance: ['Own derivation documented', 'Every discrepancy listed with source'], model: t.model, effort: t.effort }));
+    // Extra per-task double check only in the first round; later rounds are verified by the focused round test anyway.
+    const checks = round > 1 ? [] : tasks.filter((t) => t.critical && !t.id.endsWith('-check')).map((t) => ({ id: `${t.id}-check`, title: `Nezávislé ověření: ${t.title}`, role: 'tester', question: `Is the conclusion of ${t.id} correct?`, inputs: [t.output || ''], output: `${office}/handoffs/${t.id}-check.md`, consumer: 'boss', depends_on: [t.id], critical: false, instructions: `Independently re-derive the result of task ${t.id} ("${t.question || t.title}") from the ORIGINAL sources (recompute numbers, re-open the sources, re-run checks). Do it before reading ${t.id}'s conclusion; then compare and list every discrepancy.`, acceptance: ['Own derivation documented', 'Every discrepancy listed with source'], model: t.model, effort: t.effort }));
     await runTasks(p, [...tasks, ...checks], ctx);
     phase(p, 'verify');
     const report = path.join(office, 'reports', `round-${round}.md`);
@@ -1251,11 +1289,28 @@ export function addManualRole(repoId, h) {
 }
 export function castList() { return Object.entries(CAST).map(([key, name]) => ({ key, name, base: Object.values(BASE_CHAR).includes(key) })); }
 
+/** Time the project really worked on the current goal (no pauses, nights or app restarts): drives the time-left estimate. */
+function activeFromAttempts(p) {
+  try {
+    const goal = (p.state.history || []).length + 1, iv = [];
+    for (const l of read(path.join(p.dir, 'attempts.jsonl'), '').split('\n')) { if (!l) continue; let a; try { a = JSON.parse(l); } catch { continue; } if (a.goal !== goal) continue; const e = Date.parse(a.t); iv.push([e - (a.ms || 0), e]); }
+    iv.sort((a, b) => a[0] - b[0]); let ms = 0, cur = null;
+    for (const [s, e] of iv) { if (!cur || s > cur[1]) { if (cur) ms += cur[1] - cur[0]; cur = [s, e]; } else cur[1] = Math.max(cur[1], e); }
+    if (cur) ms += cur[1] - cur[0]; return ms;
+  } catch { return 0; }
+}
+function stopClock(state) { if (state.runningSince) { state.activeMs = (state.activeMs || 0) + Math.max(0, Date.now() - Date.parse(state.runningSince)); state.runningSince = null; } }
 function runPipeline(p, opts = {}) {
   const state = p.state;
   live.set(state.id, { p, children: new Set(), stopped: false, running: new Map(), lock: Promise.resolve() });
+  if (state.runningSince) { // the app went away while running: count up to the last thing that happened
+    const last = Date.parse(state.log?.[state.log.length - 1]?.t || '') || Date.parse(state.runningSince);
+    state.activeMs = (state.activeMs || 0) + Math.max(0, last - Date.parse(state.runningSince)); state.runningSince = null;
+  }
+  if (state.activeMs == null) state.activeMs = activeFromAttempts(p);
+  state.runningSince = new Date().toISOString();
   save(p);
-  pipeline(p, opts).catch((e) => {
+  pipeline(p, opts).finally(() => { stopClock(state); try { save(p); } catch {} }).catch((e) => {
     if (e.message === 'stopped') { state.limit = null; state.autoRetryAt = null; state.status = live.get(state.id)?.paused ? 'paused' : 'stopped'; if (state.status === 'paused') log(p, 'boss', 'Pozastaveno. Až budeš chtít, navážu přesně tady.'); save(p); return; }
     // Until the user pauses or stops it, a project keeps going: a used-up run budget or an error is retried by itself.
     if (e.budget) { state.status = 'interrupted'; log(p, 'boss', 'Došel rozpočet běhů – přidávám další a pokračuji.'); scheduleAutoRetry(p, 5000, { extraRuns: 0 }); save(p); return; }
@@ -1282,7 +1337,7 @@ export function startProject({ repoId, preset = 'general', goal, cwd, notes = ''
     const dir = path.join(PROJECTS_DIR, old.id); const st = old;
     (st.history ||= []).push({ goal: st.goal, started: st.started || null, finished: now(), status: st.status, score: st.score, summary: st.final?.summary || '', maxRounds: st.settings?.maxRounds, mode: st.settings?.mode || 'full' });
     (st.history[st.history.length - 1]).human = st.human || null; (st.history[st.history.length - 1]).accepted = !!st.accepted;
-    Object.assign(st, { goal, notes, preset, started: now(), status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, autoContinue: null, errorRetries: 0, autoRetryAt: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
+    Object.assign(st, { goal, notes, preset, started: now(), status: 'running', round: 0, score: null, final: null, tasks: [], inbox: [], assumptions: [], checkpoint: {}, human: { answers: 0, messages: 0, directives: 0, roles: 0 }, accepted: null, autoContinue: null, errorRetries: 0, autoRetryAt: null, activeMs: 0, runningSince: null, settings: { ...pr.defaults, ...settings }, stats: { runs: 0, cost: st.stats?.cost || 0, tokens: st.stats?.tokens || {} }, cwd: repo.path, repoId: repo.id, repoName: repo.name, archived: false });
     for (const k of Object.keys(st.agents)) st.agents[k] = { ...st.agents[k], status: 'idle', activity: '' };
     st.agents.boss = { ...st.agents.boss, status: 'working', activity: 'start' };
     const p = { state: st, dir, feeds: (() => { try { return JSON.parse(read(path.join(dir, 'feeds.json'), '{}')); } catch { return {}; } })() };
@@ -1383,7 +1438,8 @@ export function autoResume() {
     if (raw.autoRetryAt && ['error', 'interrupted', 'partial'].includes(raw.status)) { armRetry(r.projectId, Date.parse(raw.autoRetryAt) - Date.now(), raw.autoRetryOpts || { extraRuns: 1 }); resumed.push(r.name + ' (naplánováno)'); continue; }
     if (!['running', 'waiting_user', 'interrupted'].includes(raw.status)) continue; // paused, stopped, done, partial without a plan: the user decides
     // Only pause/stop ends a run. Repeated crashes are slowed down, never given up on.
-    const recent = (raw.autoResumes || []).filter((t) => Date.now() - Date.parse(t) < 3600e3);
+    // only a crash loop (3 restarts within 10 minutes) is slowed down; app updates and reinstalls are not
+    const recent = (raw.autoResumes || []).filter((t) => Date.now() - Date.parse(t) < 600e3);
     raw.autoResumes = [...recent, now()].slice(-10); raw.status = 'interrupted';
     fs.writeFileSync(path.join(PROJECTS_DIR, r.projectId, 'state.json'), JSON.stringify(raw, null, 2));
     if (recent.length >= 3) { armRetry(r.projectId, 10 * 60000, { extraRuns: 1 }); resumed.push(r.name + ' (za 10 min)'); continue; }

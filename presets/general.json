@@ -2,6 +2,6 @@
   "id": "general",
   "name": "Libovolný úkol",
   "description": "Boss rozhodne, jaký výzkum a jaká kritéria dává smysl, a dotáhne výsledek sám.",
-  "defaults": { "maxRounds": 3, "maxRuns": 40, "targetScore": 88, "concurrency": 2, "answerTimeoutMin": 20 },
+  "defaults": { "maxRounds": 3, "maxRuns": 40, "targetScore": 88, "concurrency": 4, "answerTimeoutMin": 20 },
   "focus": "Deliverable is whatever the goal describes. Decide yourself which research angles matter (experts, users, leaders/competitors, prior art) and keep the scorecard verifiable. If the result is code, include tests/run checks in the scorecard; if it has a UI, verify it in a browser."
 }

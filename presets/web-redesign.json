@@ -2,6 +2,6 @@
   "id": "web-redesign",
   "name": "Redesign webu pro pitch",
   "description": "Boss si sám vyzkoumá odborníky, návštěvníky a lídry oboru, vytvoří vkus + scorecard, přepracuje web a testuje v prohlížeči.",
-  "defaults": { "maxRounds": 4, "maxRuns": 60, "targetScore": 90, "concurrency": 2, "answerTimeoutMin": 20 },
+  "defaults": { "maxRounds": 4, "maxRuns": 60, "targetScore": 90, "concurrency": 4, "answerTimeoutMin": 20 },
   "focus": "Deliverable: a redesigned website (or landing page) whose job is to land a pitch. Research must cover (1) experts on conversion/UX/copy for this kind of page and field, (2) what visitors of this field reward or punish, (3) the top 5-8 leader sites of the field with desktop+mobile screenshots. The scorecard must include: first-screen clarity in 5 seconds, positioning and proof, CTA, trust signals, mobile, performance, accessibility basics, brand/logo consistency, no placeholder content, SEO/meta basics."
 }

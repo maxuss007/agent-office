@@ -286,7 +286,9 @@ export async function runCodex(p, o, { entry, onEvent, onChild }) {
   const dir = path.join(p.dir, '.runtime'); fs.mkdirSync(dir, { recursive: true });
   const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`, schema = path.join(dir, `${id}.schema.json`), resultFile = path.join(dir, `${id}.result.json`);
   fs.writeFileSync(schema, JSON.stringify(strictSchema(o.schema)));
-  const args = ['--no-daemon', 'exec', ...(o.agent && o.agent !== 'boss' ? ['--ephemeral'] : []), '--json', '--color', 'never', '--skip-git-repo-check', '--sandbox', o.bash || o.tools?.includes('Write') ? 'workspace-write' : 'read-only', '-C', o.cwd, '--output-schema', schema, '-o', resultFile];
+  // --ignore-user-config: agents get a clean Codex (sign-in kept), without the user's own plugins and MCP servers –
+  // their browser/Playwright tools start Chrome inside the sandbox, where it crashes and shows the user a crash dialog.
+  const args = ['--no-daemon', 'exec', '--ignore-user-config', ...(o.agent && o.agent !== 'boss' ? ['--ephemeral'] : []), '--json', '--color', 'never', '--skip-git-repo-check', '--sandbox', o.bash || o.tools?.includes('Write') ? 'workspace-write' : 'read-only', '-C', o.cwd, '--output-schema', schema, '-o', resultFile];
   if (o.provider === 'ollama') args.push('--oss', '--local-provider', 'ollama', '-c', 'model_context_window=65536');
   args.push('--model', o.model);
   if (o.provider === 'codex') args.push('-c', `model_reasoning_effort=${JSON.stringify(o.effort)}`);
@@ -304,9 +306,11 @@ export async function runCodex(p, o, { entry, onEvent, onChild }) {
     const terminate = reason => { if(timedOut)return;timedOut=true;error=`${o.model}: ${reason} (${Math.round((Date.now()-began)/1000)} s). Uložené soubory zůstaly zachované.`; child.kill('SIGTERM');killTimer=setTimeout(()=>child.kill('SIGKILL'),3000); };
     const touch=()=>{clearTimeout(idleTimer);idleTimer=setTimeout(()=>terminate('bez nové aktivity příliš dlouho'),idleMs);};touch();
     const timer=setTimeout(()=>terminate('překročen celkový čas kroku'),o.timeoutMs || 1800000);
-    const heartbeat=setInterval(()=>onEvent({kind:'sys',text:`${o.model} stále pracuje · ${Math.floor((Date.now()-began)/60000)} min`}),60000);
+    // no output for a while = the model is thinking about what it read; say so instead of showing an old command as "now"
+    let lastOut=Date.now();
+    const heartbeat=setInterval(()=>{const quiet=Date.now()-lastOut>45000;onEvent({kind:'sys',text:`${o.model} ${quiet?'přemýšlí':'stále pracuje'} · ${Math.floor((Date.now()-began)/60000)} min`,thinking:quiet});},60000);
     const cleanup=()=>{clearTimeout(timer);clearTimeout(idleTimer);clearTimeout(killTimer);clearInterval(heartbeat);};
-    child.stdout.on('data', (chunk) => { touch(); buffer += chunk; let i; while ((i = buffer.indexOf('\n')) >= 0) {
+    child.stdout.on('data', (chunk) => { touch(); lastOut=Date.now(); buffer += chunk; let i; while ((i = buffer.indexOf('\n')) >= 0) {
       const line = buffer.slice(0, i); buffer = buffer.slice(i + 1); let e; try { e = JSON.parse(line); } catch { continue; }
       if (e.type === 'thread.started') session = e.thread_id;
       if (e.type === 'turn.completed') usage = e.usage || {};
